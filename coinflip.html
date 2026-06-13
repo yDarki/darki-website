@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Coin Flip</title>
+<style>
+  :root{
+    --bg:#0a0a0f;
+    --card:#15151f;
+    --card-2:#1b1b28;
+    --text:#f2f2f7;
+    --muted:#8c8ca3;
+    --gold:#e8c35b;
+    --gold-2:#c4922e;
+    --accent:#7b5bff;
+    --border:rgba(255,255,255,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    background:var(--bg);color:var(--text);min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;overflow-x:hidden;
+  }
+  .glow{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(600px circle at 28% 22%, rgba(232,195,91,.13), transparent 42%),
+      radial-gradient(600px circle at 72% 82%, rgba(123,91,255,.14), transparent 42%);
+  }
+  .wrap{position:relative;z-index:1;width:100%;max-width:760px;padding:24px;text-align:center}
+
+  .back{
+    position:fixed;top:18px;left:18px;z-index:10;
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:9px 16px;color:var(--muted);font-weight:600;font-size:14px;text-decoration:none;
+    transition:color .2s,border-color .2s,background .2s;
+  }
+  .back:hover{color:var(--text);border-color:var(--gold);background:var(--card-2)}
+
+  h1{font-size:clamp(28px,5vw,42px);font-weight:800;letter-spacing:-1px;margin-top:18px}
+  h1 .grad{background:linear-gradient(120deg,var(--gold),var(--gold-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+
+  .scene{perspective:1000px;margin:46px auto 30px;width:180px;height:180px}
+  .coin{
+    width:180px;height:180px;position:relative;transform-style:preserve-3d;
+    transition:transform 1.6s cubic-bezier(.25,.1,.25,1);transform:rotateX(0deg);
+  }
+  .face{
+    position:absolute;inset:0;border-radius:50%;backface-visibility:hidden;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    box-shadow:inset 0 0 0 8px rgba(0,0,0,.12), 0 22px 50px rgba(232,195,91,.3);
+  }
+  .face .big{font-size:54px;line-height:1}
+  .face .lbl{font-weight:800;font-size:20px;letter-spacing:1px;margin-top:4px}
+  .heads{background:radial-gradient(circle at 35% 30%, #f4dd86, var(--gold) 55%, var(--gold-2));color:#5b430f}
+  .tails{background:radial-gradient(circle at 35% 30%, #d3d7e3, #a9aec0 55%, #7e8499);transform:rotateX(180deg);color:#2a2f3d}
+
+  .result{font-size:26px;font-weight:800;min-height:34px;margin-bottom:8px}
+  .result .win{color:var(--gold)}
+  .hint{color:var(--muted);font-size:15px;margin-bottom:22px}
+
+  .btn{
+    background:linear-gradient(120deg,var(--gold),var(--gold-2));color:#3a2a06;border:none;
+    padding:15px 40px;border-radius:14px;font-size:17px;font-weight:800;cursor:pointer;
+    box-shadow:0 12px 30px rgba(232,195,91,.32);transition:transform .12s,box-shadow .2s,opacity .2s;
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(232,195,91,.45)}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+  .stats{display:flex;gap:14px;justify-content:center;margin:34px 0 0;flex-wrap:wrap}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 26px;min-width:120px}
+  .stat .v{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:13px;color:var(--muted);margin-top:2px}
+  .reset{background:none;border:1px solid var(--border);color:var(--muted);padding:8px 16px;border-radius:10px;cursor:pointer;font-size:13px;margin-top:22px}
+  .reset:hover{border-color:var(--gold);color:var(--text)}
+
+  .hist-label{color:var(--muted);font-size:12px;letter-spacing:2px;text-transform:uppercase;margin:30px 0 12px}
+  .history{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;min-height:32px}
+  .chip{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:14px;border:1px solid var(--border);animation:chipIn .25s ease}
+  .chip.k{background:rgba(232,195,91,.18);color:var(--gold)}
+  .chip.z{background:rgba(170,176,200,.18);color:#c2c7d6}
+  @keyframes chipIn{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <a class="back" href="index.html">← Dashboard</a>
+  <div class="wrap">
+    <h1>🪙 <span class="grad">Coin Flip</span></h1>
+
+    <div class="scene">
+      <div class="coin" id="coin">
+        <div class="face heads"><span class="big">👑</span><span class="lbl">KOPF</span></div>
+        <div class="face tails"><span class="big">🔢</span><span class="lbl">ZAHL</span></div>
+      </div>
+    </div>
+
+    <div class="result" id="result">Bereit?</div>
+    <p class="hint">Drück den Knopf und wirf die Münze.</p>
+    <button class="btn" id="flip">Münze werfen</button>
+
+    <div class="stats">
+      <div class="stat"><div class="v" id="headsC">0</div><div class="l">Kopf 👑</div></div>
+      <div class="stat"><div class="v" id="tailsC">0</div><div class="l">Zahl 🔢</div></div>
+      <div class="stat"><div class="v" id="totalC">0</div><div class="l">Würfe gesamt</div></div>
+    </div>
+    <button class="reset" id="reset">Statistik zurücksetzen</button>
+
+    <div class="hist-label">Letzte Würfe</div>
+    <div class="history" id="history"></div>
+  </div>
+
+  <script>
+    const coin = document.getElementById('coin');
+    const result = document.getElementById('result');
+    const flipBtn = document.getElementById('flip');
+    const headsC = document.getElementById('headsC');
+    const tailsC = document.getElementById('tailsC');
+    const totalC = document.getElementById('totalC');
+
+    const historyEl = document.getElementById('history');
+    let stats = { heads:0, tails:0 };
+    let history = []; // neueste zuerst, 'K' oder 'Z'
+    try{
+      const s = JSON.parse(localStorage.getItem('coinSave')||'null');
+      if(s){ stats.heads = s.heads||0; stats.tails = s.tails||0; history = s.history||[]; }
+    }catch(e){}
+
+    function save(){ localStorage.setItem('coinSave', JSON.stringify({...stats, history})); }
+    function renderStats(){
+      headsC.textContent = stats.heads;
+      tailsC.textContent = stats.tails;
+      totalC.textContent = stats.heads + stats.tails;
+    }
+    function renderHistory(){
+      historyEl.innerHTML = '';
+      history.slice(0,15).forEach(r=>{
+        const c = document.createElement('div');
+        c.className = 'chip ' + (r==='K'?'k':'z');
+        c.textContent = r;
+        historyEl.appendChild(c);
+      });
+    }
+
+    let rotation = 0;
+    let busy = false;
+
+    function flip(){
+      if(busy) return;
+      busy = true; flipBtn.disabled = true;
+      result.textContent = '…';
+
+      const isHeads = Math.random() < 0.5;
+      const target = isHeads ? 0 : 180;           // gewünschte Endlage (mod 360)
+      let base = rotation - (rotation % 360);
+      let next = base + 360*5 + target;            // 5 volle Drehungen + Ziel
+      if(next <= rotation) next += 360;
+      rotation = next;
+      coin.style.transform = `rotateX(${rotation}deg)`;
+
+      setTimeout(()=>{
+        if(isHeads){ stats.heads++; history.unshift('K'); result.innerHTML = '<span class="win">Kopf!</span>'; }
+        else       { stats.tails++; history.unshift('Z'); result.innerHTML = '<span class="win">Zahl!</span>'; }
+        if(history.length > 50) history = history.slice(0,50);
+        renderStats(); renderHistory(); save();
+        busy = false; flipBtn.disabled = false;
+      }, 1650);
+    }
+
+    flipBtn.addEventListener('click', flip);
+    coin.addEventListener('click', flip);
+
+    document.getElementById('reset').addEventListener('click', ()=>{
+      if(confirm('Statistik wirklich zurücksetzen?')){
+        stats = { heads:0, tails:0 }; history = []; save(); renderStats(); renderHistory();
+        result.textContent = 'Bereit?';
+      }
+    });
+
+    renderStats(); renderHistory();
+  </script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard</title>
+<style>
+  :root{
+    --bg:#0a0a0f;
+    --card:#15151f;
+    --card-2:#1b1b28;
+    --text:#f2f2f7;
+    --muted:#8c8ca3;
+    --accent:#e8a44c;
+    --accent-2:#7b5bff;
+    --border:rgba(255,255,255,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;
+  }
+  a{text-decoration:none;color:inherit}
+  .glow{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(700px circle at 20% 18%, rgba(232,164,76,.13), transparent 42%),
+      radial-gradient(700px circle at 82% 75%, rgba(123,91,255,.14), transparent 45%);
+  }
+  .wrap{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:60px 24px}
+
+  .head{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+  .head .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  h1{font-size:clamp(32px,6vw,52px);font-weight:800;letter-spacing:-1px}
+  h1 .grad{background:linear-gradient(120deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--muted);font-size:17px;margin:10px 0 40px}
+
+  .section-label{color:var(--muted);font-size:13px;letter-spacing:2px;text-transform:uppercase;margin:0 0 18px;font-weight:600}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+
+  .tile{
+    position:relative;display:block;
+    background:var(--card);border:1px solid var(--border);border-radius:20px;padding:26px;
+    transition:transform .18s,border-color .2s,background .2s;overflow:hidden;
+  }
+  .tile:hover{transform:translateY(-4px);background:var(--card-2);border-color:rgba(232,164,76,.45)}
+  .tile.featured{grid-column:span 2;display:flex;align-items:center;gap:26px;
+    background:linear-gradient(135deg,rgba(232,164,76,.10),rgba(123,91,255,.08));}
+  @media(max-width:640px){.tile.featured{grid-column:span 1;flex-direction:column;text-align:center}}
+
+  .tile .ico{font-size:54px;line-height:1;filter:drop-shadow(0 10px 24px rgba(232,164,76,.3))}
+  .tile.featured .ico{font-size:84px}
+  .tile .body{flex:1}
+  .tile h3{font-size:22px;font-weight:800;margin-bottom:6px}
+  .tile.featured h3{font-size:30px}
+  .tile p{color:var(--muted);font-size:15px;line-height:1.5}
+
+  .pill{display:inline-block;margin-top:14px;background:linear-gradient(120deg,var(--accent),var(--accent-2));
+    color:#fff;font-weight:700;font-size:14px;padding:9px 20px;border-radius:11px;
+    box-shadow:0 10px 26px rgba(232,164,76,.28)}
+  .save-line{margin-top:12px;font-size:14px;color:var(--accent);font-weight:700}
+
+  .tile.soon{opacity:.5;cursor:not-allowed}
+  .tile.soon:hover{transform:none;background:var(--card);border-color:var(--border)}
+  .badge-soon{position:absolute;top:16px;right:16px;background:var(--bg);border:1px solid var(--border);
+    color:var(--muted);font-size:12px;font-weight:600;padding:4px 10px;border-radius:8px}
+
+  footer{color:var(--muted);font-size:13px;text-align:center;padding:40px 0 20px}
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="wrap">
+    <div class="head"><span class="dot"></span><span class="section-label" style="margin:0">Dashboard</span></div>
+    <h1>Willkommen bei <span class="grad">Darki's Hub</span></h1>
+    <p class="sub">Wähl unten ein Spiel oder eine App aus.</p>
+
+    <div class="section-label">Spiele</div>
+    <div class="grid">
+
+      <a class="tile featured" href="cookie.html">
+        <div class="ico">🍪</div>
+        <div class="body">
+          <h3>Cookie Clicker</h3>
+          <p>Klick den Cookie, kauf Gebäude und produziere automatisch Cookies. Dein Fortschritt wird gespeichert.</p>
+          <div class="save-line" id="saveLine">Noch kein Spielstand — jetzt starten!</div>
+          <span class="pill">▶ Spielen</span>
+        </div>
+      </a>
+
+      <a class="tile" href="coinflip.html">
+        <div class="ico">🪙</div>
+        <h3>Coin Flip</h3>
+        <p>Kopf oder Zahl? Wirf die Münze und verfolge deine Statistik.</p>
+        <span class="pill">▶ Spielen</span>
+      </a>
+
+      <div class="tile soon">
+        <span class="badge-soon">Bald</span>
+        <div class="ico">🖱️</div>
+        <h3>CPS-Test</h3>
+        <p>Wie viele Klicks pro Sekunde schaffst du?</p>
+      </div>
+
+    </div>
+
+    <div class="section-label" style="margin-top:38px">Tools</div>
+    <div class="grid">
+      <a class="tile featured" href="donutprices.html">
+        <div class="ico">🍩</div>
+        <div class="body">
+          <h3>DonutSMP Preise</h3>
+          <p>Live-Auktionspreise vom DonutSMP-Server — durchsuchbar und sortierbar, mit Ø-, Min- und Max-Preis pro Item.</p>
+          <span class="pill">▶ Öffnen</span>
+        </div>
+      </a>
+    </div>
+
+    <footer>Darki's Hub · läuft im Browser</footer>
+  </div>
+
+  <script>
+    // Zeige aktuellen Cookie-Spielstand auf der Kachel
+    try{
+      const s = JSON.parse(localStorage.getItem('cookieSave')||'null');
+      if(s && s.cookies > 0){
+        const fmt = n => n>=1e6 ? (n/1e6).toFixed(2)+'M' : n>=1e3 ? (n/1e3).toFixed(2)+'k' : Math.floor(n).toString();
+        document.getElementById('saveLine').textContent = '🍪 Gespeicherter Stand: ' + fmt(s.cookies) + ' Cookies';
+      }
+    }catch(e){}
+  </script>
+</body>
+</html>

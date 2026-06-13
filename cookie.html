@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cookie Clicker</title>
+<style>
+  :root{
+    --bg:#0a0a0f;
+    --card:#15151f;
+    --card-2:#1b1b28;
+    --text:#f2f2f7;
+    --muted:#8c8ca3;
+    --accent:#e8a44c;
+    --accent-2:#c46b2e;
+    --green:#5bd99a;
+    --border:rgba(255,255,255,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    background:var(--bg);color:var(--text);min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;
+    overflow-x:hidden;
+  }
+  .glow{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(600px circle at 28% 22%, rgba(232,164,76,.14), transparent 42%),
+      radial-gradient(600px circle at 72% 82%, rgba(196,107,46,.14), transparent 42%);
+  }
+  .wrap{position:relative;z-index:1;width:100%;max-width:900px;padding:24px;text-align:center}
+
+  .back{
+    position:fixed;top:18px;left:18px;z-index:10;
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:9px 16px;color:var(--muted);font-weight:600;font-size:14px;text-decoration:none;
+    transition:color .2s,border-color .2s,background .2s;
+  }
+  .back:hover{color:var(--text);border-color:var(--accent);background:var(--card-2)}
+
+  h1{font-size:clamp(28px,5vw,42px);font-weight:800;letter-spacing:-1px;margin-top:18px}
+  h1 .grad{background:linear-gradient(120deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+
+  .stats{display:flex;gap:14px;justify-content:center;margin:22px 0 8px;flex-wrap:wrap}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 22px;min-width:150px}
+  .stat .v{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:13px;color:var(--muted);margin-top:2px}
+
+  .cookie{
+    font-size:clamp(120px,30vw,190px);line-height:1;cursor:pointer;user-select:none;
+    margin:18px auto;display:inline-block;
+    filter:drop-shadow(0 18px 40px rgba(232,164,76,.35));
+    transition:transform .06s;
+  }
+  .cookie:active{transform:scale(.92)}
+
+  .float{
+    position:fixed;z-index:5;pointer-events:none;font-weight:800;font-size:22px;color:var(--accent);
+    animation:rise 1s ease-out forwards;
+  }
+  @keyframes rise{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-70px)}}
+
+  .shop{margin-top:26px}
+  .shop h2{font-size:18px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:16px}
+  .items{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+  .item{
+    background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;
+    display:flex;align-items:center;gap:14px;text-align:left;cursor:pointer;
+    transition:transform .15s,border-color .2s,background .2s,opacity .2s;
+  }
+  .item:hover{transform:translateY(-3px);background:var(--card-2);border-color:rgba(232,164,76,.5)}
+  .item.locked{opacity:.45;cursor:not-allowed}
+  .item.locked:hover{transform:none;border-color:var(--border);background:var(--card)}
+  .item .emoji{font-size:38px}
+  .item .info{flex:1}
+  .item .name{font-weight:700;font-size:17px}
+  .item .desc{font-size:13px;color:var(--muted);margin-top:2px}
+  .item .meta{text-align:right;font-size:13px}
+  .item .cost{font-weight:800;color:var(--accent)}
+  .item .owned{color:var(--muted);margin-top:2px}
+
+  footer{color:var(--muted);font-size:13px;padding:30px 0}
+  .reset{background:none;border:1px solid var(--border);color:var(--muted);padding:8px 16px;border-radius:10px;cursor:pointer;font-size:13px;margin-top:10px}
+  .reset:hover{border-color:var(--accent);color:var(--text)}
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <a class="back" href="index.html">← Dashboard</a>
+  <div class="wrap">
+    <h1>🍪 <span class="grad">Cookie Clicker</span></h1>
+
+    <div class="stats">
+      <div class="stat"><div class="v" id="count">0</div><div class="l">Cookies</div></div>
+      <div class="stat"><div class="v" id="cps">0</div><div class="l">pro Sekunde</div></div>
+      <div class="stat"><div class="v" id="perClick">1</div><div class="l">pro Klick</div></div>
+    </div>
+
+    <div class="cookie" id="cookie">🍪</div>
+    <p style="color:var(--muted)">Klick den Cookie!</p>
+
+    <div class="shop">
+      <h2>Shop</h2>
+      <div class="items" id="shop"></div>
+    </div>
+
+    <footer>
+      <div>Fortschritt wird automatisch im Browser gespeichert.</div>
+      <button class="reset" id="reset">Spielstand zurücksetzen</button>
+    </footer>
+  </div>
+
+  <script>
+    // ---- game state ----
+    const state = { cookies: 0, perClick: 1 };
+
+    const shopItems = [
+      { id:'cursor',  emoji:'👆', name:'Cursor',   desc:'Klickt automatisch',      baseCost:15,    cps:0.1,  owned:0 },
+      { id:'grandma', emoji:'👵', name:'Oma',      desc:'Backt fleißig Cookies',   baseCost:100,   cps:1,    owned:0 },
+      { id:'farm',    emoji:'🌾', name:'Farm',     desc:'Cookie-Plantage',         baseCost:1100,  cps:8,    owned:0 },
+      { id:'factory', emoji:'🏭', name:'Fabrik',   desc:'Massenproduktion',        baseCost:12000, cps:47,   owned:0 },
+      { id:'bank',    emoji:'🏦', name:'Bank',     desc:'Cookie-Zinsen',           baseCost:130000,cps:260,  owned:0 },
+    ];
+
+    // ---- persistence ----
+    try{
+      const saved = JSON.parse(localStorage.getItem('cookieSave')||'null');
+      if(saved){
+        state.cookies = saved.cookies||0;
+        state.perClick = saved.perClick||1;
+        if(saved.owned) shopItems.forEach(i=>{ i.owned = saved.owned[i.id]||0; });
+      }
+    }catch(e){}
+
+    function save(){
+      const owned={}; shopItems.forEach(i=>owned[i.id]=i.owned);
+      localStorage.setItem('cookieSave', JSON.stringify({cookies:state.cookies,perClick:state.perClick,owned}));
+    }
+
+    // ---- helpers ----
+    const fmt = n => n>=1e6 ? (n/1e6).toFixed(2)+'M' : n>=1e3 ? (n/1e3).toFixed(2)+'k' : Math.floor(n).toString();
+    const costOf = it => Math.ceil(it.baseCost * Math.pow(1.15, it.owned));
+    const totalCps = () => shopItems.reduce((s,i)=>s + i.cps*i.owned, 0);
+
+    const countEl = document.getElementById('count');
+    const cpsEl = document.getElementById('cps');
+    const perClickEl = document.getElementById('perClick');
+    const shopEl = document.getElementById('shop');
+    const cookie = document.getElementById('cookie');
+
+    function renderStats(){
+      countEl.textContent = fmt(state.cookies);
+      cpsEl.textContent = totalCps().toFixed(1);
+      perClickEl.textContent = state.perClick;
+    }
+
+    function renderShop(){
+      shopEl.innerHTML='';
+      shopItems.forEach(it=>{
+        const cost = costOf(it);
+        const afford = state.cookies >= cost;
+        const div = document.createElement('div');
+        div.className = 'item' + (afford ? '' : ' locked');
+        div.innerHTML = `
+          <div class="emoji">${it.emoji}</div>
+          <div class="info">
+            <div class="name">${it.name}</div>
+            <div class="desc">${it.desc} · +${it.cps}/s</div>
+          </div>
+          <div class="meta">
+            <div class="cost">🍪 ${fmt(cost)}</div>
+            <div class="owned">x${it.owned}</div>
+          </div>`;
+        div.addEventListener('click', ()=>buy(it));
+        shopEl.appendChild(div);
+      });
+    }
+
+    function buy(it){
+      const cost = costOf(it);
+      if(state.cookies < cost) return;
+      state.cookies -= cost;
+      it.owned++;
+      renderStats(); renderShop(); save();
+    }
+
+    function floatText(x,y,txt){
+      const el = document.createElement('div');
+      el.className='float'; el.textContent=txt;
+      el.style.left=x+'px'; el.style.top=y+'px';
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),1000);
+    }
+
+    cookie.addEventListener('click', e=>{
+      state.cookies += state.perClick;
+      floatText(e.clientX-10, e.clientY-20, '+'+state.perClick);
+      renderStats();
+      renderShop();
+      save(); // jeden Klick sofort sichern
+    });
+
+    // zusätzlich beim Verlassen / Tab-Wechsel sichern
+    window.addEventListener('beforeunload', save);
+    document.addEventListener('visibilitychange', ()=>{ if(document.hidden) save(); });
+
+    document.getElementById('reset').addEventListener('click', ()=>{
+      if(confirm('Spielstand wirklich zurücksetzen?')){
+        localStorage.removeItem('cookieSave');
+        location.reload();
+      }
+    });
+
+    // ---- main loop: passive cookies ----
+    let last = performance.now();
+    function loop(now){
+      const dt = (now - last)/1000; last = now;
+      const gain = totalCps()*dt;
+      if(gain>0){ state.cookies += gain; renderStats(); }
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+
+    setInterval(()=>{ renderShop(); save(); }, 1000);
+
+    renderStats(); renderShop();
+  </script>
+</body>
+</html>
