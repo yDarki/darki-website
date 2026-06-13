@@ -6,15 +6,8 @@
 <title>DonutSMP Preise</title>
 <style>
   :root{
-    --bg:#0a0a0f;
-    --card:#15151f;
-    --card-2:#1b1b28;
-    --text:#f2f2f7;
-    --muted:#8c8ca3;
-    --accent:#ff5fa2;
-    --accent-2:#7b5bff;
-    --green:#5bd99a;
-    --border:rgba(255,255,255,.08);
+    --bg:#0a0a0f; --card:#15151f; --card-2:#1b1b28; --text:#f2f2f7; --muted:#8c8ca3;
+    --accent:#ff5fa2; --accent-2:#7b5bff; --green:#5bd99a; --border:rgba(255,255,255,.08);
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
@@ -25,58 +18,65 @@
   .wrap{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:28px 22px 60px}
 
   .back{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);
-    border-radius:12px;padding:9px 16px;color:var(--muted);font-weight:600;font-size:14px;margin-bottom:22px;
-    transition:color .2s,border-color .2s,background .2s}
+    border-radius:12px;padding:9px 16px;color:var(--muted);font-weight:600;font-size:14px;margin-bottom:22px;transition:.2s}
   .back:hover{color:var(--text);border-color:var(--accent);background:var(--card-2)}
-
   h1{font-size:clamp(28px,5vw,40px);font-weight:800;letter-spacing:-1px}
   h1 .grad{background:linear-gradient(120deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
   .sub{color:var(--muted);font-size:15px;margin-top:8px}
 
-  .tabs{display:flex;gap:8px;margin:26px 0 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
-  .tab{background:none;border:none;color:var(--muted);font-size:15px;font-weight:600;cursor:pointer;
-    padding:12px 18px;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .2s,border-color .2s}
-  .tab:hover{color:var(--text)}
-  .tab.active{color:var(--text);border-bottom-color:var(--accent)}
-
-  .panel{display:none}
-  .panel.active{display:block;animation:fade .25s ease}
-  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-
-  .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
-  .search{flex:1;min-width:180px;background:var(--card);border:1px solid var(--border);border-radius:12px;
-    padding:12px 16px;color:var(--text);font-size:15px;outline:none}
+  .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:26px 0 14px}
+  .search{flex:1;min-width:180px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 16px;color:var(--text);font-size:15px;outline:none}
   .search:focus{border-color:var(--accent)}
-  .btn{background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#fff;border:none;
-    padding:12px 20px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:transform .12s,opacity .2s}
+  .btn{background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#fff;border:none;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:.12s}
   .btn:hover{transform:translateY(-2px)}
   .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-
   .status{color:var(--muted);font-size:13px;margin-bottom:14px}
   .status b{color:var(--text)}
 
   table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-  thead th{text-align:left;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);
-    padding:13px 14px;background:var(--card-2);cursor:pointer;user-select:none;white-space:nowrap}
+  thead th{text-align:left;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:13px 14px;background:var(--card-2);cursor:pointer;user-select:none;white-space:nowrap}
   thead th:hover{color:var(--text)}
   thead th.num,tbody td.num{text-align:right}
   tbody td{padding:11px 14px;border-top:1px solid var(--border);font-size:15px;white-space:nowrap}
+  tbody tr{cursor:pointer}
   tbody tr:hover{background:var(--card-2)}
   .item-cell{display:flex;align-items:center;gap:10px}
   .item-cell img{width:24px;height:24px;image-rendering:pixelated;flex-shrink:0}
   .item-name{font-weight:600;text-transform:capitalize}
   .price{font-weight:800;color:var(--green);font-variant-numeric:tabular-nums}
   .muted-num{color:var(--muted);font-variant-numeric:tabular-nums}
+  .tag1{font-size:10px;color:var(--muted);margin-left:6px}
 
   .loading,.error{padding:40px;text-align:center;color:var(--muted)}
   .spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;margin:0 auto 14px;animation:spin 1s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
+  .attrib{margin-top:16px;font-size:13px;color:var(--muted)} .attrib a{color:var(--accent);font-weight:600}
 
-  .info-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;line-height:1.7;color:var(--muted)}
-  .info-card h3{color:var(--text);margin-bottom:10px}
-  .info-card a{color:var(--accent);font-weight:600}
-  .attrib{margin-top:16px;font-size:13px;color:var(--muted)}
-  .attrib a{color:var(--accent);font-weight:600}
+  /* ---- side detail panel ---- */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.2s;z-index:40}
+  .overlay.open{opacity:1;pointer-events:auto}
+  .panel{position:fixed;top:0;right:0;height:100%;width:min(440px,92vw);background:var(--card);
+    border-left:1px solid var(--border);transform:translateX(100%);transition:transform .28s cubic-bezier(.25,.1,.25,1);
+    z-index:50;display:flex;flex-direction:column}
+  .panel.open{transform:translateX(0)}
+  .panel-head{padding:22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px}
+  .panel-head img{width:36px;height:36px;image-rendering:pixelated}
+  .panel-head .title{flex:1}
+  .panel-head .name{font-size:20px;font-weight:800;text-transform:capitalize}
+  .panel-head .meta{font-size:13px;color:var(--muted);margin-top:2px}
+  .panel-close{background:none;border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:18px}
+  .panel-close:hover{color:var(--text);border-color:var(--accent)}
+
+  .ptabs{display:flex;gap:8px;padding:14px 22px 0}
+  .ptab{flex:1;background:var(--card-2);border:1px solid var(--border);color:var(--muted);font-weight:700;font-size:14px;padding:11px;border-radius:10px;cursor:pointer;transition:.2s}
+  .ptab.active{color:#fff;background:linear-gradient(120deg,var(--accent),var(--accent-2));border-color:transparent}
+  .plist{flex:1;overflow-y:auto;padding:16px 22px 24px}
+  .lrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:var(--card-2);border:1px solid var(--border);border-radius:12px;margin-bottom:10px}
+  .lrow .who{font-size:14px}
+  .lrow .who small{color:var(--muted)}
+  .lrow .pr{font-weight:800;color:var(--green);font-variant-numeric:tabular-nums;text-align:right}
+  .lrow .pr small{display:block;color:var(--muted);font-weight:500}
+  .empty{color:var(--muted);text-align:center;padding:30px}
 </style>
 </head>
 <body>
@@ -84,171 +84,156 @@
   <div class="wrap">
     <a class="back" href="index.html">← Dashboard</a>
     <h1>🍩 <span class="grad">DonutSMP Preise</span></h1>
-    <p class="sub">Aktuelle Auktionshaus-Preise vom DonutSMP-Server.</p>
+    <p class="sub">Echte Auktionshaus-Preise vom DonutSMP-Server (offizielle API).</p>
 
-    <div class="tabs">
-      <button class="tab active" data-tab="prices">📊 Preise</button>
-      <button class="tab" data-tab="info">ℹ️ Info</button>
+    <div class="toolbar">
+      <input class="search" id="search" placeholder="Item suchen… (z. B. netherite)" />
+      <button class="btn" id="refresh">Aktualisieren</button>
     </div>
-
-    <div class="panel active" id="panel-prices">
-      <div class="toolbar">
-        <input class="search" id="search" placeholder="Item suchen… (z. B. netherite)" />
-        <button class="btn" id="refresh">Aktualisieren</button>
-      </div>
-      <div class="status" id="status">Lade Daten…</div>
-      <div id="tableWrap"><div class="loading"><div class="spinner"></div>Preise werden geladen…</div></div>
-      <p class="attrib">Datenquelle: <a href="https://donutsmp.stacksail.com/item-prices/" target="_blank" rel="noopener">donutsmp.stacksail.com</a></p>
-    </div>
-
-    <div class="panel" id="panel-info">
-      <div class="info-card">
-        <h3>Über diese Preise</h3>
-        <p>Die Preise stammen aus dem DonutSMP-Auktionshaus, bereitgestellt über den
-        Tracker <a href="https://donutsmp.stacksail.com/item-prices/" target="_blank" rel="noopener">donutsmp.stacksail.com</a>
-        (Daten aus der offiziellen DonutSMP-API).</p>
-        <p>Pro Item siehst du den <b>letzten Verkaufspreis</b>, die <b>Stackgröße</b> des letzten Verkaufs,
-        das gesamte <b>Handelsvolumen</b> und <b>wann</b> zuletzt verkauft wurde. Klick auf eine Spaltenüberschrift zum Sortieren.</p>
-        <p>Die Daten werden gecacht und höchstens alle <b>30 Minuten</b> neu geladen.</p>
-        <p class="attrib">Daten von <a href="https://donutsmp.stacksail.com/item-prices/" target="_blank" rel="noopener">donutsmp.stacksail.com</a> · nicht offiziell mit DonutSMP verbunden.</p>
-      </div>
-    </div>
+    <div class="status" id="status">Lade Daten…</div>
+    <div id="tableWrap"><div class="loading"><div class="spinner"></div>Preise werden geladen…</div></div>
+    <p class="attrib">Preis = günstigstes aktuelles Einzel-Angebot (Stück, qty&nbsp;1). Quelle: offizielle DonutSMP-API.</p>
   </div>
 
+  <!-- detail panel -->
+  <div class="overlay" id="overlay"></div>
+  <aside class="panel" id="panel">
+    <div class="panel-head">
+      <img id="pImg" src="" alt="">
+      <div class="title"><div class="name" id="pName">—</div><div class="meta" id="pMeta"></div></div>
+      <button class="panel-close" id="pClose">×</button>
+    </div>
+    <div class="ptabs">
+      <button class="ptab active" data-pt="ah" id="tabAh">🏷️ AH (Angebote)</button>
+      <button class="ptab" data-pt="orders" id="tabOrders">📜 Orders (Verkäufe)</button>
+    </div>
+    <div class="plist" id="pList"></div>
+  </aside>
+
   <script>
-    const API = 'https://api.donutsmp.jpsoftware.nl/api/items?source=api';
-    // Die Daten-API blockt fremde Browser-Origins (503). Daher über öffentliche Proxys, mit Fallback.
-    const SOURCES = [
-      'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(API),
-      'https://corsproxy.io/?url=' + encodeURIComponent(API),
-      'https://api.allorigins.win/raw?url=' + encodeURIComponent(API)
-    ];
-    function fetchT(url, ms){
-      const ctrl = new AbortController();
-      const id = setTimeout(()=>ctrl.abort(), ms);
-      return fetch(url, {signal:ctrl.signal}).finally(()=>clearTimeout(id));
-    }
+    const API = '/.netlify/functions/donut';
     const TEX = 'https://donutsmp.stacksail.com/textures/';
-    const CACHE_KEY = 'donutPricesV2';
-    const CACHE_MS = 30*60*1000;
+    const CACHE_KEY = 'donutPricesV3';
+    const CACHE_MS = 5*60*1000;
 
     const statusEl = document.getElementById('status');
     const tableWrap = document.getElementById('tableWrap');
     const searchEl = document.getElementById('search');
     const refreshEl = document.getElementById('refresh');
+    const overlay = document.getElementById('overlay');
+    const panel = document.getElementById('panel');
 
     let items = [];
-    let sortKey = 'trading_volume', sortDir = -1;
+    let sortKey = 'cheapest1', sortDir = 1;
+    let current = null, curTab = 'ah';
 
-    document.querySelectorAll('.tab').forEach(t=>{
-      t.addEventListener('click', ()=>{
-        document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-        document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
-        t.classList.add('active');
-        document.getElementById('panel-'+t.dataset.tab).classList.add('active');
-      });
-    });
-
-    const fmt = n => Math.round(n).toLocaleString('de-DE');
+    const fmt = n => (n==null) ? '–' : Math.round(n).toLocaleString('de-DE');
     const shortName = id => (id||'').replace(/^minecraft:/,'');
     const pretty = id => shortName(id).replace(/_/g,' ');
-    function ago(ts){
-      if(!ts) return '–';
-      const s = Math.floor((Date.now()-ts)/1000);
-      if(s < 60) return 'gerade eben';
-      const m = Math.floor(s/60); if(m < 60) return 'vor '+m+' Min';
-      const h = Math.floor(m/60); if(h < 24) return 'vor '+h+' Std';
-      const d = Math.floor(h/24); return 'vor '+d+' T';
-    }
+    const tex = id => TEX + shortName(id) + '.png';
+    function ago(ts){ if(!ts) return '–'; const s=Math.floor((Date.now()-ts)/1000);
+      if(s<60)return'gerade eben'; const m=Math.floor(s/60); if(m<60)return'vor '+m+' Min';
+      const h=Math.floor(m/60); if(h<24)return'vor '+h+' Std'; return 'vor '+Math.floor(h/24)+' T'; }
+    function priceOf(it){ return it.cheapest1!=null ? it.cheapest1 : it.cheapestAny; }
+    function lastSale(it){ return (it.sales && it.sales[0]) ? it.sales[0] : null; }
 
     function render(){
       const q = searchEl.value.trim().toLowerCase();
-      let rows = items.filter(it => pretty(it.item_id).toLowerCase().includes(q));
+      let rows = items.filter(it => pretty(it.id).toLowerCase().includes(q));
       rows.sort((a,b)=>{
-        if(sortKey==='item_id') return sortDir*pretty(a.item_id).localeCompare(pretty(b.item_id));
-        return sortDir*((a[sortKey]||0)-(b[sortKey]||0));
+        if(sortKey==='id') return sortDir*pretty(a.id).localeCompare(pretty(b.id));
+        if(sortKey==='last'){ const av=(lastSale(a)||{}).time||0, bv=(lastSale(b)||{}).time||0; return sortDir*(av-bv); }
+        let av=a[sortKey], bv=b[sortKey];
+        av = (av==null?Infinity:av); bv=(bv==null?Infinity:bv);
+        return sortDir*(av-bv);
       });
-      if(rows.length===0){ tableWrap.innerHTML = '<div class="error">Keine Items gefunden.</div>'; return; }
-      let html = `<table><thead><tr>
-        <th data-k="item_id">Item</th>
-        <th class="num" data-k="latest_price">Preis</th>
-        <th class="num" data-k="latest_count">Stack</th>
-        <th class="num" data-k="trading_volume">Volumen</th>
-        <th class="num" data-k="latest_date_sold">Zuletzt</th>
-      </tr></thead><tbody>`;
-      rows.slice(0,400).forEach(it=>{
-        const name = shortName(it.item_id);
-        html += `<tr>
-          <td><div class="item-cell">
-            <img src="${TEX}${name}.png" alt="" onerror="this.style.visibility='hidden'">
-            <span class="item-name">${pretty(it.item_id)}</span>
-          </div></td>
-          <td class="num price">${fmt(it.latest_price)}</td>
-          <td class="num muted-num">${it.latest_count ?? '–'}</td>
-          <td class="num muted-num">${fmt(it.trading_volume||0)}</td>
-          <td class="num muted-num">${ago(it.latest_date_sold)}</td>
-        </tr>`;
+      if(!rows.length){ tableWrap.innerHTML='<div class="error">Keine Items gefunden.</div>'; return; }
+      let html='<table><thead><tr>'
+        +'<th data-k="id">Item</th>'
+        +'<th class="num" data-k="cheapest1">Preis (Stück)</th>'
+        +'<th class="num" data-k="listings">Angebote</th>'
+        +'<th class="num" data-k="last">Zuletzt</th>'
+        +'</tr></thead><tbody>';
+      rows.slice(0,400).forEach((it,i)=>{
+        const ls=lastSale(it);
+        const only = it.cheapest1==null ? '<span class="tag1">(kein Einzel)</span>' : '';
+        html+='<tr data-i="'+items.indexOf(it)+'">'
+          +'<td><div class="item-cell"><img src="'+tex(it.id)+'" onerror="this.style.visibility=\'hidden\'"><span class="item-name">'+pretty(it.id)+'</span></div></td>'
+          +'<td class="num price">'+fmt(priceOf(it))+only+'</td>'
+          +'<td class="num muted-num">'+it.listings+'</td>'
+          +'<td class="num muted-num">'+(ls?ago(ls.time):'–')+'</td>'
+          +'</tr>';
       });
-      html += '</tbody></table>';
-      tableWrap.innerHTML = html;
-      tableWrap.querySelectorAll('th').forEach(th=>{
-        th.addEventListener('click', ()=>{
-          const k = th.dataset.k;
-          if(sortKey===k) sortDir*=-1; else { sortKey=k; sortDir = (k==='item_id')?1:-1; }
-          render();
-        });
-      });
+      html+='</tbody></table>';
+      tableWrap.innerHTML=html;
+      tableWrap.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{
+        const k=th.dataset.k; if(sortKey===k)sortDir*=-1; else{sortKey=k;sortDir=(k==='id')?1:(k==='last'?-1:1);} render();
+      }));
+      tableWrap.querySelectorAll('tbody tr').forEach(tr=>tr.addEventListener('click',()=>openPanel(items[+tr.dataset.i])));
     }
 
-    function setStatus(ts, n){
-      const t = new Date(ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-      statusEl.innerHTML = `<b>${n}</b> Items · Stand: ${t} Uhr`;
+    function renderPanelList(){
+      const it=current; if(!it){pList.innerHTML='';return;}
+      const list = curTab==='ah' ? it.ah : it.sales;
+      if(!list || !list.length){ pList.innerHTML='<div class="empty">Keine '+(curTab==='ah'?'Angebote':'Verkäufe')+' gefunden.</div>'; return; }
+      let h='';
+      list.forEach(e=>{
+        if(curTab==='ah'){
+          h+='<div class="lrow"><div class="who">'+e.seller+'<br><small>'+e.count+'× Stück</small></div>'
+            +'<div class="pr">'+fmt(e.price)+'<small>'+(e.count>1?('je '+fmt(e.price/e.count)):'pro Stück')+'</small></div></div>';
+        } else {
+          h+='<div class="lrow"><div class="who">'+e.seller+'<br><small>'+e.count+'× · '+ago(e.time)+'</small></div>'
+            +'<div class="pr">'+fmt(e.price)+'<small>'+(e.count>1?('je '+fmt(e.price/e.count)):'pro Stück')+'</small></div></div>';
+        }
+      });
+      pList.innerHTML=h;
     }
+    const pList=document.getElementById('pList');
+
+    function openPanel(it){
+      current=it; curTab='ah';
+      document.getElementById('pName').textContent=pretty(it.id);
+      document.getElementById('pImg').src=tex(it.id);
+      const ls=lastSale(it);
+      document.getElementById('pMeta').textContent='Günstigstes Stück: '+fmt(priceOf(it))+' · '+it.listings+' Angebote';
+      document.getElementById('tabAh').classList.add('active');
+      document.getElementById('tabOrders').classList.remove('active');
+      renderPanelList();
+      overlay.classList.add('open'); panel.classList.add('open');
+    }
+    function closePanel(){ overlay.classList.remove('open'); panel.classList.remove('open'); }
+    overlay.addEventListener('click',closePanel);
+    document.getElementById('pClose').addEventListener('click',closePanel);
+    document.querySelectorAll('.ptab').forEach(t=>t.addEventListener('click',()=>{
+      curTab=t.dataset.pt;
+      document.querySelectorAll('.ptab').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active'); renderPanelList();
+    }));
+
+    function setStatus(ts,n){ const t=new Date(ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+      statusEl.innerHTML='<b>'+n+'</b> Items · Stand: '+t+' Uhr'; }
 
     async function load(force){
-      if(!force){
-        try{
-          const c = JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
-          if(c && (Date.now()-c.ts < CACHE_MS) && c.items){ items=c.items; setStatus(c.ts, items.length); render(); return; }
-        }catch(e){}
-      }
-      tableWrap.innerHTML = '<div class="loading"><div class="spinner"></div>Preise werden geladen…</div>';
-      statusEl.textContent = 'Lade Daten…'; refreshEl.disabled = true;
-      let lastErr = 'unbekannt';
-      for(const src of SOURCES){
-        try{
-          const res = await fetchT(src, 12000);
-          if(!res.ok){ lastErr = 'HTTP '+res.status; continue; }
-          const data = await res.json();
-          const arr = Array.isArray(data) ? data : (Array.isArray(data.contents) ? data.contents : null);
-          const list = (arr||[]).filter(x=>x && x.item_id && typeof x.latest_price==='number');
-          if(list.length === 0){ lastErr = 'leere Antwort'; continue; }
-          items = list;
-          const ts = Date.now();
-          try{ localStorage.setItem(CACHE_KEY, JSON.stringify({ts, items})); }catch(e){}
-          setStatus(ts, items.length); render();
-          refreshEl.disabled = false;
-          return;
-        }catch(err){ lastErr = err.message; }
-      }
-      tableWrap.innerHTML = `<div class="error">Konnte die Preise gerade nicht laden.<br><br>Grund: ${lastErr}.<br>Bitte später erneut versuchen.</div>`;
-      statusEl.textContent = '';
-      refreshEl.disabled = false;
-    }
-
-    searchEl.addEventListener('input', render);
-    refreshEl.addEventListener('click', ()=>{
+      if(!force){ try{ const c=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
+        if(c && (Date.now()-c.ts<CACHE_MS) && c.items){ items=c.items; setStatus(c.ts,items.length); render(); return; } }catch(e){} }
+      tableWrap.innerHTML='<div class="loading"><div class="spinner"></div>Preise werden geladen…</div>';
+      statusEl.textContent='Lade Daten von der DonutSMP-API…'; refreshEl.disabled=true;
       try{
-        const c = JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
-        if(c && (Date.now()-c.ts < CACHE_MS)){
-          const mins = Math.ceil((CACHE_MS-(Date.now()-c.ts))/60000);
-          alert('Die Daten sind aktuell. Bitte in '+mins+' Min. erneut aktualisieren.');
-          return;
-        }
-      }catch(e){}
-      load(true);
-    });
-
+        const r=await fetch(API); if(!r.ok) throw new Error('HTTP '+r.status);
+        const data=await r.json();
+        if(data.error) throw new Error(data.error);
+        items=(data.items||[]).filter(x=>x && x.id && (x.cheapest1!=null||x.cheapestAny!=null));
+        const ts=Date.now();
+        try{ localStorage.setItem(CACHE_KEY,JSON.stringify({ts,items})); }catch(e){}
+        setStatus(ts,items.length); render();
+      }catch(err){
+        tableWrap.innerHTML='<div class="error">Konnte die Preise nicht laden.<br><br>Grund: '+err.message+'.</div>';
+        statusEl.textContent='';
+      }finally{ refreshEl.disabled=false; }
+    }
+    searchEl.addEventListener('input',render);
+    refreshEl.addEventListener('click',()=>load(true));
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape')closePanel(); });
     load(false);
   </script>
 </body>
