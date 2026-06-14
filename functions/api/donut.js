@@ -40,7 +40,7 @@ export async function onRequest(context) {
 
   async function searchPage(q, p) {
     try {
-      const r = await fetch(base + 'auction/list/' + p + '?_=' + Date.now() + '-' + Math.floor(Math.random()*100000), { method: 'POST', headers: postHeaders, body: JSON.stringify({ search: q, sort: 'lowest_price' }) });
+      const r = await fetch(base + 'auction/list/' + p, { method: 'POST', headers: postHeaders, body: JSON.stringify({ search: q, sort: 'lowest_price' }) });
       if (!r.ok) return null;
       const j = await r.json();
       return (j && Array.isArray(j.result)) ? j.result.filter(Boolean) : [];
