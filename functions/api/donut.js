@@ -60,13 +60,11 @@ export async function onRequest(context) {
       const arr = await searchPage(cfg.q, p);
       if (arr === null) break;
       const pageSize = arr.length;
-      let foundOnPage = false;
       for (const l of arr) {
         if (!l) continue;
         const it = l.item || {};
-        if (it.id && cfg.match(it.id) && typeof l.price === 'number') { matches.push(l); foundOnPage = true; }
+        if (it.id && cfg.match(it.id) && typeof l.price === 'number') { matches.push(l); }
       }
-      if (foundOnPage) break;
       if (pageSize < 40) break;
     }
     return matches;
@@ -90,7 +88,7 @@ export async function onRequest(context) {
   }
 
   try {
-    const maxSearchPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 4, 8);
+    const maxSearchPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 8, 12);
     const tx = await getTxPages(3);
     const concurrency = 5;
     const items = [];
