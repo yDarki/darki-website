@@ -48,9 +48,9 @@ export async function onRequest(context) {
   }
 
   if (url.searchParams.get('debug')) {
-    const q = url.searchParams.get('q') || 'diamond';
+    const qp = url.searchParams.get('q'); const q = (qp !== null) ? qp : 'diamond';
     const out = {};
-    const target = 'minecraft:' + q; out.target = target; out.pages = []; for (let p = 1; p <= 6; p++) { const arr = await searchPage(q, p); if (arr === null) break; out.pages.push({ p: p, n: arr.length, first6: arr.slice(0,6).map(l => ({ id: l && l.item ? l.item.id : null, price: l ? l.price : null, c: l && l.item ? l.item.count : null })), exact: arr.filter(l => l && l.item && l.item.id === target).slice(0,8).map(l => ({ price: l.price, c: (l.item.count || 1) })) }); if (arr.length < 40) break; }
+    const target = 'minecraft:' + (url.searchParams.get('id') || q); out.target = target; out.q = q; out.pages = []; for (let p = 1; p <= 10; p++) { const arr = await searchPage(q, p); if (arr === null) break; out.pages.push({ p: p, n: arr.length, first6: arr.slice(0,6).map(l => ({ id: l && l.item ? l.item.id : null, price: l ? l.price : null, c: l && l.item ? l.item.count : null })), exact: arr.filter(l => l && l.item && l.item.id === target).slice(0,8).map(l => ({ price: l.price, c: (l.item.count || 1) })) }); if (arr.length < 40) break; }
     return new Response(JSON.stringify(out, null, 1), { status: 200, headers: cors });
   }
 
