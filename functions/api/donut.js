@@ -55,6 +55,23 @@ export async function onRequest(context) {
     return new Response(JSON.stringify(out2, null, 1), { status: 200, headers: cors });
   }
 
+  if (url.searchParams.get('coflnet')) {
+    const id = url.searchParams.get('coflnet');
+    const cb = 'https://donut.coflnet.com/api';
+    const eps = ['/item/price/' + id, '/item/price/' + id + '/analysis?days=7', '/auctions/tag/' + id + '/active/overview', '/auctions/tag/' + id + '/sold?pageSize=5'];
+    const o2 = {};
+    for (const e of eps) {
+      try {
+        const ctrl = new AbortController(); const to = setTimeout(() => ctrl.abort(), 4000);
+        const r = await fetch(cb + e, { headers: { Accept: 'application/json' }, signal: ctrl.signal });
+        clearTimeout(to);
+        const t = await r.text();
+        o2[e] = { status: r.status, sample: t.slice(0, 220) };
+      } catch (err) { o2[e] = String(err); }
+    }
+    return new Response(JSON.stringify(o2, null, 1), { status: 200, headers: cors });
+  }
+
   if (url.searchParams.get('debug')) {
     const qp = url.searchParams.get('q'); const q = (qp !== null) ? qp : 'diamond';
     const out = {};
