@@ -33,7 +33,6 @@ export async function onRequest(context) {
     { id: 'golden_apple', q: 'golden_apple', match: exact('golden_apple') },
     { id: 'enchanted_golden_apple', q: 'enchanted_golden_apple', match: exact('enchanted_golden_apple') },
     { id: 'elytra', q: 'elytra', match: exact('elytra') },
-    { id: 'shulker_box', q: 'shulker_box', match: (x => x.indexOf('shulker_box') !== -1) },
     { id: 'shulker_shell', q: 'shulker_shell', match: exact('shulker_shell') },
     { id: 'totem_of_undying', q: 'totem_of_undying', match: exact('totem_of_undying') },
     { id: 'dragon_head', q: 'dragon_head', match: exact('dragon_head') }
