@@ -92,7 +92,7 @@
     </div>
     <div class="status" id="status">Lade Daten…</div>
     <div id="tableWrap"><div class="loading"><div class="spinner"></div>Preise werden geladen…</div></div>
-    <p class="attrib">Preis = günstigster Stückpreis (Gesamtpreis ÷ Menge). Quelle: offizielle DonutSMP-API.</p>
+    <p class="attrib">Preis / Stück = günstigster tatsächlicher Verkaufspreis pro Stück; „Letzter Verkauf“ = jüngster Verkauf. Quelle: offizielle DonutSMP-API.</p>
   </div>
 
   <!-- detail panel -->
@@ -125,7 +125,7 @@
     const panel = document.getElementById('panel');
 
     let items = [];
-    let sortKey = 'unit', sortDir = 1;
+    let sortKey = 'price', sortDir = 1;
     let current = null, curTab = 'ah';
 
     const fmt = n => (n==null) ? '–' : Math.round(n).toLocaleString('de-DE');
@@ -135,7 +135,7 @@
     function ago(ts){ if(!ts) return '–'; const s=Math.floor((Date.now()-ts)/1000);
       if(s<60)return'gerade eben'; const m=Math.floor(s/60); if(m<60)return'vor '+m+' Min';
       const h=Math.floor(m/60); if(h<24)return'vor '+h+' Std'; return 'vor '+Math.floor(h/24)+' T'; }
-    function priceOf(it){ return it.unit!=null ? it.unit : (it.cheapest1!=null ? it.cheapest1 : it.cheapestAny); }
+    function priceOf(it){ return it.price!=null ? it.price : (it.unit!=null ? it.unit : (it.cheapest1!=null ? it.cheapest1 : it.cheapestAny)); }
     function lastSale(it){ return (it.sales && it.sales[0]) ? it.sales[0] : null; }
 
     function render(){
@@ -151,9 +151,9 @@
       if(!rows.length){ tableWrap.innerHTML='<div class="error">Keine Items gefunden.</div>'; return; }
       let html='<table><thead><tr>'
         +'<th data-k="id">Item</th>'
-        +'<th class="num" data-k="unit">Preis / Stück</th>'
+        +'<th class="num" data-k="price">Preis / Stück</th>'
         +'<th class="num" data-k="listings">Angebote</th>'
-        +'<th class="num" data-k="last">Zuletzt</th>'
+        +'<th class="num" data-k="last">Letzter Verkauf</th>'
         +'</tr></thead><tbody>';
       rows.slice(0,400).forEach((it,i)=>{
         const ls=lastSale(it);
@@ -162,7 +162,7 @@
           +'<td><div class="item-cell"><img src="'+tex(it.id)+'" onerror="this.style.visibility=\'hidden\'"><span class="item-name">'+pretty(it.id)+'</span></div></td>'
           +'<td class="num price">'+fmt(priceOf(it))+only+'</td>'
           +'<td class="num muted-num">'+it.listings+'</td>'
-          +'<td class="num muted-num">'+(ls?ago(ls.time):'–')+'</td>'
+          +'<td class="num muted-num">'+(it.lastSold?(fmt(it.lastSold.unit)+' · '+ago(it.lastSold.time)):'–')+'</td>'
           +'</tr>';
       });
       html+='</tbody></table>';
