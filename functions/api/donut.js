@@ -43,7 +43,7 @@ export async function onRequest(context) {
       const r = await fetch(base + 'auction/list/' + p, { method: 'POST', headers: postHeaders, body: JSON.stringify({ search: q, sort: 'lowest_price' }) });
       if (!r.ok) return null;
       const j = await r.json();
-      return (j && j.result) || [];
+      return (j && Array.isArray(j.result)) ? j.result.filter(Boolean) : [];
     } catch (e) { return null; }
   }
 
@@ -62,6 +62,7 @@ export async function onRequest(context) {
       const pageSize = arr.length;
       let foundOnPage = false;
       for (const l of arr) {
+        if (!l) continue;
         const it = l.item || {};
         if (it.id && cfg.match(it.id) && typeof l.price === 'number') { matches.push(l); foundOnPage = true; }
       }
@@ -79,7 +80,7 @@ export async function onRequest(context) {
       try { r = await fetch(base + 'auction/transactions/' + p, { headers: auth }); } catch (e) { break; }
       if (!r.ok) break;
       const j = await r.json();
-      const arr = (j && j.result) || [];
+      const arr = (j && Array.isArray(j.result)) ? j.result.filter(Boolean) : [];
       if (!arr.length) break;
       if (!size) size = arr.length;
       all = all.concat(arr);
@@ -102,6 +103,7 @@ export async function onRequest(context) {
         let cheapest1 = null, cheapestAny = null;
         const ah = [];
         for (const l of listings) {
+          if (!l) continue;
           const count = (l.item && l.item.count) || 1;
           if (cheapestAny === null || l.price < cheapestAny) cheapestAny = l.price;
           if (count === 1 && (cheapest1 === null || l.price < cheapest1)) cheapest1 = l.price;
@@ -109,6 +111,7 @@ export async function onRequest(context) {
         }
         const sales = [];
         for (const t of tx) {
+          if (!t) continue;
           const it = t.item || {};
           if (it.id && cfg.match(it.id) && typeof t.price === 'number') {
             sales.push({ seller: (t.seller && t.seller.name) || '?', price: t.price, count: it.count || 1, time: t.unixMillisDateSold || 0 });
