@@ -26,8 +26,9 @@ export default async (req) => {
     } catch (e) { return null; }
   }
 
-  // Scan the WHOLE auction house in parallel batches (sorted lowest_price) so that
-  // every listed item type is captured, not just the globally cheapest ~880 listings.
+  // Scan the auction house in parallel batches (sorted lowest_price) so that many item
+  // types are captured, not just the globally cheapest ~880 listings. Capped to stay
+  // under the API's 250 requests/minute limit.
   async function getAllListings(maxPages, concurrency) {
     const first = await listPage(1);
     if (!first || !first.length) return { listings: [], pages: 0, pageSize: 0 };
@@ -67,10 +68,11 @@ export default async (req) => {
   }
 
   try {
-    const maxPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 200, 400);
+    const maxPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 150, 250);
+    // Sales first (cheap, 3 requests) so the "last sold" data is never starved by the big listing scan.
+    const tx = await getTxPages(3);
     const lr = await getAllListings(maxPages, 6);
     const listings = lr.listings;
-    const tx = await getTxPages(3);
     const map = {};
     function row(id) { if (!map[id]) map[id] = { id: id, listings: 0, cheapest1: null, cheapestAny: null, ah: [], sales: [] }; return map[id]; }
     for (const l of listings) {
