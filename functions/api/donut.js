@@ -13,6 +13,7 @@ export async function onRequest(context) {
   const postHeaders = { Authorization: 'Bearer ' + token, Accept: 'application/json', 'Content-Type': 'application/json' };
   const base = 'https://api.donutsmp.net/v1/';
   const url = new URL(request.url);
+  const median = (a) => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 
   const exact = id => (x => x === 'minecraft:' + id);
   const WATCH = [
@@ -99,7 +100,7 @@ export async function onRequest(context) {
 
   try {
     const maxSearchPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 8, 10);
-    const tx = await getTxPages(10);
+    const tx = await getTxPages(15);
     const concurrency = 5;
     const items = [];
     for (let i = 0; i < WATCH.length; i += concurrency) {
@@ -109,13 +110,14 @@ export async function onRequest(context) {
         const cfg = slice[k];
         const listings = results[k].slice().sort((a, b) => a.price - b.price);
         let cheapest1 = null, cheapestAny = null, unit = null;
-        const ah = [];
+        const ah = []; const listUnits = [];
         for (const l of listings) {
           if (!l) continue;
           const count = (l.item && l.item.count) || 1;
           const per = count > 0 ? l.price / count : l.price;
           if (cheapestAny === null || l.price < cheapestAny) cheapestAny = l.price;
           if (unit === null || per < unit) unit = per;
+          listUnits.push(per);
           if (count === 1 && (cheapest1 === null || l.price < cheapest1)) cheapest1 = l.price;
           ah.push({ seller: (l.seller && l.seller.name) || '?', price: l.price, count: count });
         }
@@ -128,7 +130,7 @@ export async function onRequest(context) {
             sales.push({ seller: (t.seller && t.seller.name) || '?', price: t.price, count: it.count || 1, time: t.unixMillisDateSold || 0 });
           }
         }
-        let soldUnit = null; for (const s of sales) { const per = s.count > 0 ? s.price / s.count : s.price; if (soldUnit === null || per < soldUnit) soldUnit = per; } sales.sort((a, b) => b.time - a.time); const last = sales[0] || null; const listUnit = (unit === null ? null : Math.round(unit)); const soldU = (soldUnit === null ? null : Math.round(soldUnit)); items.push({ id: 'minecraft:' + cfg.id, listings: listings.length, unit: listUnit, soldUnit: soldU, price: (soldU !== null ? soldU : listUnit), lastSold: (last ? { unit: Math.round(last.price / (last.count || 1)), time: last.time } : null), cheapest1: cheapest1, cheapestAny: cheapestAny, ah: ah.slice(0, 12), sales: sales.slice(0, 12) });
+        const soldUnits = sales.map(s => (s.count > 0 ? s.price / s.count : s.price)); const soldU = soldUnits.length ? Math.round(Math.min.apply(null, soldUnits)) : null; sales.sort((a, b) => b.time - a.time); const last = sales[0] || null; const listUnit = (unit === null ? null : Math.round(unit)); const medSold = median(soldUnits); const medList = median(listUnits); const approx = (medSold !== null ? medSold : medList); items.push({ id: 'minecraft:' + cfg.id, listings: listings.length, unit: listUnit, soldUnit: soldU, soldCount: soldUnits.length, price: (approx === null ? null : Math.round(approx)), lastSold: (last ? { unit: Math.round(last.price / (last.count || 1)), time: last.time } : null), cheapest1: cheapest1, cheapestAny: cheapestAny, ah: ah.slice(0, 12), sales: sales.slice(0, 12) });
       }
     }
     const body = JSON.stringify({ lastUpdated: Date.now(), watchlist: WATCH.length, salesScanned: tx.length, items: items });
