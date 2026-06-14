@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Playerstats</title>
+<style>
+  :root{ --bg:#0a0a0f; --card:#15151f; --card-2:#1b1b28; --text:#f2f2f7; --muted:#8c8ca3; --accent:#5bd2ff; --accent-2:#7b5bff; --green:#5bd99a; --border:rgba(255,255,255,.08); }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  .glow{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(700px circle at 22% 18%, rgba(91,210,255,.12), transparent 42%),radial-gradient(700px circle at 82% 80%, rgba(123,91,255,.13), transparent 45%);}
+  .wrap{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:28px 22px 60px}
+  .back{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 16px;color:var(--muted);font-weight:600;font-size:14px;margin-bottom:22px;transition:.2s}
+  .back:hover{color:var(--text);border-color:var(--accent);background:var(--card-2)}
+  h1{font-size:clamp(28px,5vw,40px);font-weight:800;letter-spacing:-1px}
+  h1 .grad{background:linear-gradient(120deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--muted);font-size:15px;margin-top:8px}
+  .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:26px 0 14px}
+  .search{flex:1;min-width:180px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 16px;color:var(--text);font-size:15px;outline:none}
+  .search:focus{border-color:var(--accent)}
+  .btn{background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#fff;border:none;padding:12px 22px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:.12s}
+  .btn:hover{transform:translateY(-2px)} .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .msg{color:var(--muted);font-size:14px;padding:30px 0;text-align:center}
+  .err{color:#ff6b6b}
+  .spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;margin:0 auto 14px;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .phead{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,rgba(91,210,255,.10),rgba(123,91,255,.08));border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:18px}
+  .phead img{width:64px;height:64px;border-radius:12px;image-rendering:pixelated;background:var(--card-2)}
+  .phead .nm{font-size:24px;font-weight:800}
+  .phead .meta{color:var(--muted);font-size:13px;margin-top:3px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
+  .stat .lbl{color:var(--muted);font-size:12px;letter-spacing:1px;text-transform:uppercase;font-weight:600}
+  .stat .val{font-size:24px;font-weight:800;margin-top:6px;font-variant-numeric:tabular-nums}
+  .stat .val.money{color:var(--green)}
+  .stat .sub2{color:var(--muted);font-size:12px;margin-top:2px}
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="wrap">
+    <a class="back" href="index.html">← Dashboard</a>
+    <h1>🎮 <span class="grad">Playerstats</span></h1>
+    <p class="sub">Suche einen DonutSMP-Spieler und sieh Geld, Shards, K/D, Spielzeit und mehr.</p>
+    <div class="toolbar">
+      <input class="search" id="name" placeholder="Spielername… (z. B. Ikeacpvp)" />
+      <button class="btn" id="go">Suchen</button>
+    </div>
+    <div id="out"></div>
+  </div>
+  <script>
+    const API='/api/player';
+    const nameEl=document.getElementById('name'), goEl=document.getElementById('go'), out=document.getElementById('out');
+    const de=n=>Math.round(n).toLocaleString('de-DE');
+    function abbr(n){ const a=Math.abs(n); if(a>=1e12)return (n/1e12).toFixed(2)+'T'; if(a>=1e9)return (n/1e9).toFixed(2)+'B'; if(a>=1e6)return (n/1e6).toFixed(2)+'M'; if(a>=1e3)return (n/1e3).toFixed(2)+'k'; return Math.round(n).toString(); }
+    function playtime(ms){ const s=Math.floor(ms/1000); const d=Math.floor(s/86400); const h=Math.floor((s%86400)/3600); const m=Math.floor((s%3600)/60); if(d>0)return d+'d '+h+'h'; if(h>0)return h+'h '+m+'m'; return m+'m'; }
+    function card(lbl,val,sub,cls){ return '<div class="stat"><div class="lbl">'+lbl+'</div><div class="val '+(cls||'')+'">'+val+'</div>'+(sub?'<div class="sub2">'+sub+'</div>':'')+'</div>'; }
+    async function search(){
+      const name=nameEl.value.trim(); if(!name) return;
+      out.innerHTML='<div class="msg"><div class="spinner"></div>Lade Statistiken…</div>'; goEl.disabled=true;
+      try{
+        const r=await fetch(API+'?name='+encodeURIComponent(name)); const j=await r.json();
+        const s=j.stats;
+        if(!s || s.money===undefined){ out.innerHTML='<div class="msg err">Spieler „'+name+'" nicht gefunden oder keine Daten.</div>'; return; }
+        const money=+s.money, shards=+s.shards, kills=+s.kills, deaths=+s.deaths;
+        const kd= deaths>0 ? (kills/deaths).toFixed(2) : String(kills);
+        const lk=j.lookup||{};
+        const online = (lk.location) ? ('Online · '+lk.location) : ((lk.username||lk.rank) ? 'Online' : 'Offline');
+        let h='<div class="phead"><img src="https://minotar.net/helm/'+encodeURIComponent(name)+'/64.png" alt=""><div><div class="nm">'+name+'</div><div class="meta">'+online+'</div></div></div>';
+        h+='<div class="grid">';
+        h+=card('Geld', abbr(money), de(money)+' $', 'money');
+        h+=card('Shards', de(shards));
+        h+=card('Kills', de(kills));
+        h+=card('Deaths', de(deaths));
+        h+=card('K/D', kd);
+        h+=card('Spielzeit', playtime(+s.playtime));
+        h+=card('Blöcke abgebaut', de(+s.broken_blocks));
+        h+=card('Blöcke platziert', de(+s.placed_blocks));
+        h+=card('Mobs getötet', de(+s.mobs_killed));
+        h+=card('Im Shop ausgegeben', abbr(+s.money_spent_on_shop), de(+s.money_spent_on_shop)+' $');
+        h+=card('Mit /sell verdient', abbr(+s.money_made_from_sell), de(+s.money_made_from_sell)+' $');
+        h+='</div>';
+        out.innerHTML=h;
+      }catch(e){ out.innerHTML='<div class="msg err">Fehler beim Laden: '+e.message+'</div>'; }
+      finally{ goEl.disabled=false; }
+    }
+    goEl.addEventListener('click',search);
+    nameEl.addEventListener('keydown',e=>{ if(e.key==='Enter') search(); });
+  </script>
+</body>
+</html>
