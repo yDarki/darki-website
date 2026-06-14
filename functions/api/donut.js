@@ -50,7 +50,7 @@ export async function onRequest(context) {
   if (url.searchParams.get('debug')) {
     const qp = url.searchParams.get('q'); const q = (qp !== null) ? qp : 'diamond';
     const out = {};
-    const target = 'minecraft:' + (url.searchParams.get('id') || q); out.target = target; out.q = q; out.pages = []; for (let p = 1; p <= 10; p++) { const arr = await searchPage(q, p); if (arr === null) break; out.pages.push({ p: p, n: arr.length, first6: arr.slice(0,6).map(l => ({ id: l && l.item ? l.item.id : null, price: l ? l.price : null, c: l && l.item ? l.item.count : null })), exact: arr.filter(l => l && l.item && l.item.id === target).slice(0,8).map(l => ({ price: l.price, c: (l.item.count || 1) })) }); if (arr.length < 40) break; }
+    const target = 'minecraft:' + (url.searchParams.get('id') || q); out.target = target; out.q = q; const maxP = Math.min(parseInt(url.searchParams.get('pages'),10)||10,40); let seen=0,cnt=0,firstPage=null,minTotal=null,minUnit=null; const few=[]; for (let p=1;p<=maxP;p++){ const arr=await searchPage(q,p); if(arr===null) break; for(const l of arr){ if(!l||!l.item) continue; seen++; if(l.item.id===target && typeof l.price==='number'){ cnt++; if(firstPage===null) firstPage=p; const cc=l.item.count||1; if(minTotal===null||l.price<minTotal) minTotal=l.price; const u=Math.round(l.price/cc); if(minUnit===null||u<minUnit) minUnit=u; if(few.length<6) few.push({tot:l.price,c:cc}); } } if(arr.length<40) break; } out.maxP=maxP; out.seen=seen; out.cnt=cnt; out.firstPage=firstPage; out.minTotal=minTotal; out.minUnit=minUnit; out.few=few;
     return new Response(JSON.stringify(out, null, 1), { status: 200, headers: cors });
   }
 
