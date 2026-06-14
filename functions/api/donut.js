@@ -100,15 +100,18 @@ export async function onRequest(context) {
       for (let k = 0; k < slice.length; k++) {
         const cfg = slice[k];
         const listings = results[k].slice().sort((a, b) => a.price - b.price);
-        let cheapest1 = null, cheapestAny = null;
+        let cheapest1 = null, cheapestAny = null, unit = null;
         const ah = [];
         for (const l of listings) {
           if (!l) continue;
           const count = (l.item && l.item.count) || 1;
+          const per = count > 0 ? l.price / count : l.price;
           if (cheapestAny === null || l.price < cheapestAny) cheapestAny = l.price;
+          if (unit === null || per < unit) unit = per;
           if (count === 1 && (cheapest1 === null || l.price < cheapest1)) cheapest1 = l.price;
           ah.push({ seller: (l.seller && l.seller.name) || '?', price: l.price, count: count });
         }
+        ah.sort((a, b) => (a.price / a.count) - (b.price / b.count));
         const sales = [];
         for (const t of tx) {
           if (!t) continue;
@@ -117,7 +120,7 @@ export async function onRequest(context) {
             sales.push({ seller: (t.seller && t.seller.name) || '?', price: t.price, count: it.count || 1, time: t.unixMillisDateSold || 0 });
           }
         }
-        items.push({ id: 'minecraft:' + cfg.id, listings: listings.length, cheapest1: cheapest1, cheapestAny: cheapestAny, ah: ah.slice(0, 12), sales: sales.sort((a, b) => b.time - a.time).slice(0, 12) });
+        items.push({ id: 'minecraft:' + cfg.id, listings: listings.length, unit: (unit === null ? null : Math.round(unit)), cheapest1: cheapest1, cheapestAny: cheapestAny, ah: ah.slice(0, 12), sales: sales.sort((a, b) => b.time - a.time).slice(0, 12) });
       }
     }
     const body = JSON.stringify({ lastUpdated: Date.now(), watchlist: WATCH.length, salesScanned: tx.length, items: items });
