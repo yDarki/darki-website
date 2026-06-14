@@ -47,6 +47,14 @@ export async function onRequest(context) {
     } catch (e) { return null; }
   }
 
+  if (url.searchParams.get('tx')) {
+    const q2 = url.searchParams.get('q') || 'iron_ingot';
+    const out2 = {};
+    try { const r = await fetch(base + 'auction/transactions/1', { headers: auth }); const j = await r.json(); const arr = (j && j.result) || []; out2.get = { status: r.status, n: arr.length, first3: arr.slice(0,3).map(t => ({ id: t && t.item ? t.item.id : null, price: t ? t.price : null, c: t && t.item ? t.item.count : null, time: t ? t.unixMillisDateSold : null })) }; } catch (e) { out2.get = String(e); }
+    try { const r = await fetch(base + 'auction/transactions/1', { method: 'POST', headers: postHeaders, body: JSON.stringify({ search: q2, sort: 'lowest_price' }) }); const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) {} const arr = (j && j.result) || []; out2.post = { status: r.status, n: arr.length, raw: j ? null : txt.slice(0,150), first5: arr.slice(0,5).map(t => ({ id: t && t.item ? t.item.id : null, price: t ? t.price : null, c: t && t.item ? t.item.count : null })) }; } catch (e) { out2.post = String(e); }
+    return new Response(JSON.stringify(out2, null, 1), { status: 200, headers: cors });
+  }
+
   if (url.searchParams.get('debug')) {
     const qp = url.searchParams.get('q'); const q = (qp !== null) ? qp : 'diamond';
     const out = {};
