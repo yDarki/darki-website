@@ -56,6 +56,7 @@ export async function onRequest(context) {
 
   async function collect(cfg, maxSearchPages) {
     const matches = [];
+    let foundAtPage = null;
     for (let p = 1; p <= maxSearchPages; p++) {
       const arr = await searchPage(cfg.q, p);
       if (arr === null) break;
@@ -63,9 +64,10 @@ export async function onRequest(context) {
       for (const l of arr) {
         if (!l) continue;
         const it = l.item || {};
-        if (it.id && cfg.match(it.id) && typeof l.price === 'number') { matches.push(l); }
+        if (it.id && cfg.match(it.id) && typeof l.price === 'number') { matches.push(l); if (foundAtPage === null) foundAtPage = p; }
       }
       if (pageSize < 40) break;
+      if (foundAtPage !== null && p >= foundAtPage + 2) break;
     }
     return matches;
   }
@@ -88,7 +90,7 @@ export async function onRequest(context) {
   }
 
   try {
-    const maxSearchPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 5, 8);
+    const maxSearchPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 8, 10);
     const tx = await getTxPages(3);
     const concurrency = 5;
     const items = [];
