@@ -92,7 +92,7 @@
     </div>
     <div class="status" id="status">Lade Daten…</div>
     <div id="tableWrap"><div class="loading"><div class="spinner"></div>Preise werden geladen…</div></div>
-    <p class="attrib">Preis / Stück = günstigster tatsächlicher Verkaufspreis pro Stück; „Letzter Verkauf“ = jüngster Verkauf. Quelle: offizielle DonutSMP-API.</p>
+    <p class="attrib">≈ Preis / Stück = typischer Verkaufspreis (Median der letzten Verkäufe pro Stück); bei fehlenden Verkäufen Median der Angebote. „Letzter Verkauf“ = jüngster Verkauf. Quelle: offizielle DonutSMP-API.</p>
   </div>
 
   <!-- detail panel -->
@@ -151,7 +151,7 @@
       if(!rows.length){ tableWrap.innerHTML='<div class="error">Keine Items gefunden.</div>'; return; }
       let html='<table><thead><tr>'
         +'<th data-k="id">Item</th>'
-        +'<th class="num" data-k="price">Preis / Stück</th>'
+        +'<th class="num" data-k="price">≈ Preis / Stück</th>'
         +'<th class="num" data-k="listings">Angebote</th>'
         +'<th class="num" data-k="last">Letzter Verkauf</th>'
         +'</tr></thead><tbody>';
