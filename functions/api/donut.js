@@ -1,0 +1,122 @@
+// Cloudflare Pages Function: proxy + aggregator for the official DonutSMP API.
+// Token is the secret env var DONUT_TOKEN (set in the Cloudflare Pages dashboard) and never reaches the browser.
+// Tracks a fixed WATCHLIST of high-value items, each looked up directly via the API search
+// (sorted lowest_price) so expensive items always appear regardless of their price rank.
+export async function onRequest(context) {
+  const request = context.request;
+  const env = context.env || {};
+  const cors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=300' };
+  const token = env.DONUT_TOKEN;
+  if (!token) { return new Response(JSON.stringify({ error: 'no token configured' }), { status: 500, headers: cors }); }
+  const auth = { Authorization: 'Bearer ' + token, Accept: 'application/json' };
+  const postHeaders = { Authorization: 'Bearer ' + token, Accept: 'application/json', 'Content-Type': 'application/json' };
+  const base = 'https://api.donutsmp.net/v1/';
+  const url = new URL(request.url);
+
+  const exact = id => (x => x === 'minecraft:' + id);
+  const WATCH = [
+    { id: 'netherite_ingot', q: 'netherite_ingot', match: exact('netherite_ingot') },
+    { id: 'netherite_scrap', q: 'netherite_scrap', match: exact('netherite_scrap') },
+    { id: 'netherite_block', q: 'netherite_block', match: exact('netherite_block') },
+    { id: 'diamond', q: 'diamond', match: exact('diamond') },
+    { id: 'diamond_block', q: 'diamond_block', match: exact('diamond_block') },
+    { id: 'iron_ingot', q: 'iron_ingot', match: exact('iron_ingot') },
+    { id: 'iron_block', q: 'iron_block', match: exact('iron_block') },
+    { id: 'gold_ingot', q: 'gold_ingot', match: exact('gold_ingot') },
+    { id: 'gold_block', q: 'gold_block', match: exact('gold_block') },
+    { id: 'obsidian', q: 'obsidian', match: exact('obsidian') },
+    { id: 'crying_obsidian', q: 'crying_obsidian', match: exact('crying_obsidian') },
+    { id: 'respawn_anchor', q: 'respawn_anchor', match: exact('respawn_anchor') },
+    { id: 'end_crystal', q: 'end_crystal', match: exact('end_crystal') },
+    { id: 'golden_apple', q: 'golden_apple', match: exact('golden_apple') },
+    { id: 'enchanted_golden_apple', q: 'enchanted_golden_apple', match: exact('enchanted_golden_apple') },
+    { id: 'elytra', q: 'elytra', match: exact('elytra') },
+    { id: 'shulker_box', q: 'shulker_box', match: (x => x.indexOf('shulker_box') !== -1) },
+    { id: 'shulker_shell', q: 'shulker_shell', match: exact('shulker_shell') },
+    { id: 'totem_of_undying', q: 'totem_of_undying', match: exact('totem_of_undying') },
+    { id: 'dragon_head', q: 'dragon_head', match: exact('dragon_head') }
+  ];
+
+  async function searchPage(q, p) {
+    try {
+      const r = await fetch(base + 'auction/list/' + p, { method: 'POST', headers: postHeaders, body: JSON.stringify({ search: q, sort: 'lowest_price' }) });
+      if (!r.ok) return null;
+      const j = await r.json();
+      return (j && j.result) || [];
+    } catch (e) { return null; }
+  }
+
+  if (url.searchParams.get('debug')) {
+    const q = url.searchParams.get('q') || 'diamond';
+    const out = {};
+    try { const arr = await searchPage(q, 1); out.post = { count: arr ? arr.length : null, firstId: arr && arr[0] && arr[0].item ? arr[0].item.id : null }; } catch (e) { out.post = String(e); }
+    return new Response(JSON.stringify(out, null, 1), { status: 200, headers: cors });
+  }
+
+  async function collect(cfg, maxSearchPages) {
+    const matches = [];
+    for (let p = 1; p <= maxSearchPages; p++) {
+      const arr = await searchPage(cfg.q, p);
+      if (arr === null) break;
+      const pageSize = arr.length;
+      let foundOnPage = false;
+      for (const l of arr) {
+        const it = l.item || {};
+        if (it.id && cfg.match(it.id) && typeof l.price === 'number') { matches.push(l); foundOnPage = true; }
+      }
+      if (foundOnPage) break;
+      if (pageSize < 40) break;
+    }
+    return matches;
+  }
+
+  async function getTxPages(maxPages) {
+    let all = [];
+    let size = 0;
+    for (let p = 1; p <= maxPages; p++) {
+      let r;
+      try { r = await fetch(base + 'auction/transactions/' + p, { headers: auth }); } catch (e) { break; }
+      if (!r.ok) break;
+      const j = await r.json();
+      const arr = (j && j.result) || [];
+      if (!arr.length) break;
+      if (!size) size = arr.length;
+      all = all.concat(arr);
+      if (arr.length < size) break;
+    }
+    return all;
+  }
+
+  try {
+    const maxSearchPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 4, 8);
+    const tx = await getTxPages(3);
+    const concurrency = 5;
+    const items = [];
+    for (let i = 0; i < WATCH.length; i += concurrency) {
+      const slice = WATCH.slice(i, i + concurrency);
+      const results = await Promise.all(slice.map(cfg => collect(cfg, maxSearchPages)));
+      for (let k = 0; k < slice.length; k++) {
+        const cfg = slice[k];
+        const listings = results[k].slice().sort((a, b) => a.price - b.price);
+        let cheapest1 = null, cheapestAny = null;
+        const ah = [];
+        for (const l of listings) {
+          const count = (l.item && l.item.count) || 1;
+          if (cheapestAny === null || l.price < cheapestAny) cheapestAny = l.price;
+          if (count === 1 && (cheapest1 === null || l.price < cheapest1)) cheapest1 = l.price;
+          ah.push({ seller: (l.seller && l.seller.name) || '?', price: l.price, count: count });
+        }
+        const sales = [];
+        for (const t of tx) {
+          const it = t.item || {};
+          if (it.id && cfg.match(it.id) && typeof t.price === 'number') {
+            sales.push({ seller: (t.seller && t.seller.name) || '?', price: t.price, count: it.count || 1, time: t.unixMillisDateSold || 0 });
+          }
+        }
+        items.push({ id: 'minecraft:' + cfg.id, listings: listings.length, cheapest1: cheapest1, cheapestAny: cheapestAny, ah: ah.slice(0, 12), sales: sales.sort((a, b) => b.time - a.time).slice(0, 12) });
+      }
+    }
+    const body = JSON.stringify({ lastUpdated: Date.now(), watchlist: WATCH.length, salesScanned: tx.length, items: items });
+    return new Response(body, { status: 200, headers: cors });
+  } catch (e) { return new Response(JSON.stringify({ error: String(e) }), { status: 502, headers: cors }); }
+}
