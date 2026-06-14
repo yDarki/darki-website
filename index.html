@@ -59,12 +59,6 @@
   .pill{display:inline-block;margin-top:14px;background:linear-gradient(120deg,var(--accent),var(--accent-2));
     color:#fff;font-weight:700;font-size:14px;padding:9px 20px;border-radius:11px;
     box-shadow:0 10px 26px rgba(232,164,76,.28)}
-  .save-line{margin-top:12px;font-size:14px;color:var(--accent);font-weight:700}
-
-  .tile.soon{opacity:.5;cursor:not-allowed}
-  .tile.soon:hover{transform:none;background:var(--card);border-color:var(--border)}
-  .badge-soon{position:absolute;top:16px;right:16px;background:var(--bg);border:1px solid var(--border);
-    color:var(--muted);font-size:12px;font-weight:600;padding:4px 10px;border-radius:8px}
 
   footer{color:var(--muted);font-size:13px;text-align:center;padding:40px 0 20px}
 </style>
@@ -76,36 +70,7 @@
     <h1>Willkommen bei <span class="grad">Darki's Hub</span></h1>
     <p class="sub">Wähl unten ein Spiel oder eine App aus.</p>
 
-    <div class="section-label">Spiele</div>
-    <div class="grid">
-
-      <a class="tile featured" href="cookie.html">
-        <div class="ico">🍪</div>
-        <div class="body">
-          <h3>Cookie Clicker</h3>
-          <p>Klick den Cookie, kauf Gebäude und produziere automatisch Cookies. Dein Fortschritt wird gespeichert.</p>
-          <div class="save-line" id="saveLine">Noch kein Spielstand — jetzt starten!</div>
-          <span class="pill">▶ Spielen</span>
-        </div>
-      </a>
-
-      <a class="tile" href="coinflip.html">
-        <div class="ico">🪙</div>
-        <h3>Coin Flip</h3>
-        <p>Kopf oder Zahl? Wirf die Münze und verfolge deine Statistik.</p>
-        <span class="pill">▶ Spielen</span>
-      </a>
-
-      <div class="tile soon">
-        <span class="badge-soon">Bald</span>
-        <div class="ico">🖱️</div>
-        <h3>CPS-Test</h3>
-        <p>Wie viele Klicks pro Sekunde schaffst du?</p>
-      </div>
-
-    </div>
-
-    <div class="section-label" style="margin-top:38px">Tools</div>
+    <div class="section-label">Tools</div>
     <div class="grid">
       <a class="tile featured" href="donutprices.html">
         <div class="ico">🍩</div>
@@ -117,18 +82,17 @@
       </a>
     </div>
 
+    <div class="section-label" style="margin-top:38px">Spiele</div>
+    <div class="grid">
+      <a class="tile" href="coinflip.html">
+        <div class="ico">🪙</div>
+        <h3>Coin Flip</h3>
+        <p>Kopf oder Zahl? Wirf die Münze und verfolge deine Statistik.</p>
+        <span class="pill">▶ Spielen</span>
+      </a>
+    </div>
+
     <footer>Darki's Hub · läuft im Browser</footer>
   </div>
-
-  <script>
-    // Zeige aktuellen Cookie-Spielstand auf der Kachel
-    try{
-      const s = JSON.parse(localStorage.getItem('cookieSave')||'null');
-      if(s && s.cookies > 0){
-        const fmt = n => n>=1e6 ? (n/1e6).toFixed(2)+'M' : n>=1e3 ? (n/1e3).toFixed(2)+'k' : Math.floor(n).toString();
-        document.getElementById('saveLine').textContent = '🍪 Gespeicherter Stand: ' + fmt(s.cookies) + ' Cookies';
-      }
-    }catch(e){}
-  </script>
 </body>
 </html>
