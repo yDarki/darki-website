@@ -6,7 +6,7 @@
 export async function onRequest(context) {
   const request = context.request;
   const env = context.env || {};
-  const cors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=300' };
+  const cors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=120' };
   const token = env.DONUT_TOKEN;
   if (!token) { return new Response(JSON.stringify({ error: 'no token configured' }), { status: 500, headers: cors }); }
   const auth = { Authorization: 'Bearer ' + token, Accept: 'application/json' };
@@ -40,7 +40,7 @@ export async function onRequest(context) {
 
   async function searchPage(q, p) {
     try {
-      const r = await fetch(base + 'auction/list/' + p, { method: 'POST', headers: postHeaders, body: JSON.stringify({ search: q, sort: 'lowest_price' }) });
+      const r = await fetch(base + 'auction/list/' + p + '?_=' + Date.now() + '-' + Math.floor(Math.random()*100000), { method: 'POST', headers: postHeaders, body: JSON.stringify({ search: q, sort: 'lowest_price' }) });
       if (!r.ok) return null;
       const j = await r.json();
       return (j && Array.isArray(j.result)) ? j.result.filter(Boolean) : [];
@@ -88,7 +88,7 @@ export async function onRequest(context) {
   }
 
   try {
-    const maxSearchPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 8, 12);
+    const maxSearchPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 5, 8);
     const tx = await getTxPages(3);
     const concurrency = 5;
     const items = [];
