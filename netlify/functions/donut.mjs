@@ -1,5 +1,8 @@
 // Netlify serverless proxy + aggregator for the official DonutSMP API.
 // Token is a secret env var (DONUT_TOKEN) and never reaches the browser.
+// This build tracks a fixed WATCHLIST of high-value items. Each item is looked up
+// directly via the API search (sorted lowest_price) so expensive items always appear,
+// regardless of where they fall in the global price-sorted auction house.
 export default async (req) => {
   const cors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=300' };
   const token = process.env.DONUT_TOKEN;
@@ -8,46 +11,67 @@ export default async (req) => {
   const postHeaders = { Authorization: 'Bearer ' + token, Accept: 'application/json', 'Content-Type': 'application/json' };
   const base = 'https://api.donutsmp.net/v1/';
   const url = new URL(req.url);
-  if (url.searchParams.get('debug')) {
-    const q = url.searchParams.get('q') || 'diamond';
-    const out = {};
-    try { const r = await fetch(base + 'auction/list/1?search=' + encodeURIComponent(q) + '&sort=lowest_price', { headers: auth }); out.qs = { status: r.status, sample: (await r.text()).slice(0, 250) }; } catch (e) { out.qs = String(e); }
-    try { const r = await fetch(base + 'auction/list/1', { method: 'POST', headers: postHeaders, body: JSON.stringify({ search: q, sort: 'lowest_price' }) }); out.post = { status: r.status, sample: (await r.text()).slice(0, 250) }; } catch (e) { out.post = String(e); }
-    return new Response(JSON.stringify(out, null, 1), { status: 200, headers: cors });
-  }
 
-  // Fetch a single auction-list page (POST with body). Returns the result array, or null on error.
-  async function listPage(p) {
+  // Watchlist: display id, search query, and a matcher against the result item id.
+  const exact = id => (x => x === 'minecraft:' + id);
+  const WATCH = [
+    { id: 'netherite_ingot', q: 'netherite_ingot', match: exact('netherite_ingot') },
+    { id: 'netherite_scrap', q: 'netherite_scrap', match: exact('netherite_scrap') },
+    { id: 'netherite_block', q: 'netherite_block', match: exact('netherite_block') },
+    { id: 'diamond', q: 'diamond', match: exact('diamond') },
+    { id: 'diamond_block', q: 'diamond_block', match: exact('diamond_block') },
+    { id: 'iron_ingot', q: 'iron_ingot', match: exact('iron_ingot') },
+    { id: 'iron_block', q: 'iron_block', match: exact('iron_block') },
+    { id: 'gold_ingot', q: 'gold_ingot', match: exact('gold_ingot') },
+    { id: 'gold_block', q: 'gold_block', match: exact('gold_block') },
+    { id: 'obsidian', q: 'obsidian', match: exact('obsidian') },
+    { id: 'crying_obsidian', q: 'crying_obsidian', match: exact('crying_obsidian') },
+    { id: 'respawn_anchor', q: 'respawn_anchor', match: exact('respawn_anchor') },
+    { id: 'end_crystal', q: 'end_crystal', match: exact('end_crystal') },
+    { id: 'golden_apple', q: 'golden_apple', match: exact('golden_apple') },
+    { id: 'enchanted_golden_apple', q: 'enchanted_golden_apple', match: exact('enchanted_golden_apple') },
+    { id: 'elytra', q: 'elytra', match: exact('elytra') },
+    { id: 'shulker_box', q: 'shulker_box', match: (x => x.indexOf('shulker_box') !== -1) },
+    { id: 'shulker_shell', q: 'shulker_shell', match: exact('shulker_shell') },
+    { id: 'totem_of_undying', q: 'totem_of_undying', match: exact('totem_of_undying') },
+    { id: 'dragon_head', q: 'dragon_head', match: exact('dragon_head') }
+  ];
+
+  async function searchPage(q, p) {
     try {
-      const r = await fetch(base + 'auction/list/' + p, { method: 'POST', headers: postHeaders, body: JSON.stringify({ search: '', sort: 'lowest_price' }) });
+      const r = await fetch(base + 'auction/list/' + p, { method: 'POST', headers: postHeaders, body: JSON.stringify({ search: q, sort: 'lowest_price' }) });
       if (!r.ok) return null;
       const j = await r.json();
       return (j && j.result) || [];
     } catch (e) { return null; }
   }
 
-  // Scan the auction house in parallel batches (sorted lowest_price) so that many item
-  // types are captured, not just the globally cheapest ~880 listings. Capped to stay
-  // under the API's 250 requests/minute limit.
-  async function getAllListings(maxPages, concurrency) {
-    const first = await listPage(1);
-    if (!first || !first.length) return { listings: [], pages: 0, pageSize: 0 };
-    const pageSize = first.length;            // real page size, detected (no hard-coded 40)
-    let all = first.slice();
-    let pagesScanned = 1;
-    let p = 2, done = first.length < pageSize;
-    while (!done && p <= maxPages) {
-      const batch = [];
-      for (let i = 0; i < concurrency && p <= maxPages; i++, p++) batch.push(p);
-      const results = await Promise.all(batch.map(listPage));
-      for (const arr of results) {
-        if (arr === null) { done = true; continue; }
-        pagesScanned++;
-        all = all.concat(arr);
-        if (arr.length < pageSize) done = true;  // last page reached
+  // Connectivity debug: ?debug=1&q=...
+  if (url.searchParams.get('debug')) {
+    const q = url.searchParams.get('q') || 'diamond';
+    const out = {};
+    try { const r = await fetch(base + 'auction/list/1?search=' + encodeURIComponent(q) + '&sort=lowest_price', { headers: auth }); out.qs = { status: r.status, sample: (await r.text()).slice(0, 250) }; } catch (e) { out.qs = String(e); }
+    try { const arr = await searchPage(q, 1); out.post = { count: arr ? arr.length : null, firstId: arr && arr[0] && arr[0].item ? arr[0].item.id : null }; } catch (e) { out.post = String(e); }
+    return new Response(JSON.stringify(out, null, 1), { status: 200, headers: cors });
+  }
+
+  // For one watch item: scan search pages (lowest_price) until the first page that holds
+  // a matching listing (that page has the cheapest match, since results are sorted ascending).
+  async function collect(cfg, maxSearchPages) {
+    const matches = [];
+    for (let p = 1; p <= maxSearchPages; p++) {
+      const arr = await searchPage(cfg.q, p);
+      if (arr === null) break;
+      const pageSize = arr.length;
+      let foundOnPage = false;
+      for (const l of arr) {
+        const it = l.item || {};
+        if (it.id && cfg.match(it.id) && typeof l.price === 'number') { matches.push(l); foundOnPage = true; }
       }
+      if (foundOnPage) break;
+      if (pageSize < 40) break;
     }
-    return { listings: all, pages: pagesScanned, pageSize: pageSize };
+    return matches;
   }
 
   async function getTxPages(maxPages) {
@@ -68,34 +92,35 @@ export default async (req) => {
   }
 
   try {
-    const maxPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 150, 250);
-    // Sales first (cheap, 3 requests) so the "last sold" data is never starved by the big listing scan.
+    const maxSearchPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 4, 8);
     const tx = await getTxPages(3);
-    const lr = await getAllListings(maxPages, 6);
-    const listings = lr.listings;
-    const map = {};
-    function row(id) { if (!map[id]) map[id] = { id: id, listings: 0, cheapest1: null, cheapestAny: null, ah: [], sales: [] }; return map[id]; }
-    for (const l of listings) {
-      const it = l.item || {};
-      if (!it.id) continue;
-      const price = l.price;
-      if (typeof price !== 'number') continue;
-      const count = it.count || 1;
-      const m = row(it.id);
-      m.listings++;
-      if (m.cheapestAny === null || price < m.cheapestAny) m.cheapestAny = price;
-      if (count === 1 && (m.cheapest1 === null || price < m.cheapest1)) m.cheapest1 = price;
-      m.ah.push({ seller: (l.seller && l.seller.name) || '?', price: price, count: count });
+    const concurrency = 5;
+    const items = [];
+    for (let i = 0; i < WATCH.length; i += concurrency) {
+      const slice = WATCH.slice(i, i + concurrency);
+      const results = await Promise.all(slice.map(cfg => collect(cfg, maxSearchPages)));
+      for (let k = 0; k < slice.length; k++) {
+        const cfg = slice[k];
+        const listings = results[k].slice().sort((a, b) => a.price - b.price);
+        let cheapest1 = null, cheapestAny = null;
+        const ah = [];
+        for (const l of listings) {
+          const count = (l.item && l.item.count) || 1;
+          if (cheapestAny === null || l.price < cheapestAny) cheapestAny = l.price;
+          if (count === 1 && (cheapest1 === null || l.price < cheapest1)) cheapest1 = l.price;
+          ah.push({ seller: (l.seller && l.seller.name) || '?', price: l.price, count: count });
+        }
+        const sales = [];
+        for (const t of tx) {
+          const it = t.item || {};
+          if (it.id && cfg.match(it.id) && typeof t.price === 'number') {
+            sales.push({ seller: (t.seller && t.seller.name) || '?', price: t.price, count: it.count || 1, time: t.unixMillisDateSold || 0 });
+          }
+        }
+        items.push({ id: 'minecraft:' + cfg.id, listings: listings.length, cheapest1: cheapest1, cheapestAny: cheapestAny, ah: ah.slice(0, 12), sales: sales.sort((a, b) => b.time - a.time).slice(0, 12) });
+      }
     }
-    for (const t of tx) {
-      const it = t.item || {};
-      if (!it.id) continue;
-      if (typeof t.price !== 'number') continue;
-      const m = row(it.id);
-      m.sales.push({ seller: (t.seller && t.seller.name) || '?', price: t.price, count: it.count || 1, time: t.unixMillisDateSold || 0 });
-    }
-    const items = Object.values(map).map(function (m) { return { id: m.id, listings: m.listings, cheapest1: m.cheapest1, cheapestAny: m.cheapestAny, ah: m.ah.sort(function (a, b) { return a.price - b.price; }).slice(0, 12), sales: m.sales.sort(function (a, b) { return b.time - a.time; }).slice(0, 12) }; });
-    const body = JSON.stringify({ lastUpdated: Date.now(), listingsScanned: listings.length, pagesScanned: lr.pages, pageSize: lr.pageSize, salesScanned: tx.length, items: items });
+    const body = JSON.stringify({ lastUpdated: Date.now(), watchlist: WATCH.length, salesScanned: tx.length, items: items });
     return new Response(body, { status: 200, headers: cors });
   } catch (e) { return new Response(JSON.stringify({ error: String(e) }), { status: 502, headers: cors }); }
 };
