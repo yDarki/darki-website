@@ -50,7 +50,7 @@ export async function onRequest(context) {
   if (url.searchParams.get('debug')) {
     const q = url.searchParams.get('q') || 'diamond';
     const out = {};
-    try { const arr = await searchPage(q, 1); out.post = { count: arr ? arr.length : null, firstId: arr && arr[0] && arr[0].item ? arr[0].item.id : null }; } catch (e) { out.post = String(e); }
+    const target = 'minecraft:' + q; out.target = target; out.pages = []; for (let p = 1; p <= 6; p++) { const arr = await searchPage(q, p); if (arr === null) break; out.pages.push({ p: p, n: arr.length, first6: arr.slice(0,6).map(l => ({ id: l && l.item ? l.item.id : null, price: l ? l.price : null, c: l && l.item ? l.item.count : null })), exact: arr.filter(l => l && l.item && l.item.id === target).slice(0,8).map(l => ({ price: l.price, c: (l.item.count || 1) })) }); if (arr.length < 40) break; }
     return new Response(JSON.stringify(out, null, 1), { status: 200, headers: cors });
   }
 
