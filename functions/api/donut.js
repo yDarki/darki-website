@@ -92,7 +92,7 @@ export async function onRequest(context) {
         if (it.id && cfg.match(it.id) && typeof l.price === 'number') { matches.push(l); if (foundAtPage === null) foundAtPage = p; }
       }
       if (pageSize < 40) break;
-      if (foundAtPage !== null && p >= foundAtPage + 2) break;
+      if (foundAtPage !== null && p >= foundAtPage + 1) break;
     }
     return matches;
   }
@@ -115,8 +115,8 @@ export async function onRequest(context) {
   }
 
   try {
-    const maxSearchPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 8, 10);
-    const tx = await getTxPages(15);
+    const maxSearchPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 6, 8);
+    const tx = await getTxPages(6);
     const concurrency = 5;
     const items = [];
     for (let i = 0; i < WATCH.length; i += concurrency) {
