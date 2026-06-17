@@ -20,21 +20,21 @@ export async function onRequest(context) {
     { id: 'netherite_ingot', q: 'netherite_ingot', match: exact('netherite_ingot') },
     { id: 'netherite_scrap', q: 'netherite_scrap', match: exact('netherite_scrap') },
     { id: 'netherite_block', q: 'netherite_block', match: exact('netherite_block') },
-    { id: 'diamond', q: 'diamond', match: exact('diamond') },
-    { id: 'diamond_block', q: 'diamond_block', match: exact('diamond_block') },
-    { id: 'iron_ingot', q: 'iron_ingot', match: exact('iron_ingot') },
-    { id: 'iron_block', q: 'iron_block', match: exact('iron_block') },
-    { id: 'gold_ingot', q: 'gold_ingot', match: exact('gold_ingot') },
-    { id: 'gold_block', q: 'gold_block', match: exact('gold_block') },
-    { id: 'obsidian', q: 'obsidian', match: exact('obsidian') },
-    { id: 'crying_obsidian', q: 'crying_obsidian', match: exact('crying_obsidian') },
-    { id: 'respawn_anchor', q: 'respawn_anchor', match: exact('respawn_anchor') },
-    { id: 'end_crystal', q: 'end_crystal', match: exact('end_crystal') },
-    { id: 'golden_apple', q: 'golden_apple', match: exact('golden_apple') },
+    { id: 'diamond', q: 'diamond', match: exact('diamond'), soon: true },
+    { id: 'diamond_block', q: 'diamond_block', match: exact('diamond_block'), soon: true },
+    { id: 'iron_ingot', q: 'iron_ingot', match: exact('iron_ingot'), soon: true },
+    { id: 'iron_block', q: 'iron_block', match: exact('iron_block'), soon: true },
+    { id: 'gold_ingot', q: 'gold_ingot', match: exact('gold_ingot'), soon: true },
+    { id: 'gold_block', q: 'gold_block', match: exact('gold_block'), soon: true },
+    { id: 'obsidian', q: 'obsidian', match: exact('obsidian'), soon: true },
+    { id: 'crying_obsidian', q: 'crying_obsidian', match: exact('crying_obsidian'), soon: true },
+    { id: 'respawn_anchor', q: 'respawn_anchor', match: exact('respawn_anchor'), soon: true },
+    { id: 'end_crystal', q: 'end_crystal', match: exact('end_crystal'), soon: true },
+    { id: 'golden_apple', q: 'golden_apple', match: exact('golden_apple'), soon: true },
     { id: 'enchanted_golden_apple', q: 'enchanted_golden_apple', match: exact('enchanted_golden_apple') },
     { id: 'elytra', q: 'elytra', match: exact('elytra') },
-    { id: 'shulker_shell', q: 'shulker_shell', match: exact('shulker_shell') },
-    { id: 'totem_of_undying', q: 'totem_of_undying', match: exact('totem_of_undying') },
+    { id: 'shulker_shell', q: 'shulker_shell', match: exact('shulker_shell'), soon: true },
+    { id: 'totem_of_undying', q: 'totem_of_undying', match: exact('totem_of_undying'), soon: true },
     { id: 'dragon_head', q: 'dragon_head', match: exact('dragon_head') }
   ];
 
@@ -118,9 +118,10 @@ export async function onRequest(context) {
     const maxSearchPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 6, 8);
     const tx = await getTxPages(6);
     const concurrency = 5;
+    const active = WATCH.filter(c => !c.soon);
     const items = [];
-    for (let i = 0; i < WATCH.length; i += concurrency) {
-      const slice = WATCH.slice(i, i + concurrency);
+    for (let i = 0; i < active.length; i += concurrency) {
+      const slice = active.slice(i, i + concurrency);
       const results = await Promise.all(slice.map(cfg => collect(cfg, maxSearchPages)));
       for (let k = 0; k < slice.length; k++) {
         const cfg = slice[k];
@@ -149,6 +150,7 @@ export async function onRequest(context) {
         const soldUnits = sales.map(s => (s.count > 0 ? s.price / s.count : s.price)); const soldU = soldUnits.length ? Math.round(Math.min.apply(null, soldUnits)) : null; sales.sort((a, b) => b.time - a.time); const last = sales[0] || null; const listUnit = (unit === null ? null : Math.round(unit)); const medSold = (soldUnits.length >= 3 ? median(soldUnits) : null); const approx = (medSold !== null ? medSold : listUnit); items.push({ id: 'minecraft:' + cfg.id, listings: listings.length, unit: listUnit, soldUnit: soldU, soldCount: soldUnits.length, price: (approx === null ? null : Math.round(approx)), lastSold: (last ? { unit: Math.round(last.price / (last.count || 1)), time: last.time } : null), cheapest1: cheapest1, cheapestAny: cheapestAny, ah: ah.slice(0, 12), sales: sales.slice(0, 12) });
       }
     }
+    for (const cfg of WATCH) { if (cfg.soon) items.push({ id: 'minecraft:' + cfg.id, soon: true, listings: 0, unit: null, soldUnit: null, price: null, lastSold: null, cheapest1: null, cheapestAny: null, ah: [], sales: [] }); }
     const body = JSON.stringify({ lastUpdated: Date.now(), ver: 'listing-v2', watchlist: WATCH.length, salesScanned: tx.length, items: items });
     return new Response(body, { status: 200, headers: cors });
   } catch (e) { return new Response(JSON.stringify({ error: String(e) }), { status: 502, headers: cors }); }
