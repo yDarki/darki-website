@@ -77,6 +77,12 @@
   .lrow .pr{font-weight:800;color:var(--green);font-variant-numeric:tabular-nums;text-align:right}
   .lrow .pr small{display:block;color:var(--muted);font-weight:500}
   .empty{color:var(--muted);text-align:center;padding:30px}
+  .soon-head{color:var(--muted);font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:600;margin:26px 0 12px}
+  .soon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .soon-card{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;opacity:.55}
+  .soon-card img{width:22px;height:22px;image-rendering:pixelated}
+  .soon-card span{flex:1;font-size:14px;text-transform:capitalize}
+  .soon-card b{font-size:11px;color:var(--accent);background:var(--card-2);border:1px solid var(--border);padding:2px 7px;border-radius:7px;font-weight:700}
 </style>
 </head>
 <body>
@@ -92,6 +98,7 @@
     </div>
     <div class="status" id="status">Lade Daten…</div>
     <div id="tableWrap"><div class="loading"><div class="spinner"></div>Preise werden geladen…</div></div>
+    <div id="soonWrap"></div>
     <p class="attrib">Preis / Stück = typischer Verkaufspreis (Median echter Verkäufe pro Stück); ohne Verkäufe = günstigstes Angebot. „Letzter Verkauf“ = jüngster Verkauf. Quelle: offizielle DonutSMP-API.</p>
   </div>
 
@@ -223,7 +230,7 @@
         const r=await apiGet();
         const data=await r.json();
         if(data.error) throw new Error(data.error);
-        items=(data.items||[]).filter(x=>x && x.id && (x.cheapest1!=null||x.cheapestAny!=null));
+        const _all=(data.items||[]); items=_all.filter(x=>x && x.id && !x.soon && (x.price!=null||x.cheapest1!=null||x.cheapestAny!=null)); const _soon=_all.filter(x=>x && x.soon); var _sw=document.getElementById('soonWrap'); if(_sw){ _sw.innerHTML=_soon.length?('<div class="soon-head">Bald verf\u00fcgbar</div><div class="soon-grid">'+_soon.map(function(it){return '<div class="soon-card"><img src="'+tex(it.id)+'" onerror="this.style.visibility=&#39;hidden&#39;"><span>'+pretty(it.id)+'</span><b>Bald</b></div>';}).join('')+'</div>'):''; }
         const ts=Date.now();
         try{ localStorage.setItem(CACHE_KEY,JSON.stringify({ts,items})); }catch(e){}
         setStatus(ts,items.length); render();
