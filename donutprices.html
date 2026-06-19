@@ -252,5 +252,17 @@
   var to=document.getElementById("tabOrders"); if(to) to.textContent="📦 Orders";
 })();
 </script>
+<script>
+(function(){
+  renderPanelList=function(){
+    var it=current; var pl=document.getElementById("pList"); if(!pl) return;
+    if(!it){ pl.innerHTML=""; return; }
+    var list=(curTab==="ah")?(it.ah||[]):(it.sales||[]);
+    if(!list.length){ pl.innerHTML="<div class=\"empty\">"+(curTab==="ah"?"Keine Angebote im AH.":"Keine AH-Verkäufe gefunden.")+"</div>"; return; }
+    pl.innerHTML=list.map(function(e){ var sub=(curTab==="ah")?(e.count+"× Stück"):(e.count+"× · "+ago(e.time)); var per=(e.count>1?("je "+fmt(e.price/e.count)):"pro Stück"); return "<div class=\"lrow\"><div class=\"who\">"+e.seller+"<br><small>"+sub+"</small></div><div class=\"pr\">"+fmt(e.price)+"<small>"+per+"</small></div></div>"; }).join("");
+  };
+  var to=document.getElementById("tabOrders"); if(to) to.textContent="📜 Verkäufe (AH)";
+})();
+</script>
 </body>
 </html>
