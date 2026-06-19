@@ -244,5 +244,13 @@
     document.addEventListener('keydown',e=>{ if(e.key==='Escape')closePanel(); });
     load(false);
   </script>
+<script>
+(function(){
+  function pof(o){ return o.itemPrice!=null?o.itemPrice:(o.price!=null?o.price:o.pricePerItem); }
+  window.paintOrders=function(orders){ var pl=document.getElementById("pList"); if(!pl) return; if(!orders||!orders.length){ pl.innerHTML="<div class=\"empty\">Keine offenen Kauf-Orders. (Der Order-Book ist oft leer.)</div>"; return; } var list=orders.slice().sort(function(a,b){return (pof(b)||0)-(pof(a)||0);}); pl.innerHTML=list.slice(0,50).map(function(o){ var buyer=o.userName||o.user||o.buyer||"?"; var ordered=(o.amountOrdered!=null?o.amountOrdered:o.amount); var delivered=(o.amountDelivered!=null?o.amountDelivered:0); var rem=(ordered!=null)?(ordered-delivered):null; return "<div class=\"lrow\"><div class=\"who\">"+buyer+"<br><small>"+(rem!=null?(fmt(rem)+"× gesucht"):"Kauf-Order")+"</small></div><div class=\"pr\">"+fmt(pof(o))+"<small>pro Stück</small></div></div>"; }).join(""); };
+  renderPanelList=function(){ var it=current; var pl=document.getElementById("pList"); if(!pl) return; if(!it){ pl.innerHTML=""; return; } if(curTab==="ah"){ var list=it.ah||[]; if(!list.length){ pl.innerHTML="<div class=\"empty\">Keine Angebote gefunden.</div>"; return; } pl.innerHTML=list.map(function(e){return "<div class=\"lrow\"><div class=\"who\">"+e.seller+"<br><small>"+e.count+"× Stück</small></div><div class=\"pr\">"+fmt(e.price)+"<small>"+(e.count>1?("je "+fmt(e.price/e.count)):"pro Stück")+"</small></div></div>";}).join(""); return; } pl.innerHTML="<div class=\"empty\">Lade Orders…</div>"; var id=(it.id||"").replace(/^minecraft:/,""); if(it.__ord){ paintOrders(it.__ord); return; } fetch("/api/orders?q="+encodeURIComponent(id)).then(function(r){return r.json();}).then(function(j){ if(current!==it||curTab!=="orders") return; it.__ord=j.orders||[]; paintOrders(it.__ord); }).catch(function(){ var p=document.getElementById("pList"); if(p) p.innerHTML="<div class=\"empty\">Fehler beim Laden der Orders.</div>"; }); };
+  var to=document.getElementById("tabOrders"); if(to) to.textContent="📦 Orders";
+})();
+</script>
 </body>
 </html>
