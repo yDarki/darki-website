@@ -46,6 +46,7 @@
     <div class="toolbar">
       <input class="search" id="name" placeholder="Spielername… (z. B. Ikeacpvp)" />
       <button class="btn" id="go">Suchen</button>
+      <button class="btn" id="refresh">🔄 Aktualisieren</button>
     </div>
     <div id="out"></div>
   </div>
@@ -56,18 +57,18 @@
     function abbr(n){ const a=Math.abs(n); if(a>=1e12)return (n/1e12).toFixed(2)+'T'; if(a>=1e9)return (n/1e9).toFixed(2)+'B'; if(a>=1e6)return (n/1e6).toFixed(2)+'M'; if(a>=1e3)return (n/1e3).toFixed(2)+'k'; return Math.round(n).toString(); }
     function playtime(ms){ const s=Math.floor(ms/1000); const d=Math.floor(s/86400); const h=Math.floor((s%86400)/3600); const m=Math.floor((s%3600)/60); if(d>0)return d+'d '+h+'h'; if(h>0)return h+'h '+m+'m'; return m+'m'; }
     function card(lbl,val,sub,cls){ return '<div class="stat"><div class="lbl">'+lbl+'</div><div class="val '+(cls||'')+'">'+val+'</div>'+(sub?'<div class="sub2">'+sub+'</div>':'')+'</div>'; }
-    async function search(){
+    async function search(force){
       const name=nameEl.value.trim(); if(!name) return;
       out.innerHTML='<div class="msg"><div class="spinner"></div>Lade Statistiken…</div>'; goEl.disabled=true;
       try{
-        const r=await fetch(API+'?name='+encodeURIComponent(name)); const j=await r.json();
+        const r=await fetch(API+'?name='+encodeURIComponent(name)+(force?'&_='+Date.now():'')); const j=await r.json();
         const s=j.stats;
         if(!s || s.money===undefined){ out.innerHTML='<div class="msg err">Spieler „'+name+'" nicht gefunden oder keine Daten.</div>'; return; }
         const money=+s.money, shards=+s.shards, kills=+s.kills, deaths=+s.deaths;
         const kd= deaths>0 ? (kills/deaths).toFixed(2) : String(kills);
         const lk=j.lookup||{};
         const online = (lk.location) ? ('Online · '+lk.location) : ((lk.username||lk.rank) ? 'Online' : 'Offline');
-        let h='<div class="phead"><img src="https://minotar.net/helm/'+encodeURIComponent(name)+'/64.png" alt=""><div><div class="nm">'+name+'</div><div class="meta">'+online+'</div></div></div>';
+        let h='<div class="phead"><img src="https://minotar.net/helm/'+encodeURIComponent(name)+'/64.png" alt=""><div><div class="nm">'+name+'</div><div class="meta">'+online+' · Stand '+new Date().toLocaleTimeString('de-DE')+'</div></div></div>';
         h+='<div class="grid">';
         h+=card('Geld', abbr(money), de(money)+' $', 'money');
         h+=card('Shards', de(shards));
@@ -85,7 +86,8 @@
       }catch(e){ out.innerHTML='<div class="msg err">Fehler beim Laden: '+e.message+'</div>'; }
       finally{ goEl.disabled=false; }
     }
-    goEl.addEventListener('click',search);
+    goEl.addEventListener('click',()=>search(false));
+    document.getElementById('refresh').addEventListener('click',()=>search(true));
     nameEl.addEventListener('keydown',e=>{ if(e.key==='Enter') search(); });
   </script>
 </body>
