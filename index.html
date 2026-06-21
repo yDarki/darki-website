@@ -49,6 +49,8 @@
   .tile.api-down{opacity:.82}
   .tile.api-down .api-badge{display:inline-flex}
   .tile.api-down .arrow{display:none}
+  .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  @media(max-width:640px){.grid-2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -63,7 +65,7 @@
 
     <section class="section">
       <div class="label">Tools</div>
-      <div class="grid">
+      <div class="grid grid-2">
         <a class="tile" href="donutprices.html">
           <div class="ico">🍩</div>
           <div class="body"><h3>DonutSMP Prices</h3><p>Live auction house prices — searchable and sortable, with per-item price, offers and recent sales.</p></div>
