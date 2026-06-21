@@ -7,15 +7,15 @@
 <style>
   :root{
     --bg:#0a0a0c; --card:#141420; --card-2:#1a1a28; --text:#f3f3f7; --muted:#8b8ba0;
-    --accent:#ff8a3d; --accent-2:#8b6dff; --border:rgba(255,255,255,.07); --radius:18px;
+    --accent:#ffffff; --accent-2:#b8bccc; --border:rgba(255,255,255,.07); --radius:18px;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
   a{text-decoration:none;color:inherit}
   .bg{position:fixed;inset:0;z-index:0;pointer-events:none}
   .bg::before{content:"";position:absolute;inset:0;background:
-    radial-gradient(620px circle at 50% -10%, rgba(255,138,61,.13), transparent 60%),
-    radial-gradient(720px circle at 86% 112%, rgba(139,109,255,.10), transparent 55%);}
+    radial-gradient(620px circle at 50% -10%, rgba(255,255,255,.07), transparent 60%),
+    radial-gradient(720px circle at 86% 112%, rgba(184,188,204,.08), transparent 55%);}
   .bg::after{content:"";position:absolute;inset:0;
     background-image:linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
     background-size:46px 46px;
@@ -23,19 +23,19 @@
     mask-image:radial-gradient(circle at 50% 26%, #000, transparent 68%);}
   .wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:58px 24px 72px}
   .hero{text-align:center;margin-bottom:48px}
-  .hero-ico{font-size:56px;line-height:1;filter:drop-shadow(0 14px 34px rgba(255,138,61,.32))}
+  .hero-ico{font-size:56px;line-height:1;filter:drop-shadow(0 14px 34px rgba(255,255,255,.16))}
   .hero h1{font-size:clamp(34px,6vw,54px);font-weight:800;letter-spacing:-1.5px;margin-top:10px}
   .hero h1 .grad{background:linear-gradient(120deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
   .hero .sub{color:var(--muted);font-size:16px;margin:12px auto 18px;max-width:500px;line-height:1.5}
   .addr{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);background:rgba(255,255,255,.03);border:1px solid var(--border);padding:7px 16px;border-radius:999px;font-weight:600;transition:.2s}
-  .addr:hover{color:var(--text);border-color:rgba(255,138,61,.5)}
+  .addr:hover{color:var(--text);border-color:rgba(255,255,255,.45)}
   .addr .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
   .label{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;letter-spacing:2.5px;text-transform:uppercase;font-weight:700;margin:0 0 16px}
   .label::after{content:"";flex:1;height:1px;background:var(--border)}
   .section{margin-bottom:36px}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
   .tile{position:relative;display:flex;align-items:flex-start;gap:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;transition:transform .18s ease,border-color .2s,background .2s}
-  .tile:hover{transform:translateY(-3px);background:var(--card-2);border-color:rgba(255,138,61,.4)}
+  .tile:hover{transform:translateY(-3px);background:var(--card-2);border-color:rgba(255,255,255,.32)}
   .tile .ico{font-size:32px;line-height:1;flex-shrink:0}
   .tile .body{flex:1;min-width:0;padding-right:18px}
   .tile h3{font-size:18px;font-weight:700;margin-bottom:5px}
