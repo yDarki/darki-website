@@ -56,7 +56,7 @@
   .chip{cursor:grab}
   .chip:active{cursor:grabbing}
   .chip.dragging{opacity:.4}
-  .chip.over{border-color:rgba(255,255,255,.65);box-shadow:0 0 0 2px rgba(255,255,255,.18)}
+  .drop-line{align-self:stretch;width:3px;min-height:30px;background:#fff;border-radius:2px;box-shadow:0 0 9px rgba(255,255,255,.75);margin:0 -3px;pointer-events:none}
   .chip .rm{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.06);color:#8b8ba0;font-size:13px;line-height:1}
   .chip .rm:hover{background:rgba(255,90,90,.22);color:#ff9b9b}
   .btn.ghost{background:#1a1a28;color:#f3f3f7;border:1px solid rgba(255,255,255,.14)}
@@ -134,16 +134,17 @@
         box.innerHTML=h;
         box.querySelectorAll('.chip').forEach(function(c){ c.addEventListener('click',function(e){ if(e.target.classList.contains('rm')) return; nameEl.value=c.getAttribute('data-n'); search(); }); });
         box.querySelectorAll('.rm').forEach(function(r){ r.addEventListener('click',function(e){ e.stopPropagation(); var n=r.getAttribute('data-rm'); store(load().filter(function(x){return x!==n;})); render(); }); });
-        var dragSrc=null;
         box.querySelectorAll('.chip').forEach(function(c){
           c.addEventListener('dragstart',function(e){ dragSrc=c.getAttribute('data-n'); c.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; try{e.dataTransfer.setData('text/plain',dragSrc);}catch(_){} });
-          c.addEventListener('dragend',function(){ c.classList.remove('dragging'); box.querySelectorAll('.chip').forEach(function(x){x.classList.remove('over');}); });
-          c.addEventListener('dragover',function(e){ e.preventDefault(); e.dataTransfer.dropEffect='move'; c.classList.add('over'); });
-          c.addEventListener('dragleave',function(){ c.classList.remove('over'); });
-          c.addEventListener('drop',function(e){ e.preventDefault(); c.classList.remove('over'); var target=c.getAttribute('data-n'); if(!dragSrc||dragSrc===target) return; var a=load(); var from=a.indexOf(dragSrc), to=a.indexOf(target); if(from<0||to<0) return; a.splice(to,0,a.splice(from,1)[0]); store(a); render(); });
+          c.addEventListener('dragend',function(){ c.classList.remove('dragging'); if(line.parentNode) line.parentNode.removeChild(line); dragSrc=null; });
         });
       }
       if(saveBtn){ saveBtn.addEventListener('click',function(){ var n=nameEl.value.trim(); if(!n) return; var a=load(); if(a.map(function(x){return x.toLowerCase();}).indexOf(n.toLowerCase())<0){ a.push(n); store(a); } render(); }); }
+      var dragSrc=null;
+      var line=document.createElement('span'); line.className='drop-line';
+      function chipAfter(x){ var cs=[].slice.call(box.querySelectorAll('.chip:not(.dragging)')); for(var i=0;i<cs.length;i++){ var r=cs[i].getBoundingClientRect(); if(x < r.left + r.width/2) return cs[i]; } return null; }
+      box.addEventListener('dragover',function(e){ if(!dragSrc) return; e.preventDefault(); e.dataTransfer.dropEffect='move'; var after=chipAfter(e.clientX); if(after) box.insertBefore(line, after); else box.appendChild(line); });
+      box.addEventListener('drop',function(e){ if(!dragSrc) return; e.preventDefault(); var bf=line.nextElementSibling; while(bf && !bf.classList.contains('chip')) bf=bf.nextElementSibling; var beforeName=bf?bf.getAttribute('data-n'):null; if(line.parentNode) line.parentNode.removeChild(line); var a=load(); var from=a.indexOf(dragSrc); if(from<0) return; a.splice(from,1); var idx=beforeName?a.indexOf(beforeName):a.length; if(idx<0) idx=a.length; a.splice(idx,0,dragSrc); store(a); dragSrc=null; render(); });
       render();
     })();
   </script>
