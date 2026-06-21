@@ -227,7 +227,7 @@
     document.getElementById('saveSetup').onclick=function(){ var a=loadSetups(); var msg=document.getElementById('setupMsg');
       if(a.length>=5){ msg.textContent='Max 5 - remove one first.'; return; }
       var s={ type:curMode(), pile:document.getElementById('pile').value, piles:document.getElementById('piles').value, price:document.getElementById('price').value, data:document.getElementById('data').value, fitL:fitL, fitK:fitK };
-      var nm=document.getElementById('setupName').value.trim(); s.name=nm||summary(s);
+      var nm=document.getElementById('setupName').value.trim(); s.name=nm||((s.type==='skel'?'Skeleton':'Custom')+' \u2013 '+(s.pile||0)+'/'+(s.piles||1));
       a.push(s); storeSetups(a); document.getElementById('setupName').value=''; msg.textContent='Saved.'; setTimeout(function(){ if(msg.textContent==='Saved.') msg.textContent=''; },1500); renderSetups();
     };
 
