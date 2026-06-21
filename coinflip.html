@@ -42,8 +42,8 @@
   }
   .back:hover{color:var(--text);border-color:var(--gold);background:var(--card-2)}
 
-  h1{font-size:clamp(28px,5vw,42px);font-weight:800;letter-spacing:-1px;margin-top:18px}
-  h1 .grad{background:linear-gradient(120deg,var(--gold),var(--gold-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  h1{font-size:clamp(28px,5vw,42px);font-weight:800;letter-spacing:-1px;margin-top:18px;filter:drop-shadow(0 0 22px rgba(232,195,91,.20))}
+  h1 .grad{background:linear-gradient(105deg,#e8c35b 0%,#f4dd86 30%,#c4922e 50%,#f4dd86 70%,#e8c35b 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shine 5s ease-in-out infinite alternate}
 
   .scene{perspective:1000px;margin:46px auto 30px;width:180px;height:180px}
   .coin{
@@ -86,6 +86,7 @@
   .chip.k{background:rgba(232,195,91,.18);color:var(--gold)}
   .chip.z{background:rgba(170,176,200,.18);color:#c2c7d6}
   @keyframes chipIn{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+  @keyframes shine{0%{background-position:0% center}100%{background-position:100% center}}
 </style>
 </head>
 <body>
