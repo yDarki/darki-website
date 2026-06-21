@@ -1,112 +1,86 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dashboard</title>
+<title>DonutSMP Hub</title>
 <style>
   :root{
-    --bg:#0a0a0f;
-    --card:#15151f;
-    --card-2:#1b1b28;
-    --text:#f2f2f7;
-    --muted:#8c8ca3;
-    --accent:#e8a44c;
-    --accent-2:#7b5bff;
-    --border:rgba(255,255,255,.08);
+    --bg:#0a0a0c; --card:#141420; --card-2:#1a1a28; --text:#f3f3f7; --muted:#8b8ba0;
+    --accent:#ff8a3d; --accent-2:#8b6dff; --border:rgba(255,255,255,.07); --radius:18px;
   }
   *{margin:0;padding:0;box-sizing:border-box}
-  body{
-    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
-    background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;
-  }
+  body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
   a{text-decoration:none;color:inherit}
-  .glow{
-    position:fixed;inset:0;z-index:0;pointer-events:none;
-    background:
-      radial-gradient(700px circle at 20% 18%, rgba(232,164,76,.13), transparent 42%),
-      radial-gradient(700px circle at 82% 75%, rgba(123,91,255,.14), transparent 45%);
-  }
-  .wrap{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:60px 24px}
-
-  .head{display:flex;align-items:center;gap:14px;margin-bottom:8px}
-  .head .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
-  h1{font-size:clamp(32px,6vw,52px);font-weight:800;letter-spacing:-1px}
-  h1 .grad{background:linear-gradient(120deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-  .sub{color:var(--muted);font-size:17px;margin:10px 0 40px}
-
-  .section-label{color:var(--muted);font-size:13px;letter-spacing:2px;text-transform:uppercase;margin:0 0 18px;font-weight:600}
-
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
-
-  .tile{
-    position:relative;display:block;
-    background:var(--card);border:1px solid var(--border);border-radius:20px;padding:26px;
-    transition:transform .18s,border-color .2s,background .2s;overflow:hidden;
-  }
-  .tile:hover{transform:translateY(-4px);background:var(--card-2);border-color:rgba(232,164,76,.45)}
-  .tile.featured{grid-column:span 2;display:flex;align-items:center;gap:26px;
-    background:linear-gradient(135deg,rgba(232,164,76,.10),rgba(123,91,255,.08));}
-  @media(max-width:640px){.tile.featured{grid-column:span 1;flex-direction:column;text-align:center}}
-
-  .tile .ico{font-size:54px;line-height:1;filter:drop-shadow(0 10px 24px rgba(232,164,76,.3))}
-  .tile.featured .ico{font-size:84px}
-  .tile .body{flex:1}
-  .tile h3{font-size:22px;font-weight:800;margin-bottom:6px}
-  .tile.featured h3{font-size:30px}
-  .tile p{color:var(--muted);font-size:15px;line-height:1.5}
-
-  .pill{display:inline-block;margin-top:14px;background:linear-gradient(120deg,var(--accent),var(--accent-2));
-    color:#fff;font-weight:700;font-size:14px;padding:9px 20px;border-radius:11px;
-    box-shadow:0 10px 26px rgba(232,164,76,.28)}
-
-  footer{color:var(--muted);font-size:13px;text-align:center;padding:40px 0 20px}
-  .hero{text-align:center;padding:34px 0 18px}
-  .hero-ico{font-size:58px;line-height:1;filter:drop-shadow(0 12px 30px rgba(232,164,76,.35))}
-  .hero h1{font-size:clamp(34px,6vw,56px);font-weight:800;letter-spacing:-1px;margin-top:8px}
-  .hero .sub{margin:10px auto 16px;max-width:520px}
-  .addr{display:inline-block;font-size:13px;color:var(--muted);background:var(--card);border:1px solid var(--border);padding:7px 16px;border-radius:999px;font-weight:600;transition:.2s}
-  .addr:hover{color:var(--text);border-color:var(--accent)}
+  .bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+  .bg::before{content:"";position:absolute;inset:0;background:
+    radial-gradient(620px circle at 50% -10%, rgba(255,138,61,.13), transparent 60%),
+    radial-gradient(720px circle at 86% 112%, rgba(139,109,255,.10), transparent 55%);}
+  .bg::after{content:"";position:absolute;inset:0;
+    background-image:linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
+    background-size:46px 46px;
+    -webkit-mask-image:radial-gradient(circle at 50% 26%, #000, transparent 68%);
+    mask-image:radial-gradient(circle at 50% 26%, #000, transparent 68%);}
+  .wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:58px 24px 72px}
+  .hero{text-align:center;margin-bottom:48px}
+  .hero-ico{font-size:56px;line-height:1;filter:drop-shadow(0 14px 34px rgba(255,138,61,.32))}
+  .hero h1{font-size:clamp(34px,6vw,54px);font-weight:800;letter-spacing:-1.5px;margin-top:10px}
+  .hero h1 .grad{background:linear-gradient(120deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .hero .sub{color:var(--muted);font-size:16px;margin:12px auto 18px;max-width:500px;line-height:1.5}
+  .addr{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);background:rgba(255,255,255,.03);border:1px solid var(--border);padding:7px 16px;border-radius:999px;font-weight:600;transition:.2s}
+  .addr:hover{color:var(--text);border-color:rgba(255,138,61,.5)}
+  .addr .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+  .label{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;letter-spacing:2.5px;text-transform:uppercase;font-weight:700;margin:0 0 16px}
+  .label::after{content:"";flex:1;height:1px;background:var(--border)}
+  .section{margin-bottom:36px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+  .tile{position:relative;display:flex;align-items:flex-start;gap:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;transition:transform .18s ease,border-color .2s,background .2s}
+  .tile:hover{transform:translateY(-3px);background:var(--card-2);border-color:rgba(255,138,61,.4)}
+  .tile .ico{font-size:32px;line-height:1;flex-shrink:0}
+  .tile .body{flex:1;min-width:0;padding-right:18px}
+  .tile h3{font-size:18px;font-weight:700;margin-bottom:5px}
+  .tile p{color:var(--muted);font-size:14px;line-height:1.5}
+  .tile .arrow{position:absolute;top:22px;right:20px;color:var(--muted);transition:.2s;font-size:17px}
+  .tile:hover .arrow{color:var(--accent);transform:translateX(3px)}
+  footer{text-align:center;color:var(--muted);font-size:13px;padding-top:20px}
 </style>
 </head>
 <body>
-  <div class="glow"></div>
+  <div class="bg"></div>
   <div class="wrap">
     <header class="hero">
       <div class="hero-ico">🍩</div>
       <h1><span class="grad">DonutSMP Hub</span></h1>
-      <p class="sub">Live-Auktionspreise, Spieler-Statistiken &amp; Tools für DonutSMP</p>
-      <a class="addr" href="https://darki-website.pages.dev">darki-website.pages.dev</a>
+      <p class="sub">Live auction prices, player stats and tools for the DonutSMP server</p>
+      <a class="addr" href="https://darki-website.pages.dev"><span class="pulse"></span>darki-website.pages.dev</a>
     </header>
 
-    <div class="section-label">Tools</div>
-    <div class="grid">
-      <a class="tile featured" href="donutprices.html">
-        <div class="ico">🍩</div>
-        <div class="body">
-          <h3>DonutSMP Preise</h3>
-          <p>Live-Auktionspreise vom DonutSMP-Server — durchsuchbar und sortierbar, mit Ø-, Min- und Max-Preis pro Item.</p>
-          <span class="pill">▶ Öffnen</span>
-        </div>
-      </a>
+    <section class="section">
+      <div class="label">Tools</div>
+      <div class="grid">
+        <a class="tile" href="donutprices.html">
+          <div class="ico">🍩</div>
+          <div class="body"><h3>DonutSMP Prices</h3><p>Live auction house prices — searchable and sortable, with per-item price, offers and recent sales.</p></div>
+          <span class="arrow">→</span>
+        </a>
+        <a class="tile" href="playerstats.html">
+          <div class="ico">📊</div>
+          <div class="body"><h3>Player Stats</h3><p>Search a player to see money, shards, K/D, playtime and more.</p></div>
+          <span class="arrow">→</span>
+        </a>
+      </div>
+    </section>
 
-      <a class="tile" href="playerstats.html">
-        <div class="ico">🎮</div>
-        <h3>Playerstats</h3>
-        <p>Suche einen Spieler und sieh Geld, Shards, K/D, Spielzeit und mehr.</p>
-        <span class="pill">▶ Öffnen</span>
-      </a>
-    </div>
-
-    <div class="section-label" style="margin-top:38px">Spiele</div>
-    <div class="grid">
-      <a class="tile" href="coinflip.html">
-        <div class="ico">🪙</div>
-        <h3>Coin Flip</h3>
-        <p>Kopf oder Zahl? Wirf die Münze und verfolge deine Statistik.</p>
-        <span class="pill">▶ Spielen</span>
-      </a>
-    </div>
+    <section class="section">
+      <div class="label">Games</div>
+      <div class="grid">
+        <a class="tile" href="coinflip.html">
+          <div class="ico">🪙</div>
+          <div class="body"><h3>Coin Flip</h3><p>Heads or tails? Flip the coin and track your stats.</p></div>
+          <span class="arrow">→</span>
+        </a>
+      </div>
+    </section>
 
     <footer>DonutSMP Hub · darki-website.pages.dev</footer>
   </div>
