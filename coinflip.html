@@ -6,15 +6,15 @@
 <title>Coin Flip</title>
 <style>
   :root{
-    --bg:#0a0a0f;
-    --card:#15151f;
-    --card-2:#1b1b28;
-    --text:#f2f2f7;
-    --muted:#8c8ca3;
+    --bg:#0a0a0c;
+    --card:#141420;
+    --card-2:#1a1a28;
+    --text:#f3f3f7;
+    --muted:#8b8ba0;
     --gold:#e8c35b;
     --gold-2:#c4922e;
-    --accent:#7b5bff;
-    --border:rgba(255,255,255,.08);
+    --accent:#ffffff;
+    --border:rgba(255,255,255,.07);
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{
@@ -22,12 +22,15 @@
     background:var(--bg);color:var(--text);min-height:100vh;
     display:flex;flex-direction:column;align-items:center;overflow-x:hidden;
   }
-  .glow{
-    position:fixed;inset:0;z-index:0;pointer-events:none;
-    background:
-      radial-gradient(600px circle at 28% 22%, rgba(232,195,91,.13), transparent 42%),
-      radial-gradient(600px circle at 72% 82%, rgba(123,91,255,.14), transparent 42%);
-  }
+  .glow{position:fixed;inset:0;z-index:0;pointer-events:none}
+  .glow::before{content:"";position:absolute;inset:0;background:
+    radial-gradient(620px circle at 50% -10%, rgba(255,255,255,.07), transparent 60%),
+    radial-gradient(720px circle at 86% 112%, rgba(184,188,204,.08), transparent 55%);}
+  .glow::after{content:"";position:absolute;inset:0;
+    background-image:linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
+    background-size:46px 46px;
+    -webkit-mask-image:radial-gradient(circle at 50% 26%, #000, transparent 68%);
+    mask-image:radial-gradient(circle at 50% 26%, #000, transparent 68%);}
   .wrap{position:relative;z-index:1;width:100%;max-width:760px;padding:24px;text-align:center}
 
   .back{
@@ -93,23 +96,23 @@
 
     <div class="scene">
       <div class="coin" id="coin">
-        <div class="face heads"><span class="big">👑</span><span class="lbl">KOPF</span></div>
-        <div class="face tails"><span class="big">🔢</span><span class="lbl">ZAHL</span></div>
+        <div class="face heads"><span class="big">👑</span><span class="lbl">HEADS</span></div>
+        <div class="face tails"><span class="big">🔢</span><span class="lbl">TAILS</span></div>
       </div>
     </div>
 
-    <div class="result" id="result">Bereit?</div>
-    <p class="hint">Drück den Knopf und wirf die Münze.</p>
-    <button class="btn" id="flip">Münze werfen</button>
+    <div class="result" id="result">Ready?</div>
+    <p class="hint">Press the button and flip the coin.</p>
+    <button class="btn" id="flip">Flip coin</button>
 
     <div class="stats">
-      <div class="stat"><div class="v" id="headsC">0</div><div class="l">Kopf 👑</div></div>
-      <div class="stat"><div class="v" id="tailsC">0</div><div class="l">Zahl 🔢</div></div>
-      <div class="stat"><div class="v" id="totalC">0</div><div class="l">Würfe gesamt</div></div>
+      <div class="stat"><div class="v" id="headsC">0</div><div class="l">Heads 👑</div></div>
+      <div class="stat"><div class="v" id="tailsC">0</div><div class="l">Tails 🔢</div></div>
+      <div class="stat"><div class="v" id="totalC">0</div><div class="l">Total flips</div></div>
     </div>
-    <button class="reset" id="reset">Statistik zurücksetzen</button>
+    <button class="reset" id="reset">Reset stats</button>
 
-    <div class="hist-label">Letzte Würfe</div>
+    <div class="hist-label">Letzte Flips</div>
     <div class="history" id="history"></div>
   </div>
 
@@ -162,8 +165,8 @@
       coin.style.transform = `rotateX(${rotation}deg)`;
 
       setTimeout(()=>{
-        if(isHeads){ stats.heads++; history.unshift('K'); result.innerHTML = '<span class="win">Kopf!</span>'; }
-        else       { stats.tails++; history.unshift('Z'); result.innerHTML = '<span class="win">Zahl!</span>'; }
+        if(isHeads){ stats.heads++; history.unshift('K'); result.innerHTML = '<span class="win">Heads!</span>'; }
+        else       { stats.tails++; history.unshift('Z'); result.innerHTML = '<span class="win">Tails!</span>'; }
         if(history.length > 50) history = history.slice(0,50);
         renderStats(); renderHistory(); save();
         busy = false; flipBtn.disabled = false;
@@ -174,9 +177,9 @@
     coin.addEventListener('click', flip);
 
     document.getElementById('reset').addEventListener('click', ()=>{
-      if(confirm('Statistik wirklich zurücksetzen?')){
+      if(confirm('Really reset stats?')){
         stats = { heads:0, tails:0 }; history = []; save(); renderStats(); renderHistory();
-        result.textContent = 'Bereit?';
+        result.textContent = 'Ready?';
       }
     });
 
