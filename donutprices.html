@@ -271,5 +271,91 @@
   var to=document.getElementById("tabOrders"); if(to) to.textContent="📜 AH (Sales)";
 })();
 </script>
+<style>
+  .ovl{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .2s}
+  .ovl.open{opacity:1;pointer-events:auto}
+  .ovl-card{width:min(560px,96vw);max-height:90vh;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px;position:relative;transform:translateY(10px) scale(.99);transition:transform .2s}
+  .ovl.open .ovl-card{transform:none}
+  .ovl-x{position:absolute;top:14px;right:14px;background:none;border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:18px}
+  .ovl-x:hover{color:var(--text);border-color:var(--accent)}
+  .ovl-head{display:flex;align-items:center;gap:14px;margin-bottom:16px;padding-right:30px}
+  .ovl-head img{width:38px;height:38px;image-rendering:pixelated}
+  .ovl-nm{font-size:20px;font-weight:800;text-transform:capitalize}
+  .ovl-meta{color:var(--muted);font-size:13px;margin-top:2px}
+  .ovl-graph{background:var(--card-2);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;min-height:90px}
+  .ovl-graph svg{display:block;width:100%;height:auto}
+  .ovl-empty{color:var(--muted);font-size:13px;text-align:center;padding:34px 12px}
+  .ovl-tabs{display:flex;gap:8px;margin-bottom:12px}
+  .ovl-tab{flex:1;background:var(--card-2);border:1px solid var(--border);color:var(--muted);font-weight:700;font-size:14px;padding:10px;border-radius:10px;cursor:pointer;transition:.18s}
+  .ovl-tab.active{color:#0a0a0c;background:linear-gradient(120deg,var(--accent),var(--accent-2));border-color:transparent}
+  .ovl-list{display:flex;flex-direction:column;gap:8px}
+  .ovl-row{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+  .ovl-row .who{font-size:14px}
+  .ovl-row .who small{color:var(--muted)}
+  .ovl-row .pr{font-weight:800;color:var(--green);font-variant-numeric:tabular-nums;text-align:right}
+  .ovl-row .pr small{display:block;color:var(--muted);font-weight:500}
+</style>
+<div class="ovl" id="ovl"><div class="ovl-card">
+  <button class="ovl-x" id="ovlX">×</button>
+  <div class="ovl-head"><img id="ovlImg" alt=""><div><div class="ovl-nm" id="ovlNm">—</div><div class="ovl-meta" id="ovlMeta"></div></div></div>
+  <div class="ovl-graph" id="ovlGraph"></div>
+  <div class="ovl-tabs"><button class="ovl-tab active" id="ovlTabOffers">Offers</button><button class="ovl-tab" id="ovlTabSales">Sales</button></div>
+  <div class="ovl-list" id="ovlList"></div>
+</div></div>
+<script>
+(function(){
+  var ovl=document.getElementById('ovl'), ovlList=document.getElementById('ovlList'), ovlGraph=document.getElementById('ovlGraph');
+  var curItem=null, curTabO='offers';
+  function close(){ ovl.classList.remove('open'); }
+  document.getElementById('ovlX').addEventListener('click',close);
+  ovl.addEventListener('click',function(e){ if(e.target===ovl) close(); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') close(); });
+  document.getElementById('ovlTabOffers').addEventListener('click',function(){ setTab('offers'); });
+  document.getElementById('ovlTabSales').addEventListener('click',function(){ setTab('sales'); });
+  function setTab(t){ curTabO=t; document.getElementById('ovlTabOffers').classList.toggle('active',t==='offers'); document.getElementById('ovlTabSales').classList.toggle('active',t==='sales'); renderList(); }
+  function renderList(){ var it=curItem; if(!it){ovlList.innerHTML='';return;} var list=curTabO==='offers'?(it.ah||[]):(it.sales||[]); if(!list.length){ ovlList.innerHTML='<div class="ovl-empty">'+(curTabO==='offers'?'No offers in the AH.':'No AH sales found.')+'</div>'; return; } ovlList.innerHTML=list.map(function(e){ var c=e.count||1; var per=(c>1?('ea. '+fmt(e.price/c)):'per unit'); var sub=curTabO==='offers'?(c+'× units'):(c+'× · '+ago(e.time)); return '<div class="ovl-row"><div class="who">'+e.seller+'<br><small>'+sub+'</small></div><div class="pr">'+fmt(e.price)+'<small>'+per+'</small></div></div>'; }).join(''); }
+  function drawGraph(points){
+    if(!points||points.length<2){ ovlGraph.innerHTML='<div class="ovl-empty">Not enough price history yet — the graph fills in over time.</div>'; return; }
+    var W=520,H=180,pad=30;
+    var ts=points.map(function(p){return p.t;}), ps=points.map(function(p){return p.p;});
+    var t0=Math.min.apply(null,ts), t1=Math.max.apply(null,ts);
+    var p0=Math.min.apply(null,ps), p1=Math.max.apply(null,ps);
+    if(p1===p0){ p1=p0*1.1+1; p0=Math.max(0,p0*0.9-1); }
+    var X=function(t){ return pad+(t1===t0?0:(t-t0)/(t1-t0))*(W-2*pad); };
+    var Y=function(p){ return H-pad-(p-p0)/(p1-p0)*(H-2*pad); };
+    var d=points.map(function(p,i){ return (i?'L':'M')+X(p.t).toFixed(1)+' '+Y(p.p).toFixed(1); }).join(' ');
+    var area=d+' L'+X(t1).toFixed(1)+' '+(H-pad)+' L'+X(t0).toFixed(1)+' '+(H-pad)+' Z';
+    var dots=points.map(function(p){ return '<circle cx="'+X(p.t).toFixed(1)+'" cy="'+Y(p.p).toFixed(1)+'" r="2.4" fill="#ffffff"/>'; }).join('');
+    var fT=function(t){ var dt=new Date(t); return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+' '+dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); };
+    ovlGraph.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="height:180px">'
+      +'<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,255,255,.18)"/><stop offset="1" stop-color="rgba(255,255,255,0)"/></linearGradient></defs>'
+      +'<path d="'+area+'" fill="url(#ag)"/>'
+      +'<path d="'+d+'" fill="none" stroke="#ffffff" stroke-width="2" vector-effect="non-scaling-stroke"/>'
+      +dots
+      +'<text x="'+pad+'" y="14" fill="#8b8ba0" font-size="11">max '+fmt(p1)+'</text>'
+      +'<text x="'+pad+'" y="'+(H-9)+'" fill="#8b8ba0" font-size="11">min '+fmt(p0)+'</text>'
+      +'<text x="'+(W-pad)+'" y="'+(H-9)+'" fill="#8b8ba0" font-size="11" text-anchor="end">'+fT(t0)+' – '+fT(t1)+'</text>'
+      +'</svg>';
+  }
+  window.openItemOverlay=function(it){
+    curItem=it; curTabO='offers';
+    document.getElementById('ovlNm').textContent=pretty(it.id);
+    var img=document.getElementById('ovlImg'); img.src=tex(it.id); img.onerror=function(){this.style.visibility='hidden';};
+    document.getElementById('ovlMeta').textContent='~ '+fmt(priceOf(it))+' / each · '+it.listings+' offers';
+    setTab('offers');
+    ovlGraph.innerHTML='<div class="ovl-empty">Loading…</div>';
+    ovl.classList.add('open');
+    var salesPts=(it.sales||[]).filter(function(s){return s.time;}).map(function(s){return {t:s.time,p:Math.round(s.price/(s.count||1))};});
+    var id=(it.id||'').replace(/^minecraft:/,'');
+    fetch('/api/donut?history='+encodeURIComponent(id)).then(function(r){return r.json();}).then(function(j){
+      if(curItem!==it) return;
+      var hist=(j.points||[]).map(function(p){return {t:p.t,p:p.p};});
+      var all=hist.concat(salesPts).sort(function(a,b){return a.t-b.t;});
+      drawGraph(all);
+    }).catch(function(){ if(curItem===it) drawGraph(salesPts.sort(function(a,b){return a.t-b.t;})); });
+  };
+  openPanel=function(it){ openItemOverlay(it); };
+})();
+</script>
 </body>
 </html>
