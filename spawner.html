@@ -39,6 +39,15 @@
   .eq{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:var(--accent-2);background:var(--card-2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-top:10px;word-break:break-word}
   .hidden{display:none}
   .row2{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .muted{color:var(--muted);font-size:13px}
+  .setrow{display:flex;align-items:center;gap:10px;background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+  .setrow .si{flex:1;min-width:0}
+  .setrow .sn{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .setrow .sm{font-size:12px;color:var(--muted);margin-top:2px}
+  .setrow button{background:#1a1a28;border:1px solid rgba(255,255,255,.14);color:#f3f3f7;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s}
+  .setrow button:hover{border-color:rgba(255,255,255,.4)}
+  .setrow button.x{color:#ff9b9b;border-color:rgba(255,120,120,.4);width:30px;padding:6px 0}
+  .setrow button.x:hover{background:rgba(255,90,90,.18)}
 </style>
 </head>
 <body>
@@ -67,8 +76,8 @@
           <input id="piles" type="number" min="1" step="1" value="1" />
         </div>
         <div>
-          <label for="price">Sell price per drop ($)</label>
-          <input id="price" type="number" min="0" step="0.01" placeholder="e.g. 2" />
+          <label for="price" id="lblPrice">Sell price per bone ($)</label>
+          <input id="price" type="number" min="0" step="0.01" placeholder="e.g. 60" />
         </div>
       </div>
       <div id="customBox" class="hidden" style="margin-top:16px">
@@ -83,10 +92,20 @@
     </div>
 
     <div class="card">
+      <h2>Saved setups (up to 5)</h2>
+      <div class="row2">
+        <input id="setupName" placeholder="Setup name (e.g. Skelly base)" style="flex:1;min-width:160px" />
+        <button class="btn" id="saveSetup">Save setup</button>
+        <span id="setupMsg" class="muted"></span>
+      </div>
+      <div id="setupList" style="margin-top:12px;display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
+    <div class="card">
       <h2>Results</h2>
       <div class="stats">
-        <div class="stat"><div class="k">Drops / min (per pile)</div><div class="v" id="rPm">&ndash;</div></div>
-        <div class="stat"><div class="k">Drops / hour (all piles)</div><div class="v" id="rPh">&ndash;</div></div>
+        <div class="stat"><div class="k" id="lblRpm">Bones / min (per pile)</div><div class="v" id="rPm">&ndash;</div></div>
+        <div class="stat"><div class="k" id="lblRph">Bones / hour (all piles)</div><div class="v" id="rPh">&ndash;</div></div>
         <div class="stat"><div class="k">Profit / hour</div><div class="v green" id="profit">&ndash;</div></div>
         <div class="stat"><div class="k">Next spawner adds</div><div class="v" id="marg">&ndash;</div></div>
       </div>
@@ -96,7 +115,7 @@
     <div class="card">
       <h2>Production curve</h2>
       <div class="graph" id="graph"></div>
-      <p class="note">Drops per minute vs. spawners in one pile. The dashed line is the maximum (asymptote) &mdash; one pile can never exceed it, so spreading spawners across multiple piles gives more total drops.</p>
+      <p class="note">Production per minute vs. spawners in one pile. The dashed line is the maximum (asymptote) &mdash; one pile can never exceed it, so spreading spawners across multiple piles gives more total output.</p>
     </div>
   </div>
 
@@ -106,10 +125,19 @@
     var fitL=null, fitK=null;
     function rateCustom(x){ if(fitL==null) return null; return Math.max(0, fitL*(1-Math.exp(-fitK*x))); }
     function curMode(){ return document.getElementById('type').value; }
+    function unit(){ return curMode()==='skel'?'bones':'drops'; }
+    function unitS(){ return curMode()==='skel'?'bone':'drop'; }
     function asymptote(){ return curMode()==='skel'? SK.L : (fitL!=null? fitL : null); }
     function rateAt(x){ return curMode()==='skel'? rateSkel(x) : rateCustom(x); }
     var fmt=function(n){ return (n==null||isNaN(n))?'\u2013':Math.round(n).toLocaleString('en-US'); };
     var fmt1=function(n){ return (n==null||isNaN(n))?'\u2013':(Math.round(n*10)/10).toLocaleString('en-US'); };
+
+    function applyLabels(){ var u=unit(); var U=u.charAt(0).toUpperCase()+u.slice(1);
+      document.getElementById('lblRpm').textContent=U+' / min (per pile)';
+      document.getElementById('lblRph').textContent=U+' / hour (all piles)';
+      document.getElementById('lblPrice').textContent='Sell price per '+unitS()+' ($)';
+      document.getElementById('price').placeholder= curMode()==='skel'?'e.g. 60':'e.g. 2';
+    }
 
     function parseData(){ var t=document.getElementById('data').value; var pts=[];
       t.split(/\n+/).forEach(function(line){ var m=line.split(/[ ,;\t]+/).filter(Boolean); if(m.length>=2){ var x=parseFloat(m[0]), r=parseFloat(m[1]); if(!isNaN(x)&&!isNaN(r)&&x>0) pts.push({x:x,r:r}); } });
@@ -140,7 +168,7 @@
         grid+='<line x1="'+padL+'" y1="'+gy.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+gy.toFixed(1)+'" stroke="rgba(255,255,255,.08)"/>';
         grid+='<text x="'+(padL-8)+'" y="'+(gy+4).toFixed(1)+'" fill="#9a9ab2" font-size="11" text-anchor="end">'+fmt(gv)+'</text>'; }
       var ay=sy(L);
-      var asym='<line x1="'+padL+'" y1="'+ay.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+ay.toFixed(1)+'" stroke="#b8bccc" stroke-width="1.2" stroke-dasharray="5 4"/><text x="'+(W-padR)+'" y="'+(ay-6).toFixed(1)+'" fill="#b8bccc" font-size="11" text-anchor="end">max '+fmt(L)+'/min</text>';
+      var asym='<line x1="'+padL+'" y1="'+ay.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+ay.toFixed(1)+'" stroke="#b8bccc" stroke-width="1.2" stroke-dasharray="5 4"/><text x="'+(W-padR)+'" y="'+(ay-6).toFixed(1)+'" fill="#b8bccc" font-size="11" text-anchor="end">max '+fmt(L)+' '+unit()+'/min</text>';
       var cxx=Math.min(x0,maxX); var cx=sx(cxx), cy=sy(rateAt(cxx));
       var marker='<line x1="'+cx.toFixed(1)+'" y1="'+padT+'" x2="'+cx.toFixed(1)+'" y2="'+(H-padB)+'" stroke="rgba(255,255,255,.25)" stroke-dasharray="3 3"/><circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="4.2" fill="#5bd99a"/>';
       var xl='<text x="'+padL+'" y="'+(H-12)+'" fill="#9a9ab2" font-size="11">0</text><text x="'+(W-padR)+'" y="'+(H-12)+'" fill="#9a9ab2" font-size="11" text-anchor="end">'+fmt(maxX)+' spawners</text>';
@@ -148,6 +176,7 @@
     }
 
     function recompute(){
+      applyLabels();
       var x=Math.max(0,+document.getElementById('pile').value||0);
       var piles=Math.max(1,+document.getElementById('piles').value||1);
       var price=parseFloat(document.getElementById('price').value);
@@ -158,13 +187,13 @@
       document.getElementById('rPh').textContent=fmt(perHourAll);
       document.getElementById('profit').textContent=(!isNaN(price)&&price>0)?('$'+fmt(perHourAll*price)):'\u2013';
       var marg=rateAt(x+1)-rateAt(x);
-      var mtxt=fmt1(marg)+' /min';
+      var mtxt=fmt1(marg)+' '+unit()+'/min';
       if(!isNaN(price)&&price>0) mtxt+=' (~$'+fmt(marg*60*price)+'/h)';
       document.getElementById('marg').textContent=mtxt;
-      var L=asymptote(); var adv='';
+      var L=asymptote(); var adv=''; var u=unit();
       if(L!=null){ var total=x*piles; var oneRate=rateAt(total)*60;
-        if(piles>1){ adv='With '+fmt(total)+' spawners across '+piles+' piles you make '+fmt(perHourAll)+'/h. In ONE pile they would make only '+fmt(oneRate)+'/h \u2014 spreading wins by '+fmt(perHourAll-oneRate)+'/h.'; }
-        else { adv='One pile maxes out near '+fmt(L)+'/min. Splitting into more piles multiplies output \u2014 try raising Number of piles.'; } }
+        if(piles>1){ adv='With '+fmt(total)+' spawners across '+piles+' piles you make '+fmt(perHourAll)+' '+u+'/h. In ONE pile they would make only '+fmt(oneRate)+' '+u+'/h \u2014 spreading wins by '+fmt(perHourAll-oneRate)+' '+u+'/h.'; }
+        else { adv='One pile maxes out near '+fmt(L)+' '+u+'/min. Splitting into more piles multiplies output \u2014 try raising Number of piles.'; } }
       document.getElementById('advice').textContent=adv;
       drawGraph();
     }
@@ -176,9 +205,36 @@
       eq.classList.remove('hidden'); eq.textContent='rate(x) = '+fmt1(f.L)+' x (1 - e^(-'+f.k.toExponential(3)+' * x))';
       recompute();
     }
+
+    var SKEY='donutSpawnerSetups';
+    function loadSetups(){ try{ return JSON.parse(localStorage.getItem(SKEY)||'[]'); }catch(e){ return []; } }
+    function storeSetups(a){ try{ localStorage.setItem(SKEY, JSON.stringify(a)); }catch(e){} }
+    function summary(s){ var t=s.type==='skel'?'Skeleton':'Custom'; return t+' \u00b7 '+(s.pile||0)+'/pile \u00d7 '+(s.piles||1)+(s.price?(' \u00b7 $'+s.price):''); }
+    function renderSetups(){ var box=document.getElementById('setupList'); var a=loadSetups();
+      if(!a.length){ box.innerHTML='<div class="muted">No saved setups yet.</div>'; return; }
+      box.innerHTML=a.map(function(s,i){ return '<div class="setrow"><div class="si"><div class="sn">'+(s.name||('Setup '+(i+1)))+'</div><div class="sm">'+summary(s)+'</div></div><button data-load="'+i+'">Load</button><button class="x" data-del="'+i+'" title="Remove">\u00d7</button></div>'; }).join('');
+      box.querySelectorAll('[data-load]').forEach(function(b){ b.onclick=function(){ applySetup(loadSetups()[+b.getAttribute('data-load')]); }; });
+      box.querySelectorAll('[data-del]').forEach(function(b){ b.onclick=function(){ var a=loadSetups(); a.splice(+b.getAttribute('data-del'),1); storeSetups(a); renderSetups(); document.getElementById('setupMsg').textContent=''; }; });
+    }
+    function applySetup(s){ if(!s) return;
+      document.getElementById('type').value=s.type;
+      document.getElementById('customBox').classList.toggle('hidden', s.type!=='custom');
+      document.getElementById('pile').value=s.pile; document.getElementById('piles').value=s.piles; document.getElementById('price').value=s.price;
+      fitL=null; fitK=null; document.getElementById('eqBox').classList.add('hidden'); document.getElementById('fitInfo').textContent='';
+      if(s.type==='custom'){ document.getElementById('data').value=s.data||''; if(s.fitL!=null){ fitL=s.fitL; fitK=s.fitK; document.getElementById('fitInfo').textContent='Loaded saved fit'; var eq=document.getElementById('eqBox'); eq.classList.remove('hidden'); eq.textContent='rate(x) = '+fmt1(fitL)+' x (1 - e^(-'+fitK.toExponential(3)+' * x))'; } }
+      recompute();
+    }
+    document.getElementById('saveSetup').onclick=function(){ var a=loadSetups(); var msg=document.getElementById('setupMsg');
+      if(a.length>=5){ msg.textContent='Max 5 - remove one first.'; return; }
+      var s={ type:curMode(), pile:document.getElementById('pile').value, piles:document.getElementById('piles').value, price:document.getElementById('price').value, data:document.getElementById('data').value, fitL:fitL, fitK:fitK };
+      var nm=document.getElementById('setupName').value.trim(); s.name=nm||summary(s);
+      a.push(s); storeSetups(a); document.getElementById('setupName').value=''; msg.textContent='Saved.'; setTimeout(function(){ if(msg.textContent==='Saved.') msg.textContent=''; },1500); renderSetups();
+    };
+
     document.getElementById('type').addEventListener('change',function(){ document.getElementById('customBox').classList.toggle('hidden', this.value!=='custom'); recompute(); });
     ['pile','piles','price'].forEach(function(id){ document.getElementById(id).addEventListener('input',recompute); });
     document.getElementById('fitBtn').addEventListener('click',doFit);
+    renderSetups();
     recompute();
   </script>
 </body>
