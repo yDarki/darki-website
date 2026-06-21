@@ -1,3 +1,4 @@
+// deploy: activate KV price-history binding 2026-06-21T02:34:09.172Z
 // Cloudflare Pages deploy trigger 2026-06-14T01:57:54.520Z
 // Cloudflare Pages Function: proxy + aggregator for the official DonutSMP API.
 // Token is the secret env var DONUT_TOKEN (set in the Cloudflare Pages dashboard) and never reaches the browser.
