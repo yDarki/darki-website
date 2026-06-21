@@ -26,8 +26,8 @@
   .back{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);
     border-radius:12px;padding:9px 16px;color:var(--muted);font-weight:600;font-size:14px;margin-bottom:22px;transition:.2s}
   .back:hover{color:var(--text);border-color:var(--accent);background:var(--card-2)}
-  h1{font-size:clamp(28px,5vw,40px);font-weight:800;letter-spacing:-1px}
-  h1 .grad{background:linear-gradient(120deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  h1{font-size:clamp(28px,5vw,40px);font-weight:800;letter-spacing:-1px;filter:drop-shadow(0 0 22px rgba(255,255,255,.13))}
+  h1 .grad{background:linear-gradient(105deg,#ffffff 0%,#d7dae6 28%,#9197b0 50%,#d7dae6 72%,#ffffff 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shine 5s ease-in-out infinite alternate}
   .sub{color:var(--muted);font-size:15px;margin-top:8px}
 
   .toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:26px 0 14px}
@@ -89,6 +89,7 @@
   .soon-card img{width:22px;height:22px;image-rendering:pixelated}
   .soon-card span{flex:1;font-size:14px;text-transform:capitalize}
   .soon-card b{font-size:11px;color:var(--accent);background:var(--card-2);border:1px solid var(--border);padding:2px 7px;border-radius:7px;font-weight:700}
+  @keyframes shine{0%{background-position:0% center}100%{background-position:100% center}}
 </style>
 </head>
 <body>
