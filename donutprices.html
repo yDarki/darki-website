@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>DonutSMP Preise</title>
+<title>DonutSMP Prices</title>
 <style>
   :root{
     --bg:#0a0a0f; --card:#15151f; --card-2:#1b1b28; --text:#f2f2f7; --muted:#8c8ca3;
@@ -89,15 +89,15 @@
   <div class="glow"></div>
   <div class="wrap">
     <a class="back" href="index.html">← Dashboard</a>
-    <h1>🍩 <span class="grad">DonutSMP Preise</span></h1>
-    <p class="sub">Echte Auktionshaus-Preise vom DonutSMP-Server (offizielle API).</p>
+    <h1>🍩 <span class="grad">DonutSMP Prices</span></h1>
+    <p class="sub">Real auction house prices from the DonutSMP server (official API).</p>
 
     <div class="toolbar">
-      <input class="search" id="search" placeholder="Item suchen… (z. B. netherite)" />
-      <button class="btn" id="refresh">Aktualisieren</button>
+      <input class="search" id="search" placeholder="Search item… (e.g. netherite)" />
+      <button class="btn" id="refresh">Refresh</button>
     </div>
-    <div class="status" id="status">Lade Daten…</div>
-    <div id="tableWrap"><div class="loading"><div class="spinner"></div>Preise werden geladen…</div></div>
+    <div class="status" id="status">Loading data…</div>
+    <div id="tableWrap"><div class="loading"><div class="spinner"></div>Loading prices…</div></div>
     <div id="soonWrap"></div>
     <p class="attrib">Preis / Stück = typischer Verkaufspreis (Median echter Verkäufe pro Stück); ohne Verkäufe = günstigstes Angebot. „Letzter Verkauf“ = jüngster Verkauf. Quelle: offizielle DonutSMP-API.</p>
   </div>
@@ -111,8 +111,8 @@
       <button class="panel-close" id="pClose">×</button>
     </div>
     <div class="ptabs">
-      <button class="ptab active" data-pt="ah" id="tabAh">🏷️ AH (Angebote)</button>
-      <button class="ptab" data-pt="orders" id="tabOrders">📜 Orders (Verkäufe)</button>
+      <button class="ptab active" data-pt="ah" id="tabAh">🏷️ AH (Offers)</button>
+      <button class="ptab" data-pt="orders" id="tabOrders">📜 AH (Sales)</button>
     </div>
     <div class="plist" id="pList"></div>
   </aside>
@@ -140,8 +140,8 @@
     const pretty = id => shortName(id).replace(/_/g,' ');
     const tex = id => TEX + shortName(id) + '.png';
     function ago(ts){ if(!ts) return '–'; const s=Math.floor((Date.now()-ts)/1000);
-      if(s<60)return'gerade eben'; const m=Math.floor(s/60); if(m<60)return'vor '+m+' Min';
-      const h=Math.floor(m/60); if(h<24)return'vor '+h+' Std'; return 'vor '+Math.floor(h/24)+' T'; }
+      if(s<60)return'just now'; const m=Math.floor(s/60); if(m<60)return m+'m ago';
+      const h=Math.floor(m/60); if(h<24)return h+'h ago'; return Math.floor(h/24)+'d ago'; }
     function priceOf(it){ return it.price!=null ? it.price : (it.unit!=null ? it.unit : (it.cheapest1!=null ? it.cheapest1 : it.cheapestAny)); }
     function lastSale(it){ return (it.sales && it.sales[0]) ? it.sales[0] : null; }
 
@@ -155,12 +155,12 @@
         av = (av==null?Infinity:av); bv=(bv==null?Infinity:bv);
         return sortDir*(av-bv);
       });
-      if(!rows.length){ tableWrap.innerHTML='<div class="error">Keine Items gefunden.</div>'; return; }
+      if(!rows.length){ tableWrap.innerHTML='<div class="error">No items found.</div>'; return; }
       let html='<table><thead><tr>'
         +'<th data-k="id">Item</th>'
-        +'<th class="num" data-k="price">Preis / Stück</th>'
-        +'<th class="num" data-k="listings">Angebote</th>'
-        +'<th class="num" data-k="last">Letzter Verkauf</th>'
+        +'<th class="num" data-k="price">Price / each</th>'
+        +'<th class="num" data-k="listings">Offers</th>'
+        +'<th class="num" data-k="last">Last sale</th>'
         +'</tr></thead><tbody>';
       rows.slice(0,400).forEach((it,i)=>{
         const ls=lastSale(it);
@@ -183,15 +183,15 @@
     function renderPanelList(){
       const it=current; if(!it){pList.innerHTML='';return;}
       const list = curTab==='ah' ? it.ah : it.sales;
-      if(!list || !list.length){ pList.innerHTML='<div class="empty">Keine '+(curTab==='ah'?'Angebote':'Verkäufe')+' gefunden.</div>'; return; }
+      if(!list || !list.length){ pList.innerHTML='<div class="empty">Keine '+(curTab==='ah'?'Offers':'Sales')+' gefunden.</div>'; return; }
       let h='';
       list.forEach(e=>{
         if(curTab==='ah'){
           h+='<div class="lrow"><div class="who">'+e.seller+'<br><small>'+e.count+'× Stück</small></div>'
-            +'<div class="pr">'+fmt(e.price)+'<small>'+(e.count>1?('je '+fmt(e.price/e.count)):'pro Stück')+'</small></div></div>';
+            +'<div class="pr">'+fmt(e.price)+'<small>'+(e.count>1?('ea. '+fmt(e.price/e.count)):'per unit')+'</small></div></div>';
         } else {
           h+='<div class="lrow"><div class="who">'+e.seller+'<br><small>'+e.count+'× · '+ago(e.time)+'</small></div>'
-            +'<div class="pr">'+fmt(e.price)+'<small>'+(e.count>1?('je '+fmt(e.price/e.count)):'pro Stück')+'</small></div></div>';
+            +'<div class="pr">'+fmt(e.price)+'<small>'+(e.count>1?('ea. '+fmt(e.price/e.count)):'per unit')+'</small></div></div>';
         }
       });
       pList.innerHTML=h;
@@ -203,7 +203,7 @@
       document.getElementById('pName').textContent=pretty(it.id);
       document.getElementById('pImg').src=tex(it.id);
       const ls=lastSale(it);
-      document.getElementById('pMeta').textContent='Günstigstes Stück: '+fmt(priceOf(it))+' · '+it.listings+' Angebote';
+      document.getElementById('pMeta').textContent='Cheapest each: '+fmt(priceOf(it))+' · '+it.listings+' offers';
       document.getElementById('tabAh').classList.add('active');
       document.getElementById('tabOrders').classList.remove('active');
       renderPanelList();
@@ -219,23 +219,23 @@
     }));
 
     function setStatus(ts,n){ const t=new Date(ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-      statusEl.innerHTML='<b>'+n+'</b> Items · Stand: '+t+' Uhr'; }
+      statusEl.innerHTML='<b>'+n+'</b> items · as of '+t+''; }
 
     async function load(force){
       if(!force){ try{ const c=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
         if(c && (Date.now()-c.ts<CACHE_MS) && c.items){ items=c.items; setStatus(c.ts,items.length); render(); return; } }catch(e){} }
-      tableWrap.innerHTML='<div class="loading"><div class="spinner"></div>Preise werden geladen…</div>';
-      statusEl.textContent='Lade Daten von der DonutSMP-API…'; refreshEl.disabled=true;
+      tableWrap.innerHTML='<div class="loading"><div class="spinner"></div>Loading prices…</div>';
+      statusEl.textContent='Loading data from the DonutSMP API…'; refreshEl.disabled=true;
       try{
         const r=await apiGet();
         const data=await r.json();
         if(data.error) throw new Error(data.error);
-        const _all=(data.items||[]); items=_all.filter(x=>x && x.id && !x.soon && (x.price!=null||x.cheapest1!=null||x.cheapestAny!=null)); const _soon=_all.filter(x=>x && x.soon); var _sw=document.getElementById('soonWrap'); if(_sw){ _sw.innerHTML=_soon.length?('<div class="soon-head">Bald verf\u00fcgbar</div><div class="soon-grid">'+_soon.map(function(it){return '<div class="soon-card"><img src="'+tex(it.id)+'" onerror="this.style.visibility=&#39;hidden&#39;"><span>'+pretty(it.id)+'</span><b>Bald</b></div>';}).join('')+'</div>'):''; }
+        const _all=(data.items||[]); items=_all.filter(x=>x && x.id && !x.soon && (x.price!=null||x.cheapest1!=null||x.cheapestAny!=null)); const _soon=_all.filter(x=>x && x.soon); var _sw=document.getElementById('soonWrap'); if(_sw){ _sw.innerHTML=_soon.length?('<div class="soon-head">Coming soon</div><div class="soon-grid">'+_soon.map(function(it){return '<div class="soon-card"><img src="'+tex(it.id)+'" onerror="this.style.visibility=&#39;hidden&#39;"><span>'+pretty(it.id)+'</span><b>Soon</b></div>';}).join('')+'</div>'):''; }
         const ts=Date.now();
         try{ localStorage.setItem(CACHE_KEY,JSON.stringify({ts,items})); }catch(e){}
         setStatus(ts,items.length); render();
       }catch(err){
-        tableWrap.innerHTML='<div class="error">Konnte die Preise nicht laden.<br><br>Grund: '+err.message+'.</div>';
+        tableWrap.innerHTML='<div class="error">Could not load prices.<br><br>Reason: '+err.message+'.</div>';
         statusEl.textContent='';
       }finally{ refreshEl.disabled=false; }
     }
@@ -248,7 +248,7 @@
 (function(){
   function pof(o){ return o.itemPrice!=null?o.itemPrice:(o.price!=null?o.price:o.pricePerItem); }
   window.paintOrders=function(orders){ var pl=document.getElementById("pList"); if(!pl) return; if(!orders||!orders.length){ pl.innerHTML="<div class=\"empty\">Keine offenen Kauf-Orders. (Der Order-Book ist oft leer.)</div>"; return; } var list=orders.slice().sort(function(a,b){return (pof(b)||0)-(pof(a)||0);}); pl.innerHTML=list.slice(0,50).map(function(o){ var buyer=o.userName||o.user||o.buyer||"?"; var ordered=(o.amountOrdered!=null?o.amountOrdered:o.amount); var delivered=(o.amountDelivered!=null?o.amountDelivered:0); var rem=(ordered!=null)?(ordered-delivered):null; return "<div class=\"lrow\"><div class=\"who\">"+buyer+"<br><small>"+(rem!=null?(fmt(rem)+"× gesucht"):"Kauf-Order")+"</small></div><div class=\"pr\">"+fmt(pof(o))+"<small>pro Stück</small></div></div>"; }).join(""); };
-  renderPanelList=function(){ var it=current; var pl=document.getElementById("pList"); if(!pl) return; if(!it){ pl.innerHTML=""; return; } if(curTab==="ah"){ var list=it.ah||[]; if(!list.length){ pl.innerHTML="<div class=\"empty\">Keine Angebote gefunden.</div>"; return; } pl.innerHTML=list.map(function(e){return "<div class=\"lrow\"><div class=\"who\">"+e.seller+"<br><small>"+e.count+"× Stück</small></div><div class=\"pr\">"+fmt(e.price)+"<small>"+(e.count>1?("je "+fmt(e.price/e.count)):"pro Stück")+"</small></div></div>";}).join(""); return; } pl.innerHTML="<div class=\"empty\">Lade Orders…</div>"; var id=(it.id||"").replace(/^minecraft:/,""); if(it.__ord){ paintOrders(it.__ord); return; } fetch("/api/orders?q="+encodeURIComponent(id)).then(function(r){return r.json();}).then(function(j){ if(current!==it||curTab!=="orders") return; it.__ord=j.orders||[]; paintOrders(it.__ord); }).catch(function(){ var p=document.getElementById("pList"); if(p) p.innerHTML="<div class=\"empty\">Fehler beim Laden der Orders.</div>"; }); };
+  renderPanelList=function(){ var it=current; var pl=document.getElementById("pList"); if(!pl) return; if(!it){ pl.innerHTML=""; return; } if(curTab==="ah"){ var list=it.ah||[]; if(!list.length){ pl.innerHTML="<div class=\"empty\">Keine Angebote gefunden.</div>"; return; } pl.innerHTML=list.map(function(e){return "<div class=\"lrow\"><div class=\"who\">"+e.seller+"<br><small>"+e.count+"× Stück</small></div><div class=\"pr\">"+fmt(e.price)+"<small>"+(e.count>1?("ea. "+fmt(e.price/e.count)):"per unit")+"</small></div></div>";}).join(""); return; } pl.innerHTML="<div class=\"empty\">Loading…</div>"; var id=(it.id||"").replace(/^minecraft:/,""); if(it.__ord){ paintOrders(it.__ord); return; } fetch("/api/orders?q="+encodeURIComponent(id)).then(function(r){return r.json();}).then(function(j){ if(current!==it||curTab!=="orders") return; it.__ord=j.orders||[]; paintOrders(it.__ord); }).catch(function(){ var p=document.getElementById("pList"); if(p) p.innerHTML="<div class=\"empty\">Fehler beim Laden der Orders.</div>"; }); };
   var to=document.getElementById("tabOrders"); if(to) to.textContent="📦 Orders";
 })();
 </script>
@@ -258,10 +258,10 @@
     var it=current; var pl=document.getElementById("pList"); if(!pl) return;
     if(!it){ pl.innerHTML=""; return; }
     var list=(curTab==="ah")?(it.ah||[]):(it.sales||[]);
-    if(!list.length){ pl.innerHTML="<div class=\"empty\">"+(curTab==="ah"?"Keine Angebote im AH.":"Keine AH-Verkäufe gefunden.")+"</div>"; return; }
-    pl.innerHTML=list.map(function(e){ var sub=(curTab==="ah")?(e.count+"× Stück"):(e.count+"× · "+ago(e.time)); var per=(e.count>1?("je "+fmt(e.price/e.count)):"pro Stück"); return "<div class=\"lrow\"><div class=\"who\">"+e.seller+"<br><small>"+sub+"</small></div><div class=\"pr\">"+fmt(e.price)+"<small>"+per+"</small></div></div>"; }).join("");
+    if(!list.length){ pl.innerHTML="<div class=\"empty\">"+(curTab==="ah"?"No offers in the AH.":"No AH sales found.")+"</div>"; return; }
+    pl.innerHTML=list.map(function(e){ var sub=(curTab==="ah")?(e.count+"× units"):(e.count+"× · "+ago(e.time)); var per=(e.count>1?("je "+fmt(e.price/e.count)):"pro Stück"); return "<div class=\"lrow\"><div class=\"who\">"+e.seller+"<br><small>"+sub+"</small></div><div class=\"pr\">"+fmt(e.price)+"<small>"+per+"</small></div></div>"; }).join("");
   };
-  var to=document.getElementById("tabOrders"); if(to) to.textContent="📜 AH (Verkäufe)";
+  var to=document.getElementById("tabOrders"); if(to) to.textContent="📜 AH (Sales)";
 })();
 </script>
 </body>
