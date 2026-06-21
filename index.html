@@ -36,7 +36,7 @@
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
   .tile{position:relative;display:flex;align-items:flex-start;gap:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;transition:transform .18s ease,border-color .2s,background .2s,box-shadow .25s}
   .tile:hover{transform:translateY(-3px);background:var(--card-2);border-color:rgba(255,255,255,.55);box-shadow:0 0 26px rgba(255,255,255,.10),inset 0 0 14px rgba(255,255,255,.05)}
-  .tile .ico{font-size:32px;line-height:1;flex-shrink:0}
+  .tile .ico{width:46px;height:46px;border-radius:12px;background:var(--card-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .tile .body{flex:1;min-width:0;padding-right:18px}
   .tile h3{font-size:18px;font-weight:700;margin-bottom:5px}
   .tile p{color:var(--muted);font-size:14px;line-height:1.5}
@@ -67,17 +67,17 @@
       <div class="label">Tools</div>
       <div class="grid grid-2">
         <a class="tile" href="donutprices.html">
-          <div class="ico">🍩</div>
+          <div class="ico"><svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.8 4H25a3 3 0 0 1 3 3v8.2a3 3 0 0 1-.88 2.12l-9.8 9.8a3 3 0 0 1-4.24 0l-7.2-7.2a3 3 0 0 1 0-4.24l9.8-9.8A3 3 0 0 1 16.8 4Z" fill="#2a230f" stroke="#ffcf5f" stroke-width="2" stroke-linejoin="round"/><circle cx="21.8" cy="10.2" r="2" fill="#ffcf5f"/></svg></div>
           <div class="body"><h3>DonutSMP Prices</h3><p>Live auction house prices — searchable and sortable, with per-item price, offers and recent sales.</p></div>
           <span class="arrow">→</span>
         </a>
         <a class="tile" href="playerstats.html">
-          <div class="ico">📊</div>
+          <div class="ico"><svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="18" width="5.5" height="9" rx="1.6" fill="#5bd99a"/><rect x="13.2" y="12" width="5.5" height="15" rx="1.6" fill="#6ba8ff"/><rect x="21.5" y="6.5" width="5.5" height="20.5" rx="1.6" fill="#ff7eb6"/></svg></div>
           <div class="body"><h3>Player Stats</h3><p>Search a player to see money, shards, K/D, playtime and more.</p></div>
           <span class="arrow">→</span>
         </a>
         <a class="tile" href="spawner.html">
-          <div class="ico">&#129518;</div>
+          <div class="ico"><svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5.5" y="5.5" width="21" height="21" rx="4" fill="#10201a" stroke="#5bd99a" stroke-width="2"/><path d="M11 6V26M16 6V26M21 6V26M6 11H26M6 16H26M6 21H26" stroke="#5bd99a" stroke-opacity=".3" stroke-width="1"/><circle cx="16" cy="16" r="3.2" fill="#5bd99a"/></svg></div>
           <div class="body"><h3>Spawner Calculator</h3><p>Calculate spawner drops and profit per hour, with the production curve and diminishing returns.</p></div>
           <span class="arrow">&rarr;</span>
         </a>
@@ -88,7 +88,7 @@
       <div class="label">Games</div>
       <div class="grid">
         <a class="tile" href="coinflip.html">
-          <div class="ico">🪙</div>
+          <div class="ico"><svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.5 9.5 A11 11 0 0 1 24.5 7.8" fill="none" stroke="#b8bccc" stroke-width="1.8" stroke-linecap="round"/><path d="M25.4 4.2 L25.2 9 L21 7.2 Z" fill="#b8bccc"/><circle cx="16" cy="18" r="8.6" fill="#ffcf5f" stroke="#c9971f" stroke-width="1.6"/><circle cx="16" cy="18" r="5" fill="none" stroke="#c9971f" stroke-width="1.2" stroke-opacity=".55"/></svg></div>
           <div class="body"><h3>Coin Flip</h3><p>Heads or tails? Flip the coin and track your stats.</p></div>
           <span class="arrow">→</span>
         </a>
