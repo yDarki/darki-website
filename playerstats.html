@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Playerstats</title>
+<title>Player Stats</title>
 <style>
   :root{ --bg:#0a0a0f; --card:#15151f; --card-2:#1b1b28; --text:#f2f2f7; --muted:#8c8ca3; --accent:#5bd2ff; --accent-2:#7b5bff; --green:#5bd99a; --border:rgba(255,255,255,.08); }
   *{margin:0;padding:0;box-sizing:border-box}
@@ -41,12 +41,12 @@
   <div class="glow"></div>
   <div class="wrap">
     <a class="back" href="index.html">← Dashboard</a>
-    <h1>🎮 <span class="grad">Playerstats</span></h1>
-    <p class="sub">Suche einen DonutSMP-Spieler und sieh Geld, Shards, K/D, Spielzeit und mehr.</p>
+    <h1>🎮 <span class="grad">Player Stats</span></h1>
+    <p class="sub">Search a DonutSMP player to see their money, shards, K/D, playtime and more.</p>
     <div class="toolbar">
-      <input class="search" id="name" placeholder="Spielername… (z. B. Ikeacpvp)" />
-      <button class="btn" id="go">Suchen</button>
-      <button class="btn" id="refresh">🔄 Aktualisieren</button>
+      <input class="search" id="name" placeholder="Player name… (e.g. Ikeacpvp)" />
+      <button class="btn" id="go">Search</button>
+      <button class="btn" id="refresh">🔄 Refresh</button>
     </div>
     <div id="out"></div>
   </div>
@@ -59,31 +59,31 @@
     function card(lbl,val,sub,cls){ return '<div class="stat"><div class="lbl">'+lbl+'</div><div class="val '+(cls||'')+'">'+val+'</div>'+(sub?'<div class="sub2">'+sub+'</div>':'')+'</div>'; }
     async function search(force){
       const name=nameEl.value.trim(); if(!name) return;
-      out.innerHTML='<div class="msg"><div class="spinner"></div>Lade Statistiken…</div>'; goEl.disabled=true;
+      out.innerHTML='<div class="msg"><div class="spinner"></div>Loading stats…</div>'; goEl.disabled=true;
       try{
         const r=await fetch(API+'?name='+encodeURIComponent(name)+(force?'&_='+Date.now():'')); const j=await r.json();
         const s=j.stats;
-        if(!s || s.money===undefined){ out.innerHTML='<div class="msg err">Spieler „'+name+'" nicht gefunden oder keine Daten.</div>'; return; }
+        if(!s || s.money===undefined){ out.innerHTML='<div class="msg err">Player "'+name+'" not found, or no data.</div>'; return; }
         const money=+s.money, shards=+s.shards, kills=+s.kills, deaths=+s.deaths;
         const kd= deaths>0 ? (kills/deaths).toFixed(2) : String(kills);
         const lk=j.lookup||{};
         const online = (lk.location) ? ('Online · '+lk.location) : ((lk.username||lk.rank) ? 'Online' : 'Offline');
-        let h='<div class="phead"><img src="https://minotar.net/helm/'+encodeURIComponent(name)+'/64.png" alt=""><div><div class="nm">'+name+'</div><div class="meta">'+online+' · Stand '+new Date().toLocaleTimeString('de-DE')+'</div></div></div>';
+        let h='<div class="phead"><img src="https://minotar.net/helm/'+encodeURIComponent(name)+'/64.png" alt=""><div><div class="nm">'+name+'</div><div class="meta">'+online+' · updated '+new Date().toLocaleTimeString('de-DE')+'</div></div></div>';
         h+='<div class="grid">';
-        h+=card('Geld', abbr(money), de(money)+' $', 'money');
+        h+=card('Money', abbr(money), de(money)+' $', 'money');
         h+=card('Shards', de(shards));
         h+=card('Kills', de(kills));
         h+=card('Deaths', de(deaths));
         h+=card('K/D', kd);
-        h+=card('Spielzeit', playtime(+s.playtime));
-        h+=card('Blöcke abgebaut', de(+s.broken_blocks));
-        h+=card('Blöcke platziert', de(+s.placed_blocks));
-        h+=card('Mobs getötet', de(+s.mobs_killed));
-        h+=card('Im Shop ausgegeben', abbr(+s.money_spent_on_shop), de(+s.money_spent_on_shop)+' $');
-        h+=card('Mit /sell verdient', abbr(+s.money_made_from_sell), de(+s.money_made_from_sell)+' $');
+        h+=card('Playtime', playtime(+s.playtime));
+        h+=card('Blocks mined', de(+s.broken_blocks));
+        h+=card('Blocks placed', de(+s.placed_blocks));
+        h+=card('Mobs killed', de(+s.mobs_killed));
+        h+=card('Spent in shop', abbr(+s.money_spent_on_shop), de(+s.money_spent_on_shop)+' $');
+        h+=card('Earned via /sell', abbr(+s.money_made_from_sell), de(+s.money_made_from_sell)+' $');
         h+='</div>';
         out.innerHTML=h;
-      }catch(e){ out.innerHTML='<div class="msg err">Fehler beim Laden: '+e.message+'</div>'; }
+      }catch(e){ out.innerHTML='<div class="msg err">Error loading: '+e.message+'</div>'; }
       finally{ goEl.disabled=false; }
     }
     goEl.addEventListener('click',()=>search(false));
