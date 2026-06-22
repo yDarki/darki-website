@@ -308,6 +308,12 @@
   .ovl-row .pr{font-weight:800;color:var(--green);font-variant-numeric:tabular-nums;text-align:right;font-size:13px;white-space:nowrap}
   .ovl-row .pr small{display:block;color:var(--muted);font-weight:500}
   .ovl-empty{color:var(--muted);text-align:center;padding:24px;font-size:13px;margin:auto}
+  .ovl-range{display:none;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap}
+  .ovl-range.show{display:flex}
+  .ovl-range button{background:#1a1a28;border:1px solid rgba(255,255,255,.1);color:#8b8ba0;font-size:12px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer}
+  .ovl-range button:hover{color:#f3f3f7}
+  .ovl-range button.on{background:#2a2a3d;color:#f3f3f7;border-color:rgba(255,255,255,.22)}
+  .ovl-range input{width:62px;background:#1a1a28;border:1px solid rgba(255,255,255,.1);color:#f3f3f7;border-radius:8px;padding:5px 8px;font-size:12px;outline:none}
   .ovl-cap.row{display:flex;align-items:center;gap:8px}
   .ovl-exp{margin-left:auto;background:#1a1a28;border:1px solid rgba(255,255,255,.10);color:#b8bccc;width:30px;height:30px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.18s;padding:0}
   .ovl-exp:hover{color:#fff;border-color:rgba(255,255,255,.32)}
@@ -340,6 +346,7 @@
     </div>
     <div class="ovl-right">
       <div class="ovl-cap row"><span id="ovlGCap">Price history &middot; per unit</span> <button class="ovl-exp" id="ovlExpand" title="Enlarge" aria-label="Enlarge graph"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg></button></div>
+      <div class="ovl-range" id="ovlRange"><button type="button" data-r="3600000">1h</button><button type="button" data-r="86400000">1d</button><button type="button" data-r="604800000" class="on">1w</button><button type="button" data-r="custom">Custom</button><input id="ovlRangeCustom" class="hidden" type="number" min="1" max="168" placeholder="h"></div>
       <div class="ovl-graph" id="ovlGraph"></div>
     </div>
   </div>
@@ -356,44 +363,50 @@
   var ovlGraph=document.getElementById('ovlGraph');
   var ovlList=document.getElementById('ovlList');
   var ovlGCap=document.getElementById('ovlGCap');
+  var ovlRange=document.getElementById('ovlRange');
+  var ovlRangeCustom=document.getElementById('ovlRangeCustom');
   var tOff=document.getElementById('ovlTabOffers');
   var tSal=document.getElementById('ovlTabSales');
-  var curItem=null, curTabO='offers', salesSeries=[];
+  var curItem=null, curTabO='offers', salesSeries=[], rangeMs=604800000;
   function fmt(n){ return (n==null)?'-':Math.round(n).toLocaleString('en-US'); }
+  function pad(n){ return (n<10?'0':'')+n; }
   function ago(ts){ if(!ts) return '-'; var s=Math.floor((Date.now()-ts)/1000); if(s<60)return 'just now'; var m=Math.floor(s/60); if(m<60)return m+'m ago'; var h=Math.floor(m/60); if(h<24)return h+'h ago'; return Math.floor(h/24)+'d ago'; }
-  function setTab(which){ curTabO=which; tOff.classList.toggle('active',which==='offers'); tSal.classList.toggle('active',which==='sales'); renderList(); drawForTab(); }
+  function fmtTick(t){ var d=new Date(t); if(rangeMs<=129600000) return pad(d.getHours())+':'+pad(d.getMinutes()); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+  function setTab(which){ curTabO=which; tOff.classList.toggle('active',which==='offers'); tSal.classList.toggle('active',which==='sales'); if(ovlRange) ovlRange.classList.toggle('show', which==='sales'); renderList(); drawForTab(); }
   tOff.onclick=function(){ setTab('offers'); };
   tSal.onclick=function(){ setTab('sales'); };
-  function renderList(){
-    var it=curItem; if(!it){ ovlList.innerHTML=''; return; }
-    var list = curTabO==='offers' ? (it.ah||[]) : (it.sales||[]);
-    if(!list.length){ ovlList.innerHTML='<div class="ovl-empty">'+(curTabO==='offers'?'No offers in the AH.':'No AH sales found.')+'</div>'; return; }
-    ovlList.innerHTML=list.map(function(e){ var c=e.count||1; var per=(c>1?('ea. '+fmt(e.price/c)):'per unit'); var sub=curTabO==='offers'?(c+'x units'):(c+'x \u00b7 '+ago(e.time)); return '<div class="ovl-row"><div class="who">'+e.seller+'<br><small>'+sub+'</small></div><div class="pr">'+fmt(e.price)+'<small>'+per+'</small></div></div>'; }).join('');
-  }
-  function svgGraph(points, W, H, xType){
+  function renderList(){ var it=curItem; if(!it){ ovlList.innerHTML=''; return; } var list = curTabO==='offers' ? (it.ah||[]) : (it.sales||[]); if(!list.length){ ovlList.innerHTML='<div class="ovl-empty">'+(curTabO==='offers'?'No offers in the AH.':'No AH sales found.')+'</div>'; return; } ovlList.innerHTML=list.map(function(e){ var c=e.count||1; var per=(c>1?('ea. '+fmt(e.price/c)):'per unit'); var sub=curTabO==='offers'?(c+'x units'):(c+'x \u00b7 '+ago(e.time)); return '<div class="ovl-row"><div class="who">'+e.seller+'<br><small>'+sub+'</small></div><div class="pr">'+fmt(e.price)+'<small>'+per+'</small></div></div>'; }).join(''); }
+  function svgGraph(points, W, H, xType, opts){
     if(!points||points.length<2) return null;
     var padL=58,padR=16,padT=18,padB=30;
-    var xs=points.map(function(p){return p.x;}), ys=points.map(function(p){return p.y;});
-    var x0=Math.min.apply(null,xs), x1=Math.max.apply(null,xs);
+    var ys=points.map(function(p){return p.y;});
     var y0=Math.min.apply(null,ys), y1=Math.max.apply(null,ys); if(y1===y0){y1=y0+1;}
-    var sx=function(x){ return padL+(x1===x0?0:(x-x0)/(x1-x0))*(W-padL-padR); };
+    var X0,X1; if(opts&&opts.x0!=null){ X0=opts.x0; X1=opts.x1; } else { var xs=points.map(function(p){return p.x;}); X0=Math.min.apply(null,xs); X1=Math.max.apply(null,xs); }
+    var sx=function(x){ return padL+(X1===X0?0:(x-X0)/(X1-X0))*(W-padL-padR); };
     var sy=function(y){ return padT+(1-(y-y0)/(y1-y0))*(H-padT-padB); };
     var d=''; points.forEach(function(p,i){ d+=(i?' L':'M')+sx(p.x).toFixed(1)+' '+sy(p.y).toFixed(1); });
     var area='M'+sx(points[0].x).toFixed(1)+' '+(H-padB)+' '+d.replace(/^M/,'L')+' L'+sx(points[points.length-1].x).toFixed(1)+' '+(H-padB)+' Z';
     var grid=''; for(var g=0;g<=3;g++){ var gy=padT+(g/3)*(H-padT-padB); var gv=y1-(g/3)*(y1-y0); grid+='<line x1="'+padL+'" y1="'+gy.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+gy.toFixed(1)+'" stroke="rgba(255,255,255,.07)"/>'; grid+='<text x="'+(padL-8)+'" y="'+(gy+4).toFixed(1)+'" fill="#8b8ba0" font-size="10" text-anchor="end">'+fmt(gv)+'</text>'; }
     var up=points[points.length-1].y>=points[0].y; var col=up?'#5bd99a':'#ff6b6b';
     var dots=''; points.forEach(function(p){ dots+='<circle cx="'+sx(p.x).toFixed(1)+'" cy="'+sy(p.y).toFixed(1)+'" r="2.6" fill="'+col+'"/>'; });
-    var xlab; if(xType==='time'){ xlab='<text x="'+padL+'" y="'+(H-7)+'" fill="#8b8ba0" font-size="10">'+new Date(x0).toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</text><text x="'+(W-padR)+'" y="'+(H-7)+'" fill="#8b8ba0" font-size="10" text-anchor="end">'+new Date(x1).toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</text>'; } else { xlab='<text x="'+padL+'" y="'+(H-7)+'" fill="#8b8ba0" font-size="10">cheapest</text><text x="'+(W-padR)+'" y="'+(H-7)+'" fill="#8b8ba0" font-size="10" text-anchor="end">'+points.length+' offers</text>'; }
+    var xlab='';
+    if(opts&&opts.ticks){ xlab=opts.ticks.map(function(tk){ var x=sx(tk.x); var anc=(x<padL+14)?'start':((x>W-padR-14)?'end':'middle'); return '<line x1="'+x.toFixed(1)+'" y1="'+padT+'" x2="'+x.toFixed(1)+'" y2="'+(H-padB)+'" stroke="rgba(255,255,255,.05)"/><text x="'+x.toFixed(1)+'" y="'+(H-7)+'" fill="#8b8ba0" font-size="10" text-anchor="'+anc+'">'+tk.label+'</text>'; }).join(''); }
+    else if(xType==='index'){ xlab='<text x="'+padL+'" y="'+(H-7)+'" fill="#8b8ba0" font-size="10">cheapest</text><text x="'+(W-padR)+'" y="'+(H-7)+'" fill="#8b8ba0" font-size="10" text-anchor="end">'+points.length+' offers</text>'; }
     return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ovlfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+col+'" stop-opacity=".26"/><stop offset="100%" stop-color="'+col+'" stop-opacity="0"/></linearGradient></defs>'+grid+'<path d="'+area+'" fill="url(#ovlfill)"/><path d="'+d+'" fill="none" stroke="'+col+'" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 5px '+col+'88)"/>'+dots+xlab+'</svg>';
   }
   function offerPoints(){ var it=curItem; if(!it||!it.ah) return []; var arr=it.ah.map(function(e){ return Math.round(e.price/(e.count||1)); }).sort(function(a,b){return a-b;}); return arr.map(function(p,i){ return {x:i+1,y:p}; }); }
-  function salesPoints(){ return salesSeries.map(function(p){ return {x:p.t,y:p.p}; }); }
   function drawInto(el, big){
     var W=big?1040:560, H=big?460:240;
-    if(curTabO==='offers'){ var pts=offerPoints(); if(pts.length<2){ el.innerHTML='<div class="ovl-empty">'+(pts.length?('Only '+pts.length+' current offer ('+fmt(pts[0].y)+'/unit)'):'No current offers.')+'</div>'; return; } el.innerHTML=svgGraph(pts,W,H,'index'); }
-    else { var sp=salesPoints(); if(sp.length<2){ el.innerHTML='<div class="ovl-empty">Not enough sales history yet \u2014 it fills in over time.</div>'; return; } el.innerHTML=svgGraph(sp,W,H,'time'); }
+    if(curTabO==='offers'){ var pts=offerPoints(); if(pts.length<2){ el.innerHTML='<div class="ovl-empty">'+(pts.length?('Only '+pts.length+' current offer ('+fmt(pts[0].y)+'/unit)'):'No current offers.')+'</div>'; return; } el.innerHTML=svgGraph(pts,W,H,'index'); return; }
+    var now=Date.now(), x0=now-rangeMs;
+    var sp=salesSeries.filter(function(p){return p.t>=x0;}).map(function(p){return {x:p.t,y:p.p};});
+    if(sp.length<2){ el.innerHTML='<div class="ovl-empty">Not enough sales history in this range yet \u2014 it fills in over time.</div>'; return; }
+    var ticks=[]; for(var k=0;k<=3;k++){ var tt=x0+(k/3)*(now-x0); ticks.push({x:tt,label:fmtTick(tt)}); }
+    el.innerHTML=svgGraph(sp,W,H,'time',{x0:x0,x1:now,ticks:ticks});
   }
   function drawForTab(){ if(ovlGCap) ovlGCap.textContent=(curTabO==='offers'?'Current offers \u00b7 per unit':'Sales history \u00b7 per unit'); drawInto(ovlGraph,false); }
+  if(ovlRange){ ovlRange.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ ovlRange.querySelectorAll('button').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); if(b.getAttribute('data-r')==='custom'){ ovlRangeCustom.classList.remove('hidden'); ovlRangeCustom.focus(); var h=parseFloat(ovlRangeCustom.value); if(!isNaN(h)&&h>0) rangeMs=Math.min(h,168)*3600000; } else { ovlRangeCustom.classList.add('hidden'); rangeMs=parseFloat(b.getAttribute('data-r')); } drawForTab(); }; });
+    ovlRangeCustom.addEventListener('input',function(){ var h=parseFloat(this.value); if(isNaN(h)||h<=0) return; if(h>168){h=168;this.value=168;} rangeMs=h*3600000; drawForTab(); }); }
   window.openItemOverlay=function(it){
     curItem=it;
     document.getElementById('ovlNm').textContent=pretty(it.id);
