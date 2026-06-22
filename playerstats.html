@@ -92,7 +92,7 @@
       try{
         const r=await fetch(API+'?name='+encodeURIComponent(name)+(force?'&_='+Date.now():'')); const j=await r.json();
         const s=j.stats;
-        if((j.statsStatus&&j.statsStatus>=500)||(j.lookupStatus&&j.lookupStatus>=500)){ out.innerHTML='<div class="msg err"><b>DonutSMP API unavailable</b><br><small>The DonutSMP server API is down right now (not the site). Try again shortly.</small></div>'; return; }
+        if(j.statsStatus&&j.statsStatus>=500){ out.innerHTML='<div class="msg err"><b>DonutSMP API unavailable</b><br><small>The DonutSMP server API is down right now (not the site). Try again shortly.</small></div>'; return; }
         if(!s || s.money===undefined){ out.innerHTML='<div class="msg err">Player "'+name+'" not found, or no data.</div>'; return; }
         const money=+s.money, shards=+s.shards, kills=+s.kills, deaths=+s.deaths;
         const kd= deaths>0 ? (kills/deaths).toFixed(2) : String(kills);
