@@ -422,12 +422,12 @@
     var img=document.getElementById('ovlImg'); img.src=tex(it.id); img.onerror=function(){this.style.visibility='hidden';};
     document.getElementById('ovlMeta').textContent='~ '+fmt(priceOf(it))+' / each \u00b7 '+it.listings+' offers';
     var so=(it.sales||[]).filter(function(s){return s.time;}).map(function(s){return {t:s.time,p:Math.round(s.price/(s.count||1))};}).sort(function(a,b){return a.t-b.t;});
-    saleSeries=so; var co=curOffer(); offerSeries=(co!=null)?[{t:Date.now(),p:co}]:[];
+    saleSeries=so; offerSeries=[];
     if(ovlRange) ovlRange.classList.add('show');
     setTab('offers');
     ovl.classList.add('open');
     var id=(it.id||'').replace(/^minecraft:/,'');
-    fetch('/api/donut?history='+encodeURIComponent(id)).then(function(r){return r.json();}).then(function(j){ if(curItem!==it) return; var pts=(j.points||[]); var hO=pts.filter(function(p){return p.o!=null;}).map(function(p){return {t:p.t,p:p.o};}); var hS=pts.filter(function(p){return p.s!=null;}).map(function(p){return {t:p.t,p:p.s};}); offerSeries=hO.concat(co!=null?[{t:Date.now(),p:co}]:[]).sort(function(a,b){return a.t-b.t;}); saleSeries=hS.concat(so).sort(function(a,b){return a.t-b.t;}); drawForTab(); }).catch(function(){});
+    fetch('/api/donut?history='+encodeURIComponent(id)).then(function(r){return r.json();}).then(function(j){ if(curItem!==it) return; var pts=(j.points||[]); var hO=pts.filter(function(p){return p.o!=null;}).map(function(p){return {t:p.t,p:p.o};}); var hS=pts.filter(function(p){return p.s!=null;}).map(function(p){return {t:p.t,p:p.s};}); offerSeries=hO.sort(function(a,b){return a.t-b.t;}); saleSeries=hS.concat(so).sort(function(a,b){return a.t-b.t;}); drawForTab(); }).catch(function(){});
   };
   function closeOvl(){ ovl.classList.remove('open'); curItem=null; hideTip(); }
   document.getElementById('ovlX').onclick=closeOvl;
