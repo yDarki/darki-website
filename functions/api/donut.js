@@ -159,7 +159,7 @@ export async function onRequest(context) {
       }
     }
     for (const cfg of WATCH) { if (cfg.soon) items.push({ id: 'minecraft:' + cfg.id, soon: true, listings: 0, unit: null, soldUnit: null, price: null, lastSold: null, cheapest1: null, cheapestAny: null, ah: [], sales: [] }); }
-    try { const skv = env.PRICE_HISTORY; if (skv) { const raw = await skv.get('series'); let series = raw ? JSON.parse(raw) : []; const last = series.length ? series[series.length - 1].t : 0; if (Date.now() - last > 290000) { const pm = {}; for (const it of items) { const sid = it.id.replace('minecraft:', ''); if (it.price != null) pm[sid] = it.price; } series.push({ t: Date.now(), p: pm }); if (series.length > 1000) series = series.slice(series.length - 1000); await skv.put('series', JSON.stringify(series)); } } } catch (e) {}
+    try { const skv = env.PRICE_HISTORY; if (skv) { const raw = await skv.get('series'); let series = raw ? JSON.parse(raw) : []; const last = series.length ? series[series.length - 1].t : 0; if (Date.now() - last > 290000) { const pm = {}; for (const it of items) { const sid = it.id.replace('minecraft:', ''); if (it.price != null) pm[sid] = it.price; } series.push({ t: Date.now(), p: pm }); if (series.length > 2100) series = series.slice(series.length - 2100); await skv.put('series', JSON.stringify(series)); } } } catch (e) {}
     const body = JSON.stringify({ lastUpdated: Date.now(), ver: 'listing-v2', watchlist: WATCH.length, salesScanned: tx.length, items: items });
     return new Response(body, { status: 200, headers: cors });
   } catch (e) { return new Response(JSON.stringify({ error: String(e) }), { status: 502, headers: cors }); }
