@@ -1,0 +1,13 @@
+name: Price history ping
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping price API (triggers KV sampling)
+        run: curl -s -m 30 "https://donutsmpstats.com/api/donut?cron=1&t=$(date +%s)" -o /dev/null
