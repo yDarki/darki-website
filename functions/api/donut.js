@@ -19,7 +19,7 @@ export async function onRequest(context) {
     const hcors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=120' };
     const hkv = env.PRICE_HISTORY;
     if (!hkv) return new Response(JSON.stringify({ id: hid, points: [], note: 'no-kv' }), { status: 200, headers: hcors });
-    try { const raw = await hkv.get('series'); const series = raw ? JSON.parse(raw) : []; const points = series.map(s => ({ t: s.t, p: (s.p && s.p[hid] != null) ? s.p[hid] : null })).filter(x => x.p != null); return new Response(JSON.stringify({ id: hid, points: points }), { status: 200, headers: hcors }); } catch (e) { return new Response(JSON.stringify({ id: hid, points: [], error: String(e) }), { status: 200, headers: hcors }); }
+    try { const raw = await hkv.get('series'); const series = raw ? JSON.parse(raw) : []; const points = series.map(s => { var v = (s.p && s.p[hid] != null) ? s.p[hid] : null; if (v == null) return null; if (typeof v === "number") return { t: s.t, o: v, s: null }; return { t: s.t, o: (v.o != null ? v.o : null), s: (v.s != null ? v.s : null) }; }).filter(x => x && (x.o != null || x.s != null)); return new Response(JSON.stringify({ id: hid, points: points }), { status: 200, headers: hcors }); } catch (e) { return new Response(JSON.stringify({ id: hid, points: [], error: String(e) }), { status: 200, headers: hcors }); }
   }
   const median = (a) => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 
@@ -159,7 +159,7 @@ export async function onRequest(context) {
       }
     }
     for (const cfg of WATCH) { if (cfg.soon) items.push({ id: 'minecraft:' + cfg.id, soon: true, listings: 0, unit: null, soldUnit: null, price: null, lastSold: null, cheapest1: null, cheapestAny: null, ah: [], sales: [] }); }
-    try { const skv = env.PRICE_HISTORY; if (skv) { const raw = await skv.get('series'); let series = raw ? JSON.parse(raw) : []; const last = series.length ? series[series.length - 1].t : 0; if (Date.now() - last > 290000) { const pm = {}; for (const it of items) { const sid = it.id.replace('minecraft:', ''); if (it.price != null) pm[sid] = it.price; } series.push({ t: Date.now(), p: pm }); if (series.length > 2100) series = series.slice(series.length - 2100); await skv.put('series', JSON.stringify(series)); } } } catch (e) {}
+    try { const skv = env.PRICE_HISTORY; if (skv) { const raw = await skv.get('series'); let series = raw ? JSON.parse(raw) : []; const last = series.length ? series[series.length - 1].t : 0; if (Date.now() - last > 290000) { const pm = {}; for (const it of items) { const sid = it.id.replace('minecraft:', ''); var _o=(it.unit!=null?it.unit:null); var _s=(it.lastSold?it.lastSold.unit:null); if (_o!=null || _s!=null) pm[sid] = {o:_o,s:_s}; } series.push({ t: Date.now(), p: pm }); if (series.length > 2100) series = series.slice(series.length - 2100); await skv.put('series', JSON.stringify(series)); } } } catch (e) {}
     const body = JSON.stringify({ lastUpdated: Date.now(), ver: 'listing-v2', watchlist: WATCH.length, salesScanned: tx.length, items: items });
     return new Response(body, { status: 200, headers: cors });
   } catch (e) { return new Response(JSON.stringify({ error: String(e) }), { status: 502, headers: cors }); }
