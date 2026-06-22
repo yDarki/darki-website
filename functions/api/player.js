@@ -17,7 +17,7 @@ export async function onRequest(context) {
 
   if (url.searchParams.get('ping')) {
     try {
-      const r = await fetch(base + 'stats/Notch', { headers: auth });
+      const r = await fetch(base + 'leaderboards/money/1', { headers: auth });
       return new Response(JSON.stringify({ up: r.status < 500, status: r.status }), { status: 200, headers: cors });
     } catch (e) {
       return new Response(JSON.stringify({ up: false, status: 0, error: String(e) }), { status: 200, headers: cors });
