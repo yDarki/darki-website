@@ -14,6 +14,7 @@ export async function onRequest(context) {
   const postHeaders = { Authorization: 'Bearer ' + token, Accept: 'application/json', 'Content-Type': 'application/json' };
   const base = 'https://api.donutsmp.net/v1/';
   const url = new URL(request.url);
+  if (url.searchParams.get('reset') && env.DONUT_TOKEN && url.searchParams.get('reset') === env.DONUT_TOKEN) { try { const kv = env.PRICE_HISTORY; if (kv) await kv.put('series', '[]'); return new Response(JSON.stringify({ reset: true }), { status: 200, headers: { 'Content-Type': 'application/json' } }); } catch (e) { return new Response(JSON.stringify({ reset: false, error: String(e) }), { status: 200, headers: { 'Content-Type': 'application/json' } }); } }
   if (url.searchParams.get('history')) {
     const hid = url.searchParams.get('history');
     const hcors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=120' };
@@ -155,7 +156,17 @@ export async function onRequest(context) {
             sales.push({ seller: (t.seller && t.seller.name) || '?', price: t.price, count: it.count || 1, time: t.unixMillisDateSold || 0 });
           }
         }
-        const soldUnits = sales.map(s => (s.count > 0 ? s.price / s.count : s.price)); const soldU = soldUnits.length ? Math.round(Math.min.apply(null, soldUnits)) : null; sales.sort((a, b) => b.time - a.time); const last = sales[0] || null; const listUnit = (unit === null ? null : Math.round(unit)); const medSold = (soldUnits.length >= 3 ? median(soldUnits) : null); const approx = (medSold !== null ? medSold : listUnit); items.push({ id: 'minecraft:' + cfg.id, listings: listings.length, unit: listUnit, soldUnit: soldU, soldCount: soldUnits.length, price: (approx === null ? null : Math.round(approx)), lastSold: (last ? { unit: Math.round(last.price / (last.count || 1)), time: last.time } : null), cheapest1: cheapest1, cheapestAny: cheapestAny, ah: ah.slice(0, 12), sales: sales.slice(0, 12) });
+        const sUnits = sales.map(s => ({ per: (s.count > 0 ? s.price / s.count : s.price), count: (s.count || 1) }));
+        const soldUnits = sUnits.map(x => x.per);
+        const soldU = soldUnits.length ? Math.round(Math.min.apply(null, soldUnits)) : null;
+        sales.sort((a, b) => b.time - a.time);
+        const last = sales[0] || null;
+        const lus = listUnits.slice().sort((a, b) => a - b);
+        const cluster = lus.length ? median(lus.slice(0, Math.min(5, lus.length))) : null;
+        const listUnit = (cluster === null ? null : Math.round(cluster));
+        let medSold = null;
+        if (sUnits.length >= 3) { const a = sUnits.slice().sort((x, y) => x.per - y.per); const cut = Math.floor(a.length * 0.15); let mid = a.slice(cut, a.length - cut); if (!mid.length) mid = a; let sp = 0, sc = 0; for (const z of mid) { sp += z.per * z.count; sc += z.count; } medSold = sc > 0 ? Math.round(sp / sc) : null; }
+        const approx = (medSold !== null ? medSold : listUnit); items.push({ id: 'minecraft:' + cfg.id, listings: listings.length, unit: listUnit, soldUnit: soldU, soldCount: soldUnits.length, price: (approx === null ? null : Math.round(approx)), lastSold: (last ? { unit: Math.round(last.price / (last.count || 1)), time: last.time } : null), cheapest1: cheapest1, cheapestAny: cheapestAny, ah: ah.slice(0, 12), sales: sales.slice(0, 12) });
       }
     }
     for (const cfg of WATCH) { if (cfg.soon) items.push({ id: 'minecraft:' + cfg.id, soon: true, listings: 0, unit: null, soldUnit: null, price: null, lastSold: null, cheapest1: null, cheapestAny: null, ah: [], sales: [] }); }
