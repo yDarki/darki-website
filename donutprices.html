@@ -312,8 +312,11 @@
   .ovl-range input{width:62px;background:#1a1a28;border:1px solid rgba(255,255,255,.1);color:#f3f3f7;border-radius:8px;padding:5px 8px;font-size:12px;outline:none}
   .ovl-range input.hidden{display:none}
   .ovl-cap.row{display:flex;align-items:center;gap:8px}
-  .ovl-exp{margin-left:auto;background:#1a1a28;border:1px solid rgba(255,255,255,.10);color:#b8bccc;width:30px;height:30px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.18s;padding:0}
+  .ovl-exp{background:#1a1a28;border:1px solid rgba(255,255,255,.10);color:#b8bccc;width:30px;height:30px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.18s;padding:0}
   .ovl-exp:hover{color:#fff;border-color:rgba(255,255,255,.32)}
+  .ovl-rf{margin-left:auto}
+  .ovl-rf.spin svg{animation:ovlspin .8s linear infinite}
+  @keyframes ovlspin{to{transform:rotate(360deg)}}
   .ovlbig{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:28px;background:rgba(6,6,10,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .2s}
   .ovlbig.open{opacity:1;pointer-events:auto}
   .ovlbig-card{width:min(1080px,96vw);background:#0b0b12;border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:24px;position:relative}
@@ -343,7 +346,7 @@
     </div>
     <div class="ovl-right">
       <div class="ovl-cap"><span id="ovlGCap">Price history &middot; per unit</span></div>
-      <div class="ovl-range" id="ovlRange"><button type="button" data-r="604800000" class="on">1w</button><button type="button" data-r="86400000">1d</button><button type="button" data-r="3600000">1h</button><button type="button" data-r="custom">Custom</button><input id="ovlRangeCustom" class="hidden" type="number" min="1" max="168" placeholder="h"><button class="ovl-exp" id="ovlExpand" title="Enlarge" aria-label="Enlarge graph"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg></button></div>
+      <div class="ovl-range" id="ovlRange"><button type="button" data-r="604800000" class="on">1w</button><button type="button" data-r="86400000">1d</button><button type="button" data-r="3600000">1h</button><button type="button" data-r="custom">Custom</button><input id="ovlRangeCustom" class="hidden" type="number" min="1" max="168" placeholder="h"><button class="ovl-exp ovl-rf" id="ovlRefresh" title="Refresh" aria-label="Refresh data"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button><button class="ovl-exp" id="ovlExpand" title="Enlarge" aria-label="Enlarge graph"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg></button></div>
       <div class="ovl-graph" id="ovlGraph"></div>
     </div>
   </div>
@@ -444,6 +447,8 @@
   var bx=document.getElementById('ovlBigX'); if(bx) bx.onclick=function(){ ovlBig.classList.remove('open'); hideTip(); };
   if(ovlBig) ovlBig.addEventListener('click',function(e){ if(e.target===ovlBig){ ovlBig.classList.remove('open'); hideTip(); } });
   document.addEventListener('keydown',function(e){ if(e.key==='Escape' && ovlBig && ovlBig.classList.contains('open')){ ovlBig.classList.remove('open'); hideTip(); } });
+  function refreshItem(){ if(!curItem) return; var id=curItem.id; var sid=id.replace('minecraft:',''); var rb=document.getElementById('ovlRefresh'); if(rb) rb.classList.add('spin'); fetch('/api/donut?_='+Date.now()).then(function(r){return r.json();}).then(function(data){ var arr=(data.items||[]); try{ if(typeof items!=='undefined' && Array.isArray(items)){ items.length=0; for(var i=0;i<arr.length;i++) items.push(arr[i]); try{localStorage.setItem('donutPricesV3',JSON.stringify({ts:Date.now(),items:arr}));}catch(e1){} if(typeof render==='function') render(); } }catch(e2){} var fresh=arr.filter(function(x){return x.id===id;})[0]; if(fresh){ curItem=fresh; var mt=document.getElementById('ovlMeta'); if(mt) mt.textContent='~ '+fmt(priceOf(fresh))+' / each \u00b7 '+fresh.listings+' offers'; } var so=((curItem.sales)||[]).filter(function(s){return s.time;}).map(function(s){return {t:s.time,p:Math.round(s.price/(s.count||1))};}).sort(function(a,b){return a.t-b.t;}); return fetch('/api/donut?history='+encodeURIComponent(sid)+'&_='+Date.now()).then(function(r){return r.json();}).then(function(j){ var pts=(j.points||[]); var hO=pts.filter(function(p){return p.o!=null;}).map(function(p){return {t:p.t,p:p.o};}); var hSal=(j.sales||[]).map(function(p){return {t:p.t,p:p.p};}); offerSeries=hO.sort(function(a,b){return a.t-b.t;}); var mrg=hSal.concat(so).sort(function(a,b){return a.t-b.t;}); var sn={}, outS=[]; for(var qi=0;qi<mrg.length;qi++){ var kk=mrg[qi].t+':'+mrg[qi].p; if(!sn[kk]){sn[kk]=1; outS.push(mrg[qi]);} } saleSeries=outS; renderList(); drawForTab(); var ob=document.getElementById('ovlBig'); if(ob && ob.classList.contains('open')){ drawInto(document.getElementById('ovlBigGraph'), true); } }); }).catch(function(){}).then(function(){ var rb2=document.getElementById('ovlRefresh'); if(rb2) rb2.classList.remove('spin'); }); }
+  var rfb=document.getElementById('ovlRefresh'); if(rfb) rfb.onclick=refreshItem;
   openPanel=function(it){ openItemOverlay(it); };
 })();
 </script>
