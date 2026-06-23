@@ -379,17 +379,20 @@
   tOff.onclick=function(){ setTab('offers'); };
   tSal.onclick=function(){ setTab('sales'); };
   function renderList(){ var it=curItem; if(!it){ ovlList.innerHTML=''; return; } var list = curTabO==='offers' ? (it.ah||[]) : (it.sales||[]); if(!list.length){ ovlList.innerHTML='<div class="ovl-empty">'+(curTabO==='offers'?'No offers in the AH.':'No AH sales found.')+'</div>'; return; } ovlList.innerHTML=list.map(function(e){ var c=e.count||1; var per=(c>1?('ea. '+fmt(e.price/c)):'per unit'); var sub=curTabO==='offers'?(c+'x units'):(c+'x \u00b7 '+ago(e.time)); return '<div class="ovl-row"><div class="who">'+e.seller+'<br><small>'+sub+'</small></div><div class="pr">'+fmt(e.price)+'<small>'+per+'</small></div></div>'; }).join(''); }
+  function niceNum(rng, round){ var e=Math.floor(Math.log(rng)/Math.LN10); var f=rng/Math.pow(10,e); var nf; if(round){ nf=f<1.5?1:(f<3?2:(f<7?5:10)); } else { nf=f<=1?1:(f<=2?2:(f<=5?5:10)); } return nf*Math.pow(10,e); }
+  function niceScale(mn,mx){ var mid=(mn+mx)/2, span=mx-mn; var minSpan=Math.abs(mid)*0.012; if(!(span>0)||span<minSpan) span=minSpan||1; var lo=mid-span/2, hi=mid+span/2; var pad=(hi-lo)*0.05; lo-=pad; hi+=pad; var step=niceNum((hi-lo)/4,true); if(!(step>0)) step=1; return {min:Math.floor(lo/step)*step, max:Math.ceil(hi/step)*step, step:step}; }
+  function fmtAxis(n, step){ var a=Math.abs(n), unit, div; if(a>=1e9){ unit='B'; div=1e9; } else if(a>=1e6){ unit='M'; div=1e6; } else if(a>=1e3){ unit='k'; div=1e3; } else { return ''+Math.round(n); } var dec=0; if(step){ var su=step/div; dec=su>=1?0:(su>=0.1?1:(su>=0.01?2:3)); } return parseFloat((n/div).toFixed(dec))+unit; }
   function svgGraph(points, W, H, opts){
     if(!points||points.length<2) return null;
-    var padL=78,padR=18,padT=18,padB=30;
+    var padL=50,padR=18,padT=18,padB=30;
     var ys=points.map(function(p){return p.y;});
-    var y0=Math.min.apply(null,ys), y1=Math.max.apply(null,ys); if(y1===y0){y1=y0+1;}
+    var dmin=Math.min.apply(null,ys), dmax=Math.max.apply(null,ys); var sc=niceScale(dmin,dmax); var y0=sc.min, y1=sc.max; if(y1===y0){y1=y0+1;}
     var X0=opts.x0, X1=opts.x1;
     var sx=function(x){ return padL+(X1===X0?0:(x-X0)/(X1-X0))*(W-padL-padR); };
     var sy=function(y){ return padT+(1-(y-y0)/(y1-y0))*(H-padT-padB); };
     var d=''; points.forEach(function(p,i){ d+=(i?' L':'M')+sx(p.x).toFixed(1)+' '+sy(p.y).toFixed(1); });
     var area='M'+sx(points[0].x).toFixed(1)+' '+(H-padB)+' '+d.replace(/^M/,'L')+' L'+sx(points[points.length-1].x).toFixed(1)+' '+(H-padB)+' Z';
-    var grid=''; for(var g=0;g<=3;g++){ var gy=padT+(g/3)*(H-padT-padB); var gv=y1-(g/3)*(y1-y0); grid+='<line x1="'+padL+'" y1="'+gy.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+gy.toFixed(1)+'" stroke="rgba(255,255,255,.07)"/>'; grid+='<text x="'+(padL-8)+'" y="'+(gy+4).toFixed(1)+'" fill="#8b8ba0" font-size="10" text-anchor="end">'+fmt(gv)+'</text>'; }
+    var grid='', nL=Math.round((y1-y0)/sc.step); if(!(nL>0)||nL>12) nL=4; for(var gi=0;gi<=nL;gi++){ var gv=y0+gi*sc.step; var gy=sy(gv); grid+='<line x1="'+padL+'" y1="'+gy.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+gy.toFixed(1)+'" stroke="rgba(255,255,255,.07)"/>'; grid+='<text x="'+(padL-8)+'" y="'+(gy+4).toFixed(1)+'" fill="#8b8ba0" font-size="10" text-anchor="end">'+fmtAxis(gv, sc.step)+'</text>'; }
     var up=points[points.length-1].y>=points[0].y; var col=up?'#5bd99a':'#ff6b6b';
     var dots='', hits=''; points.forEach(function(p){ var X=sx(p.x).toFixed(1), Y=sy(p.y).toFixed(1); dots+='<circle cx="'+X+'" cy="'+Y+'" r="2.6" fill="'+col+'"/>'; hits+='<circle cx="'+X+'" cy="'+Y+'" r="11" fill="transparent" class="ovl-hit" data-p="'+p.y+'" data-t="'+p.x+'" style="pointer-events:all;cursor:pointer"/>'; });
     var xlab=(opts.ticks||[]).map(function(tk){ var x=sx(tk.x); var anc=(x<padL+14)?'start':((x>W-padR-14)?'end':'middle'); return '<line x1="'+x.toFixed(1)+'" y1="'+padT+'" x2="'+x.toFixed(1)+'" y2="'+(H-padB)+'" stroke="rgba(255,255,255,.05)"/><text x="'+x.toFixed(1)+'" y="'+(H-7)+'" fill="#8b8ba0" font-size="10" text-anchor="'+anc+'">'+tk.label+'</text>'; }).join('');
@@ -399,12 +402,16 @@
   function wireHits(el){ el.querySelectorAll('.ovl-hit').forEach(function(c){ c.addEventListener('mousemove',showTip); c.addEventListener('mouseenter',showTip); c.addEventListener('mouseleave',hideTip); }); }
   function drawInto(el, big){
     var W=big?1040:560, H=big?470:240;
-    var now=Date.now(), x0=now-rangeMs;
+    var now=Date.now();
+    var lastT=(((curTabO==='offers')?offerSeries:saleSeries).slice(-1)[0]||{}).t||now;
+    var x1=(now-lastT>60000)?lastT:now;
+    var x0=x1-rangeMs;
     var src=(curTabO==='offers')?offerSeries:saleSeries;
-    var pts=src.filter(function(p){return p.t>=x0;}).map(function(p){return {x:p.t,y:p.p};});
+    var pts=src.filter(function(p){return p.t>=x0 && p.t<=x1;}).map(function(p){return {x:p.t,y:p.p};});
+    if(pts.length<2 && src.length>=2){ var ln=src.slice(-8); pts=ln.map(function(p){return {x:p.t,y:p.p};}); x0=pts[0].x; x1=pts[pts.length-1].x; }
     if(pts.length<2){ el.innerHTML='<div class="ovl-empty">Not enough '+(curTabO==='offers'?'offer':'sales')+' history in this range yet \u2014 it fills in over time.</div>'; return; }
-    var step=niceStep(now-x0); var ticks=[]; for(var tt=Math.ceil(x0/step)*step; tt<=now+1; tt+=step){ ticks.push({x:tt,label:fmtTick(tt)}); } if(ticks.length>9){ ticks=ticks.filter(function(_,ix){return ix%2===0;}); }
-    el.innerHTML=svgGraph(pts,W,H,{x0:x0,x1:now,ticks:ticks});
+    var step=niceStep(x1-x0); var ticks=[]; for(var tt=Math.ceil(x0/step)*step; tt<=x1+1; tt+=step){ ticks.push({x:tt,label:fmtTick(tt)}); } if(ticks.length>9){ ticks=ticks.filter(function(_,ix){return ix%2===0;}); }
+    el.innerHTML=svgGraph(pts,W,H,{x0:x0,x1:x1,ticks:ticks});
     wireHits(el);
   }
   function drawForTab(){ if(ovlGCap) ovlGCap.textContent=(curTabO==='offers'?'Cheapest offer \u00b7 over time':'Sales \u00b7 per unit \u00b7 over time'); drawInto(ovlGraph,false); }
