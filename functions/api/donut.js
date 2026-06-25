@@ -1,5 +1,3 @@
-// deploy: activate KV price-history binding 2026-06-21T02:34:09.172Z
-// Cloudflare Pages deploy trigger 2026-06-14T01:57:54.520Z
 // Cloudflare Pages Function: proxy + aggregator for the official DonutSMP API.
 // Token is the secret env var DONUT_TOKEN (set in the Cloudflare Pages dashboard) and never reaches the browser.
 // Tracks a fixed WATCHLIST of high-value items, each looked up directly via the API search
@@ -54,38 +52,6 @@ export async function onRequest(context) {
       const j = await r.json();
       return (j && Array.isArray(j.result)) ? j.result.filter(Boolean) : [];
     } catch (e) { return null; }
-  }
-
-  if (url.searchParams.get('tx')) {
-    const q2 = url.searchParams.get('q') || 'iron_ingot';
-    const out2 = {};
-    try { const r = await fetch(base + 'auction/transactions/1', { headers: auth }); const j = await r.json(); const arr = (j && j.result) || []; out2.get = { status: r.status, n: arr.length, first3: arr.slice(0,3).map(t => ({ id: t && t.item ? t.item.id : null, price: t ? t.price : null, c: t && t.item ? t.item.count : null, time: t ? t.unixMillisDateSold : null })) }; } catch (e) { out2.get = String(e); }
-    try { const r = await fetch(base + 'auction/transactions/1', { method: 'POST', headers: postHeaders, body: JSON.stringify({ search: q2, sort: 'lowest_price' }) }); const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) {} const arr = (j && j.result) || []; out2.post = { status: r.status, n: arr.length, raw: j ? null : txt.slice(0,150), first5: arr.slice(0,5).map(t => ({ id: t && t.item ? t.item.id : null, price: t ? t.price : null, c: t && t.item ? t.item.count : null })) }; } catch (e) { out2.post = String(e); }
-    return new Response(JSON.stringify(out2, null, 1), { status: 200, headers: cors });
-  }
-
-  if (url.searchParams.get('coflnet')) {
-    const id = url.searchParams.get('coflnet');
-    const cb = 'https://donut.coflnet.com/api';
-    const eps = ['/item/price/' + id, '/item/price/' + id + '/analysis?days=7', '/auctions/tag/' + id + '/active/overview', '/auctions/tag/' + id + '/sold?pageSize=5'];
-    const o2 = {};
-    for (const e of eps) {
-      try {
-        const ctrl = new AbortController(); const to = setTimeout(() => ctrl.abort(), 4000);
-        const r = await fetch(cb + e, { headers: { Accept: 'application/json' }, signal: ctrl.signal });
-        clearTimeout(to);
-        const t = await r.text();
-        o2[e] = { status: r.status, sample: t.slice(0, 220) };
-      } catch (err) { o2[e] = String(err); }
-    }
-    return new Response(JSON.stringify(o2, null, 1), { status: 200, headers: cors });
-  }
-
-  if (url.searchParams.get('debug')) {
-    const qp = url.searchParams.get('q'); const q = (qp !== null) ? qp : 'diamond';
-    const out = {};
-    const target = 'minecraft:' + (url.searchParams.get('id') || q); out.target = target; out.q = q; const maxP = Math.min(parseInt(url.searchParams.get('pages'),10)||10,40); let seen=0,cnt=0,firstPage=null,minTotal=null,minUnit=null; const few=[]; for (let p=1;p<=maxP;p++){ const arr=await searchPage(q,p); if(arr===null) break; for(const l of arr){ if(!l||!l.item) continue; seen++; if(l.item.id===target && typeof l.price==='number'){ cnt++; if(firstPage===null) firstPage=p; const cc=l.item.count||1; if(minTotal===null||l.price<minTotal) minTotal=l.price; const u=Math.round(l.price/cc); if(minUnit===null||u<minUnit) minUnit=u; if(few.length<6) few.push({tot:l.price,c:cc}); } } if(arr.length<40) break; } out.maxP=maxP; out.seen=seen; out.cnt=cnt; out.firstPage=firstPage; out.minTotal=minTotal; out.minUnit=minUnit; out.few=few;
-    return new Response(JSON.stringify(out, null, 1), { status: 200, headers: cors });
   }
 
   async function collect(cfg, maxSearchPages) {
