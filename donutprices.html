@@ -54,31 +54,6 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   .attrib{margin-top:16px;font-size:13px;color:var(--muted)} .attrib a{color:var(--accent);font-weight:600}
 
-  /* ---- side detail panel ---- */
-  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.2s;z-index:40}
-  .overlay.open{opacity:1;pointer-events:auto}
-  .panel{position:fixed;top:0;right:0;height:100%;width:min(440px,92vw);background:var(--card);
-    border-left:1px solid var(--border);transform:translateX(100%);transition:transform .28s cubic-bezier(.25,.1,.25,1);
-    z-index:50;display:flex;flex-direction:column}
-  .panel.open{transform:translateX(0)}
-  .panel-head{padding:22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px}
-  .panel-head img{width:36px;height:36px;image-rendering:pixelated}
-  .panel-head .title{flex:1}
-  .panel-head .name{font-size:20px;font-weight:800;text-transform:capitalize}
-  .panel-head .meta{font-size:13px;color:var(--muted);margin-top:2px}
-  .panel-close{background:none;border:1px solid var(--border);color:var(--muted);width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:18px}
-  .panel-close:hover{color:var(--text);border-color:var(--accent)}
-
-  .ptabs{display:flex;gap:8px;padding:14px 22px 0}
-  .ptab{flex:1;background:var(--card-2);border:1px solid var(--border);color:var(--muted);font-weight:700;font-size:14px;padding:11px;border-radius:10px;cursor:pointer;transition:.2s}
-  .ptab.active{color:#fff;background:linear-gradient(120deg,var(--accent),var(--accent-2));border-color:transparent}
-  .plist{flex:1;overflow-y:auto;padding:16px 22px 24px}
-  .lrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:var(--card-2);border:1px solid var(--border);border-radius:12px;margin-bottom:10px}
-  .lrow .who{font-size:14px}
-  .lrow .who small{color:var(--muted)}
-  .lrow .pr{font-weight:800;color:var(--green);font-variant-numeric:tabular-nums;text-align:right}
-  .lrow .pr small{display:block;color:var(--muted);font-weight:500}
-  .empty{color:var(--muted);text-align:center;padding:30px}
   .soon-head{color:var(--muted);font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:600;margin:26px 0 12px}
   .soon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
   .soon-card{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;opacity:.55}
@@ -111,23 +86,8 @@
     <p class="attrib">Price / each = typical sale price (median of recent sales per unit); if there are no recent sales, the cheapest current offer. "Last sale" = most recent sale. Source: official DonutSMP API.</p>
   </div>
 
-  <!-- detail panel -->
-  <div class="overlay" id="overlay"></div>
-  <aside class="panel" id="panel">
-    <div class="panel-head">
-      <img id="pImg" src="" alt="">
-      <div class="title"><div class="name" id="pName">—</div><div class="meta" id="pMeta"></div></div>
-      <button class="panel-close" id="pClose">×</button>
-    </div>
-    <div class="ptabs">
-      <button class="ptab active" data-pt="ah" id="tabAh">🏷️ AH (Offers)</button>
-      <button class="ptab" data-pt="orders" id="tabOrders">📜 AH (Sales)</button>
-    </div>
-    <div class="plist" id="pList"></div>
-  </aside>
-
   <script>
-    const API_LIST = ['/api/donut','/.netlify/functions/donut'];
+    const API_LIST = ['/api/donut'];
     async function apiGet(){ let e; for(const u of API_LIST){ try{ const r=await fetch(u); if(r.ok) return r; e=new Error('HTTP '+r.status); }catch(x){ e=x; } } throw e; }
     const TEX = 'https://donutsmp.stacksail.com/textures/';
     const CACHE_KEY = 'donutPricesV3';
@@ -137,12 +97,9 @@
     const tableWrap = document.getElementById('tableWrap');
     const searchEl = document.getElementById('search');
     const refreshEl = document.getElementById('refresh');
-    const overlay = document.getElementById('overlay');
-    const panel = document.getElementById('panel');
 
     let items = [];
     let sortKey = 'price', sortDir = 1;
-    let current = null, curTab = 'ah';
 
     const fmt = n => (n==null) ? '–' : Math.round(n).toLocaleString('de-DE');
     const shortName = id => (id||'').replace(/^minecraft:/,'');
@@ -189,44 +146,6 @@
       tableWrap.querySelectorAll('tbody tr').forEach(tr=>tr.addEventListener('click',()=>openPanel(items[+tr.dataset.i])));
     }
 
-    function renderPanelList(){
-      const it=current; if(!it){pList.innerHTML='';return;}
-      const list = curTab==='ah' ? it.ah : it.sales;
-      if(!list || !list.length){ pList.innerHTML='<div class="empty">Keine '+(curTab==='ah'?'Offers':'Sales')+' gefunden.</div>'; return; }
-      let h='';
-      list.forEach(e=>{
-        if(curTab==='ah'){
-          h+='<div class="lrow"><div class="who">'+e.seller+'<br><small>'+e.count+'× Stück</small></div>'
-            +'<div class="pr">'+fmt(e.price)+'<small>'+(e.count>1?('ea. '+fmt(e.price/e.count)):'per unit')+'</small></div></div>';
-        } else {
-          h+='<div class="lrow"><div class="who">'+e.seller+'<br><small>'+e.count+'× · '+ago(e.time)+'</small></div>'
-            +'<div class="pr">'+fmt(e.price)+'<small>'+(e.count>1?('ea. '+fmt(e.price/e.count)):'per unit')+'</small></div></div>';
-        }
-      });
-      pList.innerHTML=h;
-    }
-    const pList=document.getElementById('pList');
-
-    function openPanel(it){
-      current=it; curTab='ah';
-      document.getElementById('pName').textContent=pretty(it.id);
-      document.getElementById('pImg').src=tex(it.id);
-      const ls=lastSale(it);
-      document.getElementById('pMeta').textContent='Cheapest each: '+fmt(priceOf(it))+' · '+it.listings+' offers';
-      document.getElementById('tabAh').classList.add('active');
-      document.getElementById('tabOrders').classList.remove('active');
-      renderPanelList();
-      overlay.classList.add('open'); panel.classList.add('open');
-    }
-    function closePanel(){ overlay.classList.remove('open'); panel.classList.remove('open'); }
-    overlay.addEventListener('click',closePanel);
-    document.getElementById('pClose').addEventListener('click',closePanel);
-    document.querySelectorAll('.ptab').forEach(t=>t.addEventListener('click',()=>{
-      curTab=t.dataset.pt;
-      document.querySelectorAll('.ptab').forEach(x=>x.classList.remove('active'));
-      t.classList.add('active'); renderPanelList();
-    }));
-
     function setStatus(ts,n){ const t=new Date(ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
       statusEl.innerHTML='<b>'+n+'</b> items · as of '+t+''; }
 
@@ -250,29 +169,9 @@
     }
     searchEl.addEventListener('input',render);
     refreshEl.addEventListener('click',()=>load(true));
-    document.addEventListener('keydown',e=>{ if(e.key==='Escape')closePanel(); });
     load(false);
   </script>
-<script>
-(function(){
-  function pof(o){ return o.itemPrice!=null?o.itemPrice:(o.price!=null?o.price:o.pricePerItem); }
-  window.paintOrders=function(orders){ var pl=document.getElementById("pList"); if(!pl) return; if(!orders||!orders.length){ pl.innerHTML="<div class=\"empty\">Keine offenen Kauf-Orders. (Der Order-Book ist oft leer.)</div>"; return; } var list=orders.slice().sort(function(a,b){return (pof(b)||0)-(pof(a)||0);}); pl.innerHTML=list.slice(0,50).map(function(o){ var buyer=o.userName||o.user||o.buyer||"?"; var ordered=(o.amountOrdered!=null?o.amountOrdered:o.amount); var delivered=(o.amountDelivered!=null?o.amountDelivered:0); var rem=(ordered!=null)?(ordered-delivered):null; return "<div class=\"lrow\"><div class=\"who\">"+buyer+"<br><small>"+(rem!=null?(fmt(rem)+"× gesucht"):"Kauf-Order")+"</small></div><div class=\"pr\">"+fmt(pof(o))+"<small>pro Stück</small></div></div>"; }).join(""); };
-  renderPanelList=function(){ var it=current; var pl=document.getElementById("pList"); if(!pl) return; if(!it){ pl.innerHTML=""; return; } if(curTab==="ah"){ var list=it.ah||[]; if(!list.length){ pl.innerHTML="<div class=\"empty\">Keine Angebote gefunden.</div>"; return; } pl.innerHTML=list.map(function(e){return "<div class=\"lrow\"><div class=\"who\">"+e.seller+"<br><small>"+e.count+"× Stück</small></div><div class=\"pr\">"+fmt(e.price)+"<small>"+(e.count>1?("ea. "+fmt(e.price/e.count)):"per unit")+"</small></div></div>";}).join(""); return; } pl.innerHTML="<div class=\"empty\">Loading…</div>"; var id=(it.id||"").replace(/^minecraft:/,""); if(it.__ord){ paintOrders(it.__ord); return; } fetch("/api/orders?q="+encodeURIComponent(id)).then(function(r){return r.json();}).then(function(j){ if(current!==it||curTab!=="orders") return; it.__ord=j.orders||[]; paintOrders(it.__ord); }).catch(function(){ var p=document.getElementById("pList"); if(p) p.innerHTML="<div class=\"empty\">Fehler beim Laden der Orders.</div>"; }); };
-  var to=document.getElementById("tabOrders"); if(to) to.textContent="📦 Orders";
-})();
-</script>
-<script>
-(function(){
-  renderPanelList=function(){
-    var it=current; var pl=document.getElementById("pList"); if(!pl) return;
-    if(!it){ pl.innerHTML=""; return; }
-    var list=(curTab==="ah")?(it.ah||[]):(it.sales||[]);
-    if(!list.length){ pl.innerHTML="<div class=\"empty\">"+(curTab==="ah"?"No offers in the AH.":"No AH sales found.")+"</div>"; return; }
-    pl.innerHTML=list.map(function(e){ var sub=(curTab==="ah")?(e.count+"× units"):(e.count+"× · "+ago(e.time)); var per=(e.count>1?("je "+fmt(e.price/e.count)):"pro Stück"); return "<div class=\"lrow\"><div class=\"who\">"+e.seller+"<br><small>"+sub+"</small></div><div class=\"pr\">"+fmt(e.price)+"<small>"+per+"</small></div></div>"; }).join("");
-  };
-  var to=document.getElementById("tabOrders"); if(to) to.textContent="📜 AH (Sales)";
-})();
-</script>
+
 <style>
   .ovl{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(8,8,12,.66);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .2s}
   .ovl.open{opacity:1;pointer-events:auto}
