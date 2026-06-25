@@ -10,11 +10,6 @@ export async function onRequest(context) {
   const base = 'https://api.donutsmp.net/v1/';
   const url = new URL(request.url);
 
-  // Debug helper to grab a real username from the money leaderboard.
-  if (url.searchParams.get('lb')) {
-    try { const r = await fetch(base + 'leaderboards/money/1', { headers: auth }); const txt = await r.text(); return new Response(txt, { status: r.status, headers: cors }); } catch (e) { return new Response(JSON.stringify({ error: String(e) }), { status: 502, headers: cors }); }
-  }
-
   if (url.searchParams.get('ping')) {
     try {
       const r = await fetch(base + 'leaderboards/money/1', { headers: auth });
