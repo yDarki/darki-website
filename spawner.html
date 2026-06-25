@@ -5,20 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Spawner Calculator</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="stylesheet" href="/theme.css" />
 <style>
-  :root{ --bg:#0a0a0c; --card:#141420; --card-2:#1a1a28; --text:#f3f3f7; --muted:#8b8ba0; --accent:#ffffff; --accent-2:#b8bccc; --border:rgba(255,255,255,.07); --green:#5bd99a; }
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
-  a{text-decoration:none;color:inherit}
-  .glow{position:fixed;inset:0;z-index:0;pointer-events:none}
-  .glow::before{content:"";position:absolute;inset:0;background:radial-gradient(620px circle at 50% -10%, rgba(255,255,255,.13), transparent 62%)}
-  .mz{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;-webkit-mask-image:radial-gradient(circle at 50% 32%, #000, transparent 55%);mask-image:radial-gradient(circle at 50% 32%, #000, transparent 55%)}
+
   .wrap{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:28px 22px 70px}
   .back{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 16px;color:var(--muted);font-weight:600;font-size:14px;margin-bottom:22px;transition:.2s}
   .back:hover{color:var(--text);border-color:rgba(255,255,255,.4)}
   h1{font-size:clamp(28px,5vw,40px);font-weight:800;letter-spacing:-1px;filter:drop-shadow(0 0 22px rgba(255,255,255,.13))}
   h1 .grad{background:linear-gradient(105deg,#ffffff 0%,#d7dae6 28%,#9197b0 50%,#d7dae6 72%,#ffffff 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shine 5s ease-in-out infinite alternate}
-  @keyframes shine{0%{background-position:0% center}100%{background-position:100% center}}
   .sub{color:var(--muted);font-size:15px;margin-top:8px;line-height:1.5}
   .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px 22px;margin-top:22px}
   .card h2{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:16px}
@@ -60,7 +54,7 @@
 </style>
 </head>
 <body>
-  <div class="glow"></div>
+  <div class="bg"></div>
   <div class="wrap">
     <a class="back" href="index.html">&larr; Dashboard</a>
     <h1><svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:8px"><rect x="5.5" y="5.5" width="21" height="21" rx="4" fill="#10201a" stroke="#5bd99a" stroke-width="2"/><path d="M11 6V26M16 6V26M21 6V26M6 11H26M6 16H26M6 21H26" stroke="#5bd99a" stroke-opacity=".3" stroke-width="1"/><circle cx="16" cy="16" r="3.2" fill="#5bd99a"/></svg><span class="grad">Spawner Calculator</span></h1>
@@ -258,6 +252,6 @@
     renderSetups();
     recompute();
   </script>
-<script>(function(){var bg=document.querySelector('.bg')||document.querySelector('.glow');if(!bg)return;function draw(){var W=Math.max(window.innerWidth,320),H=Math.max(window.innerHeight,320),S=30,seed=1337;function rnd(){seed=(seed*1103515245+12345)&2147483647;return seed/2147483647;}var L='';for(var y=0;y<H+S;y+=S){for(var x=0;x<W+S;x+=S){if(rnd()<0.5){L+='<line x1="'+x+'" y1="'+(y+S)+'" x2="'+(x+S)+'" y2="'+y+'"/>';}else{L+='<line x1="'+x+'" y1="'+y+'" x2="'+(x+S)+'" y2="'+(y+S)+'"/>';}}}bg.innerHTML='<svg class="mz" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><g stroke="rgba(255,255,255,0.07)" stroke-width="1" stroke-linecap="square">'+L+'</g></svg>';}draw();var t;window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(draw,250);});})();</script>
+<script src="/maze.js"></script>
 </body>
 </html>
