@@ -1,6 +1,7 @@
 // Cloudflare Pages Function: RTP map collector + reader.
 // POST adds a point (needs Authorization: Bearer <RTP_TOKEN>); GET returns { border, points }.
 // KV binding: RTP_MAP. Secret: RTP_TOKEN.
+// GET ?check returns { kvBound, tokenSet } for setup verification.
 export async function onRequest(context) {
   const { request, env } = context;
   const cors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' };
