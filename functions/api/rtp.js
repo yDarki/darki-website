@@ -1,58 +1,111 @@
 // Cloudflare Pages Function: RTP map collector + reader.
-// POST adds a point (needs Authorization: Bearer <RTP_TOKEN>); GET returns { border, points }.
+// Auth model: per-user token whitelist in KV key 'wl' = { "<token>": "<name>" }.
+//   - Master token = secret RTP_TOKEN. It can post points, manage the whitelist, and reset.
+//   - A point's display name comes from the token (whitelist), so nobody can impersonate.
+//   - Points outside the world border are rejected.
+//   (A whitelisted user can still fake their OWN coords; real verification would need a server-side plugin.)
 // KV binding: RTP_MAP. Secret: RTP_TOKEN.
-// GET ?check returns { kvBound, tokenSet } for setup verification.
+// Endpoints:
+//   GET                  -> { border, points }
+//   GET  ?check           -> { kvBound, tokenSet }
+//   GET  ?list   (master) -> { count, whitelist }
+//   POST          (user)  -> add a point { x, z, border? }
+//   POST ?op=add (master) -> body { token, name } : whitelist a user
+//   POST ?op=del (master) -> body { token } : remove a user
+//   POST ?reset  (master) -> clear all points
 export async function onRequest(context) {
   const { request, env } = context;
   const cors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' };
   const json = (obj, status) => new Response(JSON.stringify(obj), { status: status, headers: cors });
   const kv = env.RTP_MAP;
   const url = new URL(request.url);
-  if (url.searchParams.get('check')) return json({ ok: true, kvBound: !!kv, tokenSet: !!env.RTP_TOKEN }, 200);
+  const master = env.RTP_TOKEN;
 
-  if (request.method === 'POST') {
-    const token = env.RTP_TOKEN;
-    if (!token) return json({ error: 'no token configured' }, 500);
-    const authHeader = request.headers.get('Authorization') || '';
-    const provided = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : (request.headers.get('X-RTP-Token') || '');
-    if (provided !== token) return json({ error: 'unauthorized' }, 401);
-    if (!kv) return json({ error: 'no KV bound' }, 500);
-    if (url.searchParams.get('reset')) { await kv.put('points', '[]'); return json({ ok: true, reset: true, count: 0 }, 200); }
+  if (url.searchParams.get('check')) return json({ ok: true, kvBound: !!kv, tokenSet: !!master }, 200);
 
-    let body;
-    try { body = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400); }
-    const x = Math.round(Number(body.x));
-    const z = Math.round(Number(body.z));
-    if (!isFinite(x) || !isFinite(z)) return json({ error: 'bad coords' }, 400);
-    const name = String(body.name || 'unknown').slice(0, 32).replace(/[^A-Za-z0-9_ .-]/g, '');
-    const t = Date.now();
+  const authHeader = request.headers.get('Authorization') || '';
+  const provided = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : (request.headers.get('X-RTP-Token') || '');
+  const isMaster = !!master && provided === master;
 
-    let points = [];
-    try { points = JSON.parse((await kv.get('points')) || '[]'); } catch (e) { points = []; }
-    const last = points[points.length - 1];
-    const dup = last && last.x === x && last.z === z && (t - last.t) < 5000;
-    if (!dup) {
-      points.push({ n: name, x: x, z: z, t: t });
-      if (points.length > 5000) points = points.slice(points.length - 5000);
-      await kv.put('points', JSON.stringify(points));
+  // ---- GET ----
+  if (request.method !== 'POST') {
+    if (url.searchParams.get('list')) {
+      if (!isMaster) return json({ error: 'unauthorized' }, 401);
+      if (!kv) return json({ error: 'no KV bound' }, 500);
+      let wl = {}; try { wl = JSON.parse((await kv.get('wl')) || '{}'); } catch (e) {}
+      return json({ count: Object.keys(wl).length, whitelist: wl }, 200);
     }
-
-    if (body.border && Number(body.border.size) > 0) {
-      const b = {
-        size: Math.round(Number(body.border.size)),
-        cx: Math.round(Number(body.border.cx) || 0),
-        cz: Math.round(Number(body.border.cz) || 0)
-      };
-      await kv.put('border', JSON.stringify(b));
-    }
-
-    return json({ ok: true, count: points.length }, 200);
+    if (!kv) return json({ border: null, points: [] }, 200);
+    let points = []; let border = null;
+    try { points = JSON.parse((await kv.get('points')) || '[]'); } catch (e) {}
+    try { border = JSON.parse((await kv.get('border')) || 'null'); } catch (e) {}
+    return json({ border: border, points: points }, 200);
   }
 
-  if (!kv) return json({ border: null, points: [] }, 200);
-  let points = [];
-  let border = null;
-  try { points = JSON.parse((await kv.get('points')) || '[]'); } catch (e) {}
-  try { border = JSON.parse((await kv.get('border')) || 'null'); } catch (e) {}
-  return json({ border: border, points: points }, 200);
+  // ---- POST ----
+  if (!master) return json({ error: 'no token configured' }, 500);
+  if (!kv) return json({ error: 'no KV bound' }, 500);
+
+  let wl = {}; try { wl = JSON.parse((await kv.get('wl')) || '{}'); } catch (e) {}
+
+  // admin: manage whitelist (master only)
+  const op = url.searchParams.get('op');
+  if (op) {
+    if (!isMaster) return json({ error: 'unauthorized' }, 401);
+    let b = {}; try { b = await request.json(); } catch (e) {}
+    if (op === 'add' && b.token) {
+      wl[String(b.token)] = String(b.name || 'player').slice(0, 32).replace(/[^A-Za-z0-9_ .-]/g, '');
+      await kv.put('wl', JSON.stringify(wl));
+      return json({ ok: true, count: Object.keys(wl).length }, 200);
+    }
+    if (op === 'del' && b.token) {
+      delete wl[String(b.token)];
+      await kv.put('wl', JSON.stringify(wl));
+      return json({ ok: true, count: Object.keys(wl).length }, 200);
+    }
+    return json({ error: 'bad op' }, 400);
+  }
+
+  // admin: reset all points (master only)
+  if (url.searchParams.get('reset')) {
+    if (!isMaster) return json({ error: 'unauthorized' }, 401);
+    await kv.put('points', '[]');
+    return json({ ok: true, reset: true, count: 0 }, 200);
+  }
+
+  // posting a point: must be master or a whitelisted token
+  const wlName = wl[provided];
+  if (!isMaster && wlName === undefined) return json({ error: 'unauthorized' }, 401);
+
+  let body; try { body = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400); }
+  const x = Math.round(Number(body.x));
+  const z = Math.round(Number(body.z));
+  if (!isFinite(x) || !isFinite(z)) return json({ error: 'bad coords' }, 400);
+
+  // name is server-controlled (from the token), not client-controlled
+  let name = isMaster ? String(body.name || 'admin') : String(wlName);
+  name = name.slice(0, 32).replace(/[^A-Za-z0-9_ .-]/g, '');
+
+  // border: update if a valid one is sent, then enforce it
+  let border = null; try { border = JSON.parse((await kv.get('border')) || 'null'); } catch (e) {}
+  if (body.border && Number(body.border.size) > 0) {
+    border = { size: Math.round(Number(body.border.size)), cx: Math.round(Number(body.border.cx) || 0), cz: Math.round(Number(body.border.cz) || 0) };
+    await kv.put('border', JSON.stringify(border));
+  }
+  if (border && border.size > 0) {
+    const half = border.size / 2 + 64;
+    if (Math.abs(x - border.cx) > half || Math.abs(z - border.cz) > half) return json({ error: 'out of bounds' }, 400);
+  }
+
+  let points = []; try { points = JSON.parse((await kv.get('points')) || '[]'); } catch (e) { points = []; }
+  const t = Date.now();
+  const last = points[points.length - 1];
+  const dup = last && last.n === name && last.x === x && last.z === z && (t - last.t) < 5000;
+  if (!dup) {
+    points.push({ n: name, x: x, z: z, t: t });
+    if (points.length > 5000) points = points.slice(points.length - 5000);
+    await kv.put('points', JSON.stringify(points));
+  }
+
+  return json({ ok: true, count: points.length }, 200);
 }
