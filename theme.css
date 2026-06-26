@@ -6,6 +6,6 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 a{text-decoration:none;color:inherit}
-.bg{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);background-size:44px 44px}
+.bg{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(rgba(255,255,255,.09) 1.2px,transparent 1.2px);background-size:24px 24px}
 @keyframes shine{0%{background-position:0% center}100%{background-position:100% center}}
 @keyframes spin{to{transform:rotate(360deg)}}
