@@ -7,7 +7,6 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="stylesheet" href="/theme.css" />
 <style>
-
   .wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:58px 24px 72px}
   .hero{text-align:center;margin-bottom:48px}
   .hero-ico{font-size:56px;line-height:1;filter:drop-shadow(0 14px 34px rgba(255,255,255,.16))}
@@ -20,23 +19,26 @@
   .label{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;letter-spacing:2.5px;text-transform:uppercase;font-weight:700;margin:0 0 16px}
   .label::after{content:"";flex:1;height:1px;background:var(--border)}
   .section{margin-bottom:36px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
-  .tile{position:relative;display:flex;align-items:flex-start;gap:16px;background:radial-gradient(150px circle at 90% -12%,rgba(255,255,255,.06),transparent 60%),repeating-linear-gradient(45deg,rgba(255,255,255,.03) 0 1px,transparent 1px 16px),repeating-linear-gradient(-45deg,rgba(255,255,255,.03) 0 1px,transparent 1px 16px),linear-gradient(155deg,#17171f,#121219);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;box-shadow:0 6px 20px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.04);transition:transform .18s ease,border-color .2s,background .2s,box-shadow .25s}
-  .tile:hover{transform:translateY(-3px);background:radial-gradient(180px circle at 90% -12%,rgba(255,255,255,.10),transparent 60%),repeating-linear-gradient(45deg,rgba(255,255,255,.045) 0 1px,transparent 1px 16px),repeating-linear-gradient(-45deg,rgba(255,255,255,.045) 0 1px,transparent 1px 16px),linear-gradient(155deg,#1d1d2b,#16161f);border-color:rgba(255,255,255,.5);box-shadow:0 12px 30px rgba(0,0,0,.45),0 0 26px rgba(255,255,255,.08),inset 0 0 14px rgba(255,255,255,.05)}
-  .tile .ico{width:46px;height:46px;border-radius:12px;background:var(--card-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  .tile .body{flex:1;min-width:0;padding-right:18px}
-  .tile h3{font-size:18px;font-weight:700;margin-bottom:5px}
-  .tile p{color:var(--muted);font-size:14px;line-height:1.5}
-  .tile .arrow{position:absolute;top:22px;right:20px;color:var(--muted);transition:.2s;font-size:17px}
-  .tile:hover .arrow{color:var(--accent);transform:translateX(3px)}
-  footer{text-align:center;color:var(--muted);font-size:13px;padding-top:20px}
-  .tile .api-badge{position:absolute;top:16px;right:18px;display:none;align-items:center;gap:6px;background:rgba(255,80,80,.12);border:1px solid rgba(255,120,120,.42);color:#ff9b9b;font-size:11px;font-weight:700;letter-spacing:.3px;padding:4px 9px;border-radius:999px}
-  .tile .api-badge .d{width:6px;height:6px;border-radius:50%;background:#ff6b6b;box-shadow:0 0 8px #ff6b6b}
-  .tile.api-down{opacity:.82}
-  .tile.api-down .api-badge{display:inline-flex}
-  .tile.api-down .arrow{display:none}
-  .grid-2{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1fr}
+  .grid{display:grid;gap:16px}
+  .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
   @media(max-width:640px){.grid-2{grid-template-columns:1fr}}
+  .tile{position:relative;display:block;text-decoration:none;color:inherit;border-radius:18px;overflow:hidden;padding:22px 24px;background:linear-gradient(180deg,#17171b,#0f0f12);border:1px solid rgba(255,255,255,.07);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.4),0 12px 28px -16px rgba(0,0,0,.7);transition:transform .35s cubic-bezier(.22,.61,.36,1),border-color .35s,background .35s,box-shadow .35s}
+  .tile::before{content:"";position:absolute;top:-40%;left:-10%;width:60%;height:80%;background:radial-gradient(circle at center,var(--ac),transparent 70%);opacity:0;filter:blur(40px);pointer-events:none;transition:opacity .4s}
+  .tile:hover,.tile:focus-visible{transform:translateY(-3px);border-color:rgba(255,255,255,.16);outline:none;background:linear-gradient(180deg,#1d1d22,#0f0f12);box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 1px 2px rgba(0,0,0,.4),0 22px 44px -18px rgba(0,0,0,.85)}
+  .tile:hover::before,.tile:focus-visible::before{opacity:.14}
+  .tile-head{display:flex;align-items:center;gap:13px;margin-bottom:14px}
+  .ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--ac);background:color-mix(in srgb,var(--ac) 14%,transparent);border:1px solid color-mix(in srgb,var(--ac) 30%,transparent);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 6px 16px -6px color-mix(in srgb,var(--ac) 45%,transparent);transition:transform .35s,box-shadow .35s}
+  .tile:hover .ico{transform:scale(1.04);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 8px 22px -6px color-mix(in srgb,var(--ac) 70%,transparent)}
+  .tile h3{font-size:18px;font-weight:700;flex:1;letter-spacing:-.2px}
+  .tile .arrow{color:var(--muted);font-size:20px;flex-shrink:0;transition:transform .35s,color .35s}
+  .tile:hover .arrow{color:var(--text);transform:translateX(4px)}
+  .tile p{color:var(--muted);font-size:14px;line-height:1.55}
+  .api-badge{position:absolute;top:18px;right:20px;display:inline-flex;align-items:center;gap:6px;background:rgba(255,80,80,.12);border:1px solid rgba(255,120,120,.42);color:#ff9b9b;font-size:11px;font-weight:700;letter-spacing:.3px;padding:4px 9px;border-radius:999px}
+  .api-badge .d{width:6px;height:6px;border-radius:50%;background:#ff6b6b;box-shadow:0 0 8px #ff6b6b}
+  .tile.api-down{opacity:.85}
+  .tile.api-down .arrow{display:none}
+  @media(prefers-reduced-motion:reduce){.tile,.tile::before,.ico,.arrow{transition:none}.tile:hover{transform:none}}
+  footer{text-align:center;color:var(--muted);font-size:13px;padding-top:20px}
 </style>
 </head>
 <body>
@@ -52,27 +54,36 @@
     <section class="section">
       <div class="label">Tools</div>
       <div class="grid grid-2">
-        <a class="tile" href="donutprices.html">
-          <div class="ico"><svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.8 4H25a3 3 0 0 1 3 3v8.2a3 3 0 0 1-.88 2.12l-9.8 9.8a3 3 0 0 1-4.24 0l-7.2-7.2a3 3 0 0 1 0-4.24l9.8-9.8A3 3 0 0 1 16.8 4Z" fill="#2a230f" stroke="#ffcf5f" stroke-width="2" stroke-linejoin="round"/><circle cx="21.8" cy="10.2" r="2" fill="#ffcf5f"/></svg></div>
-          <div class="body"><h3>DonutSMP Prices</h3><p>Live auction house prices — searchable and sortable, with per-item price, offers and recent sales.</p></div>
-          <span class="arrow">→</span>
+        <a class="tile" href="donutprices.html" style="--ac:#f5b942">
+          <div class="tile-head">
+            <span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1.1" fill="currentColor" stroke="none"/></svg></span>
+            <h3>DonutSMP Prices</h3>
+            <span class="arrow">→</span>
+          </div>
+          <p>Live auction house prices — searchable and sortable, with per-item price, offers and recent sales.</p>
         </a>
-        <a class="tile" href="playerstats.html">
-          <div class="ico"><svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="18" width="5.5" height="9" rx="1.6" fill="#5bd99a"/><rect x="13.2" y="12" width="5.5" height="15" rx="1.6" fill="#6ba8ff"/><rect x="21.5" y="6.5" width="5.5" height="20.5" rx="1.6" fill="#ff7eb6"/></svg></div>
-          <div class="body"><h3>Player Stats</h3><p>Search a player to see money, shards, K/D, playtime and more.</p></div>
-          <span class="arrow">→</span>
+        <a class="tile" href="playerstats.html" style="--ac:#a78bfa">
+          <div class="tile-head">
+            <span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></span>
+            <h3>Player Stats</h3>
+            <span class="arrow">→</span>
+          </div>
+          <p>Search a player to see money, shards, K/D, playtime and more.</p>
         </a>
-        <a class="tile" href="spawner.html">
-          <div class="ico"><svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="5.5" y="5.5" width="21" height="21" rx="4" fill="#10201a" stroke="#5bd99a" stroke-width="2"/><path d="M11 6V26M16 6V26M21 6V26M6 11H26M6 16H26M6 21H26" stroke="#5bd99a" stroke-opacity=".3" stroke-width="1"/><circle cx="16" cy="16" r="3.2" fill="#5bd99a"/></svg></div>
-          <div class="body"><h3>Spawner Calculator</h3><p>Calculate spawner drops and profit per hour, with the production curve and diminishing returns.</p></div>
-          <span class="arrow">&rarr;</span>
+        <a class="tile" href="spawner.html" style="--ac:#4ade80">
+          <div class="tile-head">
+            <span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="14" rx="1.5"/><rect width="7" height="7" x="3" y="14" rx="1.5"/></svg></span>
+            <h3>Spawner Calculator</h3>
+            <span class="arrow">→</span>
+          </div>
+          <p>Calculate spawner drops and profit per hour, with the production curve and diminishing returns.</p>
         </a>
       </div>
     </section>
 
     <footer>DonutSMP Stats · donutsmpstats.com</footer>
   </div>
-<script>
+  <script>
   (function(){
     fetch('/api/player?ping=1').then(function(r){return r.json();}).then(function(j){
       if(j && j.up===false){
@@ -85,7 +96,6 @@
       }
     }).catch(function(){});
   })();
-</script>
-<script src="/maze.js"></script>
+  </script>
 </body>
 </html>
