@@ -6,6 +6,8 @@ export async function onRequest(context) {
   const cors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' };
   const json = (obj, status) => new Response(JSON.stringify(obj), { status: status, headers: cors });
   const kv = env.RTP_MAP;
+  const url = new URL(request.url);
+  if (url.searchParams.get('check')) return json({ ok: true, kvBound: !!kv, tokenSet: !!env.RTP_TOKEN }, 200);
 
   if (request.method === 'POST') {
     const token = env.RTP_TOKEN;
