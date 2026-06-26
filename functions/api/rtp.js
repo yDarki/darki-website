@@ -17,6 +17,7 @@ export async function onRequest(context) {
     const provided = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : (request.headers.get('X-RTP-Token') || '');
     if (provided !== token) return json({ error: 'unauthorized' }, 401);
     if (!kv) return json({ error: 'no KV bound' }, 500);
+    if (url.searchParams.get('reset')) { await kv.put('points', '[]'); return json({ ok: true, reset: true, count: 0 }, 200); }
 
     let body;
     try { body = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400); }
