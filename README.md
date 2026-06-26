@@ -18,3 +18,7 @@ Source for [donutsmpstats.com](https://donutsmpstats.com) — tools for the Donu
 ## Shared
 - `theme.css` — design tokens, reset, dot-grid background
 - `favicon.svg` — donut logo
+
+## RTP map flow
+
+Fabric mod (on /rtp) → POST `/api/rtp` with `Authorization: Bearer <RTP_TOKEN>` → KV `RTP_MAP` → rendered on `rtpmap.html`.
