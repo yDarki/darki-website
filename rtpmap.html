@@ -114,15 +114,7 @@
       updatedEl.textContent='Updated '+new Date().toLocaleTimeString('en-US');
       emptyEl.style.display=points.length?'none':'flex';
 
-      var cw=CELL/EXTENT*S;
       var g='';
-      for(var r=0;r<NCELL;r++){
-        for(var c=0;c<NCELL;c++){
-          var code=parseInt(GRID[r].charAt(c),10);
-          var rx=sx(ORIGIN+r*CELL), ry=sy(ORIGIN+(c+1)*CELL);
-          g+='<rect x="'+rx.toFixed(1)+'" y="'+ry.toFixed(1)+'" width="'+cw.toFixed(2)+'" height="'+cw.toFixed(2)+'" fill="'+REGIONS[code].color+'" opacity="0.14"/>';
-        }
-      }
       for(var i=1;i<NCELL;i++){
         var v=sx(ORIGIN+i*CELL).toFixed(1);
         g+='<line x1="'+v+'" y1="0" x2="'+v+'" y2="'+S+'" stroke="rgba(255,255,255,.10)"/>';
@@ -130,9 +122,9 @@
         g+='<line x1="0" y1="'+w+'" x2="'+S+'" y2="'+w+'" stroke="rgba(255,255,255,.10)"/>';
       }
       var c0=sx(0).toFixed(1), c1=sy(0).toFixed(1);
-      g+='<line x1="'+c0+'" y1="0" x2="'+c0+'" y2="'+S+'" stroke="rgba(255,255,255,.13)" stroke-dasharray="4 5"/><line x1="0" y1="'+c1+'" x2="'+S+'" y2="'+c1+'" stroke="rgba(255,255,255,.13)" stroke-dasharray="4 5"/>';
-      g+='<rect x="1.5" y="1.5" width="'+(S-3)+'" height="'+(S-3)+'" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="2.5"/>';
-      g+='<text x="500" y="36" text-anchor="middle" fill="rgba(255,255,255,.5)" font-size="24" font-family="sans-serif">+X</text><text x="500" y="988" text-anchor="middle" fill="rgba(255,255,255,.5)" font-size="24" font-family="sans-serif">-X</text><text x="980" y="508" text-anchor="end" fill="rgba(255,255,255,.5)" font-size="24" font-family="sans-serif">+Z</text><text x="20" y="508" fill="rgba(255,255,255,.5)" font-size="24" font-family="sans-serif">-Z</text>';
+      g+='<line x1="'+c0+'" y1="0" x2="'+c0+'" y2="'+S+'" stroke="rgba(255,255,255,.34)" stroke-width="2" stroke-dasharray="6 6"/><line x1="0" y1="'+c1+'" x2="'+S+'" y2="'+c1+'" stroke="rgba(255,255,255,.34)" stroke-width="2" stroke-dasharray="6 6"/>';
+      g+='<rect x="1.5" y="1.5" width="'+(S-3)+'" height="'+(S-3)+'" fill="none" stroke="rgba(255,255,255,.34)" stroke-width="2.5"/>';
+      g+='<text x="500" y="36" text-anchor="middle" fill="rgba(255,255,255,.8)" font-size="27" font-weight="700" font-family="sans-serif">+X</text><text x="500" y="988" text-anchor="middle" fill="rgba(255,255,255,.8)" font-size="27" font-weight="700" font-family="sans-serif">-X</text><text x="980" y="508" text-anchor="end" fill="rgba(255,255,255,.8)" font-size="27" font-weight="700" font-family="sans-serif">+Z</text><text x="20" y="508" fill="rgba(255,255,255,.8)" font-size="27" font-weight="700" font-family="sans-serif">-Z</text>';
 
       screenPts=[];
       var pts='';
