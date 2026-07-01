@@ -36,7 +36,7 @@
   <div class="wrap">
     <a class="back" href="/index.html">← Dashboard</a>
     <h1><span class="grad">RTP Map</span></h1>
-    <p class="sub">Where players land when they /rtp on DonutSMP — each point is one teleport, coloured by its DonutSMP region (Miep's region map), bounded by the world border.</p>
+    <p class="sub">Where players land when they /rtp on DonutSMP — each point is one teleport, coloured by its DonutSMP region (Miep's region map).</p>
     <div class="panel">
       <div class="bar">
         <div class="stat"><b id="count">–</b> points</div>
@@ -66,9 +66,9 @@
     var S=1000;
 
     // --- DonutSMP regions (Miep / StackingDev region map) ---------------
-    // 9x9 grid of 50k blocks spanning the overworld border (-225k..+225k in X and Z).
+    // 9x9 grid of 50k blocks spanning -225k..+225k in X and Z.
     // Grid row = Z cell (north..south), grid col = X cell (west..east).
-    var CELL=50000, ORIGIN=-225000, NCELL=9;
+    var CELL=50000, ORIGIN=-225000, NCELL=9, EXTENT=CELL*NCELL; // 450k wide
     var REGIONS=[
       {name:'Oceania',    color:'#a855f7'}, // 0
       {name:'NA West',    color:'#f97316'}, // 1
@@ -91,6 +91,13 @@
     function clampCell(v){ v=Math.floor((v-ORIGIN)/CELL); return v<0?0:(v>8?8:v); }
     function regionCode(x,z){ return parseInt(GRID[clampCell(z)].charAt(clampCell(x)),10); }
 
+    // Screen mapping: horizontal = Z (-Z left, +Z right); vertical = X (+X top, -X bottom).
+    // Always framed to the region-grid area (±225k), where the regions and points live —
+    // the actual world border is far larger, so we don't scale to it.
+    function sx(z){ return (z-ORIGIN)/EXTENT*S; }
+    function sy(x){ return (ORIGIN+EXTENT-x)/EXTENT*S; }
+    function clampS(v){ return v<0?0:(v>S?S:v); }
+
     function ago(t){ var s=Math.floor((Date.now()-t)/1000); if(s<60)return s+'s ago'; var m=Math.floor(s/60); if(m<60)return m+'m ago'; var h=Math.floor(m/60); if(h<24)return h+'h ago'; return Math.floor(h/24)+'d ago'; }
     function fmt(n){ return Math.round(n).toLocaleString('en-US'); }
     function setSvg(svg){ var old=mapwrap.querySelector('svg'); if(old) old.remove(); if(svg) mapwrap.insertAdjacentHTML('afterbegin', svg); }
@@ -103,26 +110,17 @@
 
     function render(data){
       var points=(data&&data.points)||[];
-      var border=data&&data.border;
       countEl.textContent=fmt(points.length);
       updatedEl.textContent='Updated '+new Date().toLocaleTimeString('en-US');
       emptyEl.style.display=points.length?'none':'flex';
 
-      var size=(border&&border.size)||450000;
-      var cx=(border&&typeof border.cx==='number')?border.cx:0;
-      var cz=(border&&typeof border.cz==='number')?border.cz:0;
-      var half=size/2, minX=cx-half, maxX=cx+half, minZ=cz-half;
-      // Axes: horizontal = Z (-Z left, +Z right); vertical = X (+X top, -X bottom).
-      function sx(z){ return (z-minZ)/size*S; }
-      function sy(x){ return (maxX-x)/size*S; }
-      var cw=CELL/size*S;
-
+      var cw=CELL/EXTENT*S;
       var g='';
       for(var r=0;r<NCELL;r++){
         for(var c=0;c<NCELL;c++){
           var code=parseInt(GRID[r].charAt(c),10);
           var rx=sx(ORIGIN+r*CELL), ry=sy(ORIGIN+(c+1)*CELL);
-          g+='<rect x="'+rx.toFixed(1)+'" y="'+ry.toFixed(1)+'" width="'+cw.toFixed(2)+'" height="'+cw.toFixed(2)+'" fill="'+REGIONS[code].color+'" opacity="0.13"/>';
+          g+='<rect x="'+rx.toFixed(1)+'" y="'+ry.toFixed(1)+'" width="'+cw.toFixed(2)+'" height="'+cw.toFixed(2)+'" fill="'+REGIONS[code].color+'" opacity="0.14"/>';
         }
       }
       for(var i=1;i<NCELL;i++){
@@ -131,23 +129,22 @@
         var w=sy(ORIGIN+i*CELL).toFixed(1);
         g+='<line x1="0" y1="'+w+'" x2="'+S+'" y2="'+w+'" stroke="rgba(255,255,255,.10)"/>';
       }
-      var ccx=sx(cz).toFixed(1), ccy=sy(cx).toFixed(1);
-      g+='<line x1="'+ccx+'" y1="0" x2="'+ccx+'" y2="'+S+'" stroke="rgba(255,255,255,.13)" stroke-dasharray="4 5"/><line x1="0" y1="'+ccy+'" x2="'+S+'" y2="'+ccy+'" stroke="rgba(255,255,255,.13)" stroke-dasharray="4 5"/>';
+      var c0=sx(0).toFixed(1), c1=sy(0).toFixed(1);
+      g+='<line x1="'+c0+'" y1="0" x2="'+c0+'" y2="'+S+'" stroke="rgba(255,255,255,.13)" stroke-dasharray="4 5"/><line x1="0" y1="'+c1+'" x2="'+S+'" y2="'+c1+'" stroke="rgba(255,255,255,.13)" stroke-dasharray="4 5"/>';
       g+='<rect x="1.5" y="1.5" width="'+(S-3)+'" height="'+(S-3)+'" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="2.5"/>';
       g+='<text x="500" y="36" text-anchor="middle" fill="rgba(255,255,255,.5)" font-size="24" font-family="sans-serif">+X</text><text x="500" y="988" text-anchor="middle" fill="rgba(255,255,255,.5)" font-size="24" font-family="sans-serif">-X</text><text x="980" y="508" text-anchor="end" fill="rgba(255,255,255,.5)" font-size="24" font-family="sans-serif">+Z</text><text x="20" y="508" fill="rgba(255,255,255,.5)" font-size="24" font-family="sans-serif">-Z</text>';
 
       screenPts=[];
       var pts='';
       points.forEach(function(p){
-        var psx=sx(p.z), psy=sy(p.x);
-        if(psx<-8||psx>S+8||psy<-8||psy>S+8) return;
+        var psx=clampS(sx(p.z)), psy=clampS(sy(p.x));
         var code=regionCode(p.x,p.z);
         screenPts.push({sx:psx,sy:psy,p:p,code:code});
         pts+='<circle cx="'+psx.toFixed(1)+'" cy="'+psy.toFixed(1)+'" r="4.2" fill="'+REGIONS[code].color+'" stroke="rgba(0,0,0,.4)" stroke-width="0.8" opacity="0.92"/>';
       });
 
       setSvg('<svg viewBox="0 0 '+S+' '+S+'" xmlns="http://www.w3.org/2000/svg">'+g+pts+'</svg>');
-      noteEl.textContent='Vertical axis = X (+X top, -X bottom), horizontal axis = Z (-Z left, +Z right). Center '+fmt(cx)+', '+fmt(cz)+'. Regions from Miep / StackingDev DonutSMP region map.';
+      noteEl.textContent='Vertical axis = X (+X top, -X bottom), horizontal axis = Z (-Z left, +Z right). Framed to the ±225k region area; regions from the Miep / StackingDev DonutSMP region map.';
     }
 
     mapwrap.addEventListener('mousemove', function(e){
