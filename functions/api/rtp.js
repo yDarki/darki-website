@@ -24,8 +24,8 @@ export async function onRequest(context) {
   if (url.searchParams.get('check')) return json({ ok: true, kvBound: !!kv, tokenSet: !!master }, 200);
 
   const authHeader = request.headers.get('Authorization') || '';
-  const provided = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : (request.headers.get('X-RTP-Token') || '');
-  const isMaster = !!master && provided === master;
+  const provided = (authHeader.startsWith('Bearer ') ? authHeader.slice(7) : (request.headers.get('X-RTP-Token') || '')).trim();
+  const isMaster = !!master && provided === String(master).trim();
 
   // ---- GET ----
   if (request.method !== 'POST') {
