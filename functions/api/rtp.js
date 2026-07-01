@@ -81,6 +81,8 @@ export async function onRequest(context) {
   const x = Math.round(Number(body.x));
   const z = Math.round(Number(body.z));
   if (!isFinite(x) || !isFinite(z)) return json({ error: 'bad coords' }, 400);
+  let dim = String(body.dim || 'overworld').toLowerCase();
+  if (dim !== 'nether' && dim !== 'end') dim = 'overworld';
 
   // name is server-controlled (from the token), not client-controlled
   let name = isMaster ? String(body.name || 'admin') : String(wlName);
@@ -88,11 +90,11 @@ export async function onRequest(context) {
 
   // border: update if a valid one is sent, then enforce it
   let border = null; try { border = JSON.parse((await kv.get('border')) || 'null'); } catch (e) {}
-  if (body.border && Number(body.border.size) > 0) {
+  if (dim === 'overworld' && body.border && Number(body.border.size) > 0) {
     border = { size: Math.round(Number(body.border.size)), cx: Math.round(Number(body.border.cx) || 0), cz: Math.round(Number(body.border.cz) || 0) };
     await kv.put('border', JSON.stringify(border));
   }
-  if (border && border.size > 0) {
+  if (dim === 'overworld' && border && border.size > 0) {
     const half = border.size / 2 + 64;
     if (Math.abs(x - border.cx) > half || Math.abs(z - border.cz) > half) return json({ error: 'out of bounds' }, 400);
   }
@@ -100,9 +102,9 @@ export async function onRequest(context) {
   let points = []; try { points = JSON.parse((await kv.get('points')) || '[]'); } catch (e) { points = []; }
   const t = Date.now();
   const last = points[points.length - 1];
-  const dup = last && last.n === name && last.x === x && last.z === z && (t - last.t) < 5000;
+  const dup = last && last.n === name && last.x === x && last.z === z && (last.d || 'overworld') === dim && (t - last.t) < 5000;
   if (!dup) {
-    points.push({ n: name, x: x, z: z, t: t });
+    points.push({ n: name, x: x, z: z, t: t, d: dim });
     if (points.length > 5000) points = points.slice(points.length - 5000);
     await kv.put('points', JSON.stringify(points));
   }
