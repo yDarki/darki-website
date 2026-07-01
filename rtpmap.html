@@ -1,51 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RTP Map</title>
-<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<link rel="stylesheet" href="/theme.css" />
-<style>
-  .wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:28px 22px 70px}
-  .back{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 16px;color:var(--muted);font-weight:600;font-size:14px;margin-bottom:22px;transition:.2s}
-  .back:hover{color:var(--text);border-color:rgba(255,255,255,.4)}
-  h1{font-size:clamp(28px,5vw,40px);font-weight:800;letter-spacing:-1px;filter:drop-shadow(0 0 22px rgba(255,255,255,.13))}
-  h1 .grad{background:linear-gradient(105deg,#ffffff 0%,#d7dae6 28%,#9197b0 50%,#d7dae6 72%,#ffffff 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shine 5s ease-in-out infinite alternate}
-  .sub{color:var(--muted);font-size:15px;margin-top:8px;line-height:1.5;max-width:560px}
-  .panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:22px}
-  .bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
-  .stat{font-size:13px;color:var(--muted)}
-  .stat b{color:var(--text);font-variant-numeric:tabular-nums}
-  .btn{margin-left:auto;background:#fff;color:#0a0a0c;border:none;padding:9px 16px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:.12s}
-  .btn:hover{transform:translateY(-2px)}
-  .mapwrap{position:relative;width:100%;aspect-ratio:1/1;background:var(--card-2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
-  .mapwrap svg{display:block;width:100%;height:100%}
-  .tip{position:absolute;pointer-events:none;background:#0a0a0c;border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:6px 9px;font-size:12px;color:var(--text);opacity:0;transform:translate(-50%,-130%);transition:opacity .12s;white-space:nowrap;z-index:5;font-variant-numeric:tabular-nums}
-  .tip b{color:#6ba8ff}
-  .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:14px;padding:30px}
-  .note{color:var(--muted);font-size:12.5px;line-height:1.6;margin-top:12px}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RTP Map</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/theme.css">
+  <style>
+    .wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:28px 22px 70px}
+    .back{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 16px;color:var(--muted);font-weight:600;font-size:14px;margin-bottom:22px;transition:.2s}
+    .back:hover{color:var(--text);border-color:rgba(255,255,255,.4)}
+    h1{font-size:clamp(28px,5vw,40px);font-weight:800;letter-spacing:-1px;filter:drop-shadow(0 0 22px rgba(255,255,255,.13))}
+    h1 .grad{background:linear-gradient(105deg,#ffffff 0%,#d7dae6 28%,#9197b0 50%,#d7dae6 72%,#ffffff 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shine 5s ease-in-out infinite alternate}
+    .sub{color:var(--muted);font-size:15px;margin-top:8px;line-height:1.5;max-width:560px}
+    .panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:22px}
+    .bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+    .stat{font-size:13px;color:var(--muted)}
+    .stat b{color:var(--text);font-variant-numeric:tabular-nums}
+    .btn{margin-left:auto;background:#fff;color:#0a0a0c;border:none;padding:9px 16px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:.12s}
+    .btn:hover{transform:translateY(-2px)}
+    .mapwrap{position:relative;width:100%;aspect-ratio:1/1;background:var(--card-2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+    .mapwrap svg{display:block;width:100%;height:100%}
+    .tip{position:absolute;pointer-events:none;background:#0a0a0c;border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:6px 9px;font-size:12px;color:var(--text);opacity:0;transform:translate(-50%,-130%);transition:opacity .12s;white-space:nowrap;z-index:5;font-variant-numeric:tabular-nums}
+    .tip b{color:var(--text)}
+    .tip .rg{font-weight:700}
+    .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:14px;padding:30px}
+    .legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:14px}
+    .legend .it{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted)}
+    .legend .sw{width:11px;height:11px;border-radius:3px;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+    .note{color:var(--muted);font-size:12.5px;line-height:1.6;margin-top:12px}
+  </style>
 </head>
 <body>
   <div class="bg"></div>
   <div class="wrap">
-    <a class="back" href="index.html">&larr; Dashboard</a>
+    <a class="back" href="/index.html">← Dashboard</a>
     <h1><span class="grad">RTP Map</span></h1>
-    <p class="sub">Where players land when they /rtp on DonutSMP &mdash; each point is one teleport, bounded by the world border.</p>
+    <p class="sub">Where players land when they /rtp on DonutSMP — each point is one teleport, coloured by its DonutSMP region (Miep's region map), bounded by the world border.</p>
     <div class="panel">
       <div class="bar">
-        <span class="stat"><b id="count">&ndash;</b> points</span>
-        <span class="stat" id="updated"></span>
+        <div class="stat"><b id="count">–</b> points</div>
+        <div class="stat" id="updated"></div>
         <button class="btn" id="refresh">Refresh</button>
       </div>
       <div class="mapwrap" id="mapwrap">
-        <div class="empty" id="empty">Loading&hellip;</div>
         <div class="tip" id="tip"></div>
+        <div class="empty" id="empty">Loading…</div>
       </div>
+      <div class="legend" id="legend"></div>
       <p class="note" id="bordernote"></p>
     </div>
   </div>
+
   <script>
   (function(){
     var mapwrap=document.getElementById('mapwrap');
@@ -54,37 +60,96 @@
     var countEl=document.getElementById('count');
     var updatedEl=document.getElementById('updated');
     var noteEl=document.getElementById('bordernote');
+    var legendEl=document.getElementById('legend');
+    var refreshBtn=document.getElementById('refresh');
     var screenPts=[];
-    var ACCENT='#6ba8ff';
     var S=1000;
+
+    // --- DonutSMP regions (Miep / StackingDev region map) ---------------
+    // 9x9 grid of 50k blocks spanning the overworld border (-225k..+225k in X and Z).
+    // Grid row = Z cell (north..south), grid col = X cell (west..east).
+    var CELL=50000, ORIGIN=-225000, NCELL=9;
+    var REGIONS=[
+      {name:'Oceania',    color:'#a855f7'}, // 0
+      {name:'NA West',    color:'#f97316'}, // 1
+      {name:'NA East',    color:'#ef4444'}, // 2
+      {name:'EU West',    color:'#22d3ee'}, // 3
+      {name:'EU Central', color:'#3b82f6'}, // 4
+      {name:'Asia',       color:'#eab308'}  // 5
+    ];
+    var GRID=[
+      "011122222",
+      "011122222",
+      "011122222",
+      "000122222",
+      "505522222",
+      "533444442",
+      "533444444",
+      "434444444",
+      "433333334"
+    ];
+    function clampCell(v){ v=Math.floor((v-ORIGIN)/CELL); return v<0?0:(v>8?8:v); }
+    function regionCode(x,z){ return parseInt(GRID[clampCell(z)].charAt(clampCell(x)),10); }
+
     function ago(t){ var s=Math.floor((Date.now()-t)/1000); if(s<60)return s+'s ago'; var m=Math.floor(s/60); if(m<60)return m+'m ago'; var h=Math.floor(m/60); if(h<24)return h+'h ago'; return Math.floor(h/24)+'d ago'; }
     function fmt(n){ return Math.round(n).toLocaleString('en-US'); }
     function setSvg(svg){ var old=mapwrap.querySelector('svg'); if(old) old.remove(); if(svg) mapwrap.insertAdjacentHTML('afterbegin', svg); }
+
+    function buildLegend(){
+      legendEl.innerHTML=REGIONS.map(function(r){
+        return '<span class="it"><span class="sw" style="background:'+r.color+'"></span>'+r.name+'</span>';
+      }).join('');
+    }
+
     function render(data){
       var points=(data&&data.points)||[];
       var border=data&&data.border;
       countEl.textContent=fmt(points.length);
-      updatedEl.textContent='updated '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-      if(!points.length){ setSvg(''); screenPts=[]; emptyEl.style.display='flex'; emptyEl.textContent='No points yet — install the mod and use /rtp.'; noteEl.textContent=''; return; }
-      emptyEl.style.display='none';
-      var cx,cz,size;
-      if(border&&border.size>0){ cx=border.cx||0; cz=border.cz||0; size=border.size; }
-      else { var xs=points.map(function(p){return p.x;}),zs=points.map(function(p){return p.z;}); var mnx=Math.min.apply(null,xs),mxx=Math.max.apply(null,xs),mnz=Math.min.apply(null,zs),mxz=Math.max.apply(null,zs); size=Math.max(mxx-mnx,mxz-mnz,200)*1.15; cx=(mnx+mxx)/2; cz=(mnz+mxz)/2; }
-      var half=size/2, minX=cx-half, minZ=cz-half;
-      function px(x){ return (x-minX)/size*S; }
-      function pz(z){ return (z-minZ)/size*S; }
+      updatedEl.textContent='Updated '+new Date().toLocaleTimeString('en-US');
+      emptyEl.style.display=points.length?'none':'flex';
+
+      var size=(border&&border.size)||450000;
+      var cx=(border&&typeof border.cx==='number')?border.cx:0;
+      var cz=(border&&typeof border.cz==='number')?border.cz:0;
+      var half=size/2, minX=cx-half, maxX=cx+half, minZ=cz-half;
+      // Axes: horizontal = Z (-Z left, +Z right); vertical = X (+X top, -X bottom).
+      function sx(z){ return (z-minZ)/size*S; }
+      function sy(x){ return (maxX-x)/size*S; }
+      var cw=CELL/size*S;
+
       var g='';
-      for(var i=1;i<8;i++){ var v=(i/8*S).toFixed(1); g+='<line x1="'+v+'" y1="0" x2="'+v+'" y2="'+S+'" stroke="rgba(255,255,255,.05)"/><line x1="0" y1="'+v+'" x2="'+S+'" y2="'+v+'" stroke="rgba(255,255,255,.05)"/>'; }
-      var ccx=px(cx).toFixed(1), ccz=pz(cz).toFixed(1);
-      g+='<line x1="'+ccx+'" y1="0" x2="'+ccx+'" y2="'+S+'" stroke="rgba(255,255,255,.13)" stroke-dasharray="4 5"/><line x1="0" y1="'+ccz+'" x2="'+S+'" y2="'+ccz+'" stroke="rgba(255,255,255,.13)" stroke-dasharray="4 5"/>';
+      for(var r=0;r<NCELL;r++){
+        for(var c=0;c<NCELL;c++){
+          var code=parseInt(GRID[r].charAt(c),10);
+          var rx=sx(ORIGIN+r*CELL), ry=sy(ORIGIN+(c+1)*CELL);
+          g+='<rect x="'+rx.toFixed(1)+'" y="'+ry.toFixed(1)+'" width="'+cw.toFixed(2)+'" height="'+cw.toFixed(2)+'" fill="'+REGIONS[code].color+'" opacity="0.13"/>';
+        }
+      }
+      for(var i=1;i<NCELL;i++){
+        var v=sx(ORIGIN+i*CELL).toFixed(1);
+        g+='<line x1="'+v+'" y1="0" x2="'+v+'" y2="'+S+'" stroke="rgba(255,255,255,.10)"/>';
+        var w=sy(ORIGIN+i*CELL).toFixed(1);
+        g+='<line x1="0" y1="'+w+'" x2="'+S+'" y2="'+w+'" stroke="rgba(255,255,255,.10)"/>';
+      }
+      var ccx=sx(cz).toFixed(1), ccy=sy(cx).toFixed(1);
+      g+='<line x1="'+ccx+'" y1="0" x2="'+ccx+'" y2="'+S+'" stroke="rgba(255,255,255,.13)" stroke-dasharray="4 5"/><line x1="0" y1="'+ccy+'" x2="'+S+'" y2="'+ccy+'" stroke="rgba(255,255,255,.13)" stroke-dasharray="4 5"/>';
       g+='<rect x="1.5" y="1.5" width="'+(S-3)+'" height="'+(S-3)+'" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="2.5"/>';
+      g+='<text x="500" y="36" text-anchor="middle" fill="rgba(255,255,255,.5)" font-size="24" font-family="sans-serif">+X</text><text x="500" y="988" text-anchor="middle" fill="rgba(255,255,255,.5)" font-size="24" font-family="sans-serif">-X</text><text x="980" y="508" text-anchor="end" fill="rgba(255,255,255,.5)" font-size="24" font-family="sans-serif">+Z</text><text x="20" y="508" fill="rgba(255,255,255,.5)" font-size="24" font-family="sans-serif">-Z</text>';
+
       screenPts=[];
       var pts='';
-      points.forEach(function(p){ var sx=px(p.x), sy=pz(p.z); if(sx<-8||sx>S+8||sy<-8||sy>S+8) return; screenPts.push({sx:sx,sy:sy,p:p}); pts+='<circle cx="'+sx.toFixed(1)+'" cy="'+sy.toFixed(1)+'" r="3.4" fill="'+ACCENT+'" fill-opacity="0.72"/>'; });
-      var lbl='<text x="'+(S/2)+'" y="24" fill="#8b8ba0" font-size="22" text-anchor="middle">N</text><text x="'+(S/2)+'" y="'+(S-10)+'" fill="#8b8ba0" font-size="22" text-anchor="middle">S</text><text x="20" y="'+(S/2+7)+'" fill="#8b8ba0" font-size="22" text-anchor="middle">W</text><text x="'+(S-20)+'" y="'+(S/2+7)+'" fill="#8b8ba0" font-size="22" text-anchor="middle">E</text>';
-      setSvg('<svg viewBox="0 0 '+S+' '+S+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">'+g+pts+lbl+'</svg>');
-      noteEl.textContent='World border: '+fmt(size)+' blocks wide, center '+fmt(cx)+' / '+fmt(cz)+'. Range X '+fmt(minX)+' to '+fmt(minX+size)+', Z '+fmt(minZ)+' to '+fmt(minZ+size)+'.';
+      points.forEach(function(p){
+        var psx=sx(p.z), psy=sy(p.x);
+        if(psx<-8||psx>S+8||psy<-8||psy>S+8) return;
+        var code=regionCode(p.x,p.z);
+        screenPts.push({sx:psx,sy:psy,p:p,code:code});
+        pts+='<circle cx="'+psx.toFixed(1)+'" cy="'+psy.toFixed(1)+'" r="4.2" fill="'+REGIONS[code].color+'" stroke="rgba(0,0,0,.4)" stroke-width="0.8" opacity="0.92"/>';
+      });
+
+      setSvg('<svg viewBox="0 0 '+S+' '+S+'" xmlns="http://www.w3.org/2000/svg">'+g+pts+'</svg>');
+      noteEl.textContent='Vertical axis = X (+X top, -X bottom), horizontal axis = Z (-Z left, +Z right). Center '+fmt(cx)+', '+fmt(cz)+'. Regions from Miep / StackingDev DonutSMP region map.';
     }
+
     mapwrap.addEventListener('mousemove', function(e){
       if(!screenPts.length){ tip.style.opacity=0; return; }
       var rect=mapwrap.getBoundingClientRect();
@@ -92,12 +157,24 @@
       var best=null,bd=1e9;
       for(var i=0;i<screenPts.length;i++){ var dx=screenPts[i].sx-mx, dy=screenPts[i].sy-my, d=dx*dx+dy*dy; if(d<bd){bd=d;best=screenPts[i];} }
       var tsvg=16*S/rect.width;
-      if(best && bd<=tsvg*tsvg){ var p=best.p; tip.innerHTML='<b>'+(p.n||'?')+'</b><br>'+p.x+', '+p.z+' · '+ago(p.t); tip.style.left=(best.sx/S*rect.width)+'px'; tip.style.top=(best.sy/S*rect.height)+'px'; tip.style.opacity=1; }
-      else { tip.style.opacity=0; }
+      if(best && bd<=tsvg*tsvg){
+        var p=best.p, rg=REGIONS[best.code];
+        tip.innerHTML='<b>'+(p.n||'?')+'</b><br>'+p.x+', '+p.z+'<br><span class="rg" style="color:'+rg.color+'">'+rg.name+'</span> · '+ago(p.t);
+        tip.style.left=(best.sx/S*rect.width)+'px';
+        tip.style.top=(best.sy/S*rect.height)+'px';
+        tip.style.opacity=1;
+      } else { tip.style.opacity=0; }
     });
     mapwrap.addEventListener('mouseleave', function(){ tip.style.opacity=0; });
-    function load(){ fetch('/api/rtp?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(render).catch(function(){ emptyEl.style.display='flex'; emptyEl.textContent='Could not load map data.'; }); }
-    document.getElementById('refresh').addEventListener('click', load);
+
+    function load(){
+      fetch('/api/rtp?_='+Date.now(),{cache:'no-store'})
+        .then(function(r){ return r.json(); })
+        .then(render)
+        .catch(function(){ emptyEl.textContent='Could not load the map.'; emptyEl.style.display='flex'; });
+    }
+    refreshBtn.addEventListener('click', load);
+    buildLegend();
     load();
     setInterval(load, 30000);
   })();
