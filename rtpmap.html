@@ -14,6 +14,10 @@
     h1 .grad{background:linear-gradient(105deg,#ffffff 0%,#d7dae6 28%,#9197b0 50%,#d7dae6 72%,#ffffff 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shine 5s ease-in-out infinite alternate}
     .sub{color:var(--muted);font-size:15px;margin-top:8px;line-height:1.5;max-width:560px}
     .panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:22px}
+    .dims{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+    .dims button{background:var(--card-2);border:1px solid var(--border);color:var(--muted);font-size:13px;font-weight:600;padding:7px 15px;border-radius:10px;cursor:pointer;transition:.15s}
+    .dims button:hover{color:var(--text);border-color:rgba(255,255,255,.3)}
+    .dims button.on{background:#2a2a3d;color:#f3f3f7;border-color:rgba(255,255,255,.24)}
     .bar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
     .stat{font-size:13px;color:var(--muted)}
     .stat b{color:var(--text);font-variant-numeric:tabular-nums}
@@ -36,8 +40,13 @@
   <div class="wrap">
     <a class="back" href="/index.html">← Dashboard</a>
     <h1><span class="grad">RTP Map</span></h1>
-    <p class="sub">Where players land when they /rtp on DonutSMP — each point is one teleport, coloured by its DonutSMP region (Miep's region map).</p>
+    <p class="sub">Where players land when they /rtp on DonutSMP — one point per teleport. Pick a dimension; Overworld points are coloured by region (Miep's map).</p>
     <div class="panel">
+      <div class="dims" id="dims">
+        <button type="button" data-d="overworld" class="on">Overworld</button>
+        <button type="button" data-d="nether">Nether</button>
+        <button type="button" data-d="end">End</button>
+      </div>
       <div class="bar">
         <div class="stat"><b id="count">–</b> points</div>
         <div class="stat" id="updated"></div>
@@ -62,58 +71,42 @@
     var noteEl=document.getElementById('bordernote');
     var legendEl=document.getElementById('legend');
     var refreshBtn=document.getElementById('refresh');
+    var dimsEl=document.getElementById('dims');
     var screenPts=[];
     var S=1000;
+    var lastData=null;
 
-    // --- DonutSMP regions (Miep / StackingDev region map) ---------------
-    // 9x9 grid of 50k blocks spanning -225k..+225k in X and Z.
-    // Grid row = Z cell (north..south), grid col = X cell (west..east).
-    var CELL=50000, ORIGIN=-225000, NCELL=9, EXTENT=CELL*NCELL; // 450k wide
+    function loadDim(){ try{ var d=localStorage.getItem('rtpDim'); return (d==='nether'||d==='end')?d:'overworld'; }catch(e){ return 'overworld'; } }
+    function saveDim(d){ try{ localStorage.setItem('rtpDim', d); }catch(e){} }
+    var curDim=loadDim();
+    var DIMCOLOR={ nether:'#ff6b4a', end:'#c084fc' };
+    var DIMLABEL={ overworld:'Overworld', nether:'Nether', end:'End' };
+
+    var CELL=50000, ORIGIN=-225000, NCELL=9, EXTENT=CELL*NCELL;
     var REGIONS=[
-      {name:'Oceania',    color:'#a855f7'}, // 0
-      {name:'NA West',    color:'#f97316'}, // 1
-      {name:'NA East',    color:'#ef4444'}, // 2
-      {name:'EU West',    color:'#22d3ee'}, // 3
-      {name:'EU Central', color:'#3b82f6'}, // 4
-      {name:'Asia',       color:'#eab308'}  // 5
+      {name:'Oceania',    color:'#a855f7'},
+      {name:'NA West',    color:'#f97316'},
+      {name:'NA East',    color:'#ef4444'},
+      {name:'EU West',    color:'#22d3ee'},
+      {name:'EU Central', color:'#3b82f6'},
+      {name:'Asia',       color:'#eab308'}
     ];
-    var GRID=[
-      "011122222",
-      "011122222",
-      "011122222",
-      "000122222",
-      "505522222",
-      "533444442",
-      "533444444",
-      "434444444",
-      "433333334"
-    ];
+    var GRID=["011122222","011122222","011122222","000122222","505522222","533444442","533444444","434444444","433333334"];
     function clampCell(v){ v=Math.floor((v-ORIGIN)/CELL); return v<0?0:(v>8?8:v); }
     function regionCode(x,z){ return parseInt(GRID[clampCell(z)].charAt(clampCell(x)),10); }
 
-    // Screen mapping: horizontal = Z (-Z left, +Z right); vertical = X (+X top, -X bottom).
-    // Always framed to the region-grid area (±225k), where the regions and points live —
-    // the actual world border is far larger, so we don't scale to it.
-    function sx(z){ return (z-ORIGIN)/EXTENT*S; }
-    function sy(x){ return (ORIGIN+EXTENT-x)/EXTENT*S; }
     function clampS(v){ return v<0?0:(v>S?S:v); }
-
     function ago(t){ var s=Math.floor((Date.now()-t)/1000); if(s<60)return s+'s ago'; var m=Math.floor(s/60); if(m<60)return m+'m ago'; var h=Math.floor(m/60); if(h<24)return h+'h ago'; return Math.floor(h/24)+'d ago'; }
     function fmt(n){ return Math.round(n).toLocaleString('en-US'); }
     function setSvg(svg){ var old=mapwrap.querySelector('svg'); if(old) old.remove(); if(svg) mapwrap.insertAdjacentHTML('afterbegin', svg); }
+    function pdim(p){ var d=(p&&p.d)||'overworld'; return (d==='nether'||d==='end')?d:'overworld'; }
 
-    function buildLegend(){
-      legendEl.innerHTML=REGIONS.map(function(r){
-        return '<span class="it"><span class="sw" style="background:'+r.color+'"></span>'+r.name+'</span>';
-      }).join('');
-    }
+    function axisLabels(){ return '<text x="500" y="36" text-anchor="middle" fill="rgba(255,255,255,.8)" font-size="27" font-weight="700" font-family="sans-serif">+X</text><text x="500" y="988" text-anchor="middle" fill="rgba(255,255,255,.8)" font-size="27" font-weight="700" font-family="sans-serif">-X</text><text x="980" y="508" text-anchor="end" fill="rgba(255,255,255,.8)" font-size="27" font-weight="700" font-family="sans-serif">+Z</text><text x="20" y="508" fill="rgba(255,255,255,.8)" font-size="27" font-weight="700" font-family="sans-serif">-Z</text>'; }
+    function frame(){ return '<rect x="1.5" y="1.5" width="'+(S-3)+'" height="'+(S-3)+'" fill="none" stroke="rgba(255,255,255,.34)" stroke-width="2.5"/>'; }
 
-    function render(data){
-      var points=(data&&data.points)||[];
-      countEl.textContent=fmt(points.length);
-      updatedEl.textContent='Updated '+new Date().toLocaleTimeString('en-US');
-      emptyEl.style.display=points.length?'none':'flex';
-
+    function drawOverworld(points){
+      function sx(z){ return (z-ORIGIN)/EXTENT*S; }
+      function sy(x){ return (ORIGIN+EXTENT-x)/EXTENT*S; }
       var g='';
       for(var i=1;i<NCELL;i++){
         var v=sx(ORIGIN+i*CELL).toFixed(1);
@@ -123,9 +116,7 @@
       }
       var c0=sx(0).toFixed(1), c1=sy(0).toFixed(1);
       g+='<line x1="'+c0+'" y1="0" x2="'+c0+'" y2="'+S+'" stroke="rgba(255,255,255,.34)" stroke-width="2" stroke-dasharray="6 6"/><line x1="0" y1="'+c1+'" x2="'+S+'" y2="'+c1+'" stroke="rgba(255,255,255,.34)" stroke-width="2" stroke-dasharray="6 6"/>';
-      g+='<rect x="1.5" y="1.5" width="'+(S-3)+'" height="'+(S-3)+'" fill="none" stroke="rgba(255,255,255,.34)" stroke-width="2.5"/>';
-      g+='<text x="500" y="36" text-anchor="middle" fill="rgba(255,255,255,.8)" font-size="27" font-weight="700" font-family="sans-serif">+X</text><text x="500" y="988" text-anchor="middle" fill="rgba(255,255,255,.8)" font-size="27" font-weight="700" font-family="sans-serif">-X</text><text x="980" y="508" text-anchor="end" fill="rgba(255,255,255,.8)" font-size="27" font-weight="700" font-family="sans-serif">+Z</text><text x="20" y="508" fill="rgba(255,255,255,.8)" font-size="27" font-weight="700" font-family="sans-serif">-Z</text>';
-
+      g+=frame()+axisLabels();
       screenPts=[];
       var pts='';
       points.forEach(function(p){
@@ -134,10 +125,54 @@
         screenPts.push({sx:psx,sy:psy,p:p,code:code});
         pts+='<circle cx="'+psx.toFixed(1)+'" cy="'+psy.toFixed(1)+'" r="4.2" fill="'+REGIONS[code].color+'" stroke="rgba(0,0,0,.4)" stroke-width="0.8" opacity="0.92"/>';
       });
-
       setSvg('<svg viewBox="0 0 '+S+' '+S+'" xmlns="http://www.w3.org/2000/svg">'+g+pts+'</svg>');
-      noteEl.textContent='Vertical axis = X (+X top, -X bottom), horizontal axis = Z (-Z left, +Z right). Framed to the ±225k region area; regions from the Miep / StackingDev DonutSMP region map.';
+      legendEl.innerHTML=REGIONS.map(function(r){ return '<span class="it"><span class="sw" style="background:'+r.color+'"></span>'+r.name+'</span>'; }).join('');
+      noteEl.textContent='Overworld — framed to the ±225k region area; regions from the Miep / StackingDev DonutSMP map. Axis: X vertical (+X top), Z horizontal (+Z right).';
     }
+
+    function drawPlain(points, dim){
+      var col=DIMCOLOR[dim]||'#8bd0ff';
+      var minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
+      points.forEach(function(p){ if(p.x<minX)minX=p.x; if(p.x>maxX)maxX=p.x; if(p.z<minZ)minZ=p.z; if(p.z>maxZ)maxZ=p.z; });
+      if(!isFinite(minX)){ minX=-1000;maxX=1000;minZ=-1000;maxZ=1000; }
+      var cxw=(minX+maxX)/2, czw=(minZ+maxZ)/2;
+      var half=Math.max((maxX-minX),(maxZ-minZ))/2;
+      half=Math.max(half*1.15, 500);
+      var x0=cxw-half, x1=cxw+half, z0=czw-half, z1=czw+half;
+      function sx(z){ return (z-z0)/(z1-z0)*S; }
+      function sy(x){ return (x1-x)/(x1-x0)*S; }
+      var g='';
+      for(var i=1;i<4;i++){ var v=(i/4*S).toFixed(1); g+='<line x1="'+v+'" y1="0" x2="'+v+'" y2="'+S+'" stroke="rgba(255,255,255,.08)"/><line x1="0" y1="'+v+'" x2="'+S+'" y2="'+v+'" stroke="rgba(255,255,255,.08)"/>'; }
+      if(0>=z0 && 0<=z1){ var cz=sx(0).toFixed(1); g+='<line x1="'+cz+'" y1="0" x2="'+cz+'" y2="'+S+'" stroke="rgba(255,255,255,.34)" stroke-width="2" stroke-dasharray="6 6"/>'; }
+      if(0>=x0 && 0<=x1){ var cx=sy(0).toFixed(1); g+='<line x1="0" y1="'+cx+'" x2="'+S+'" y2="'+cx+'" stroke="rgba(255,255,255,.34)" stroke-width="2" stroke-dasharray="6 6"/>'; }
+      g+=frame()+axisLabels();
+      screenPts=[];
+      var pts='';
+      points.forEach(function(p){
+        var psx=clampS(sx(p.z)), psy=clampS(sy(p.x));
+        screenPts.push({sx:psx,sy:psy,p:p,code:-1});
+        pts+='<circle cx="'+psx.toFixed(1)+'" cy="'+psy.toFixed(1)+'" r="4.2" fill="'+col+'" stroke="rgba(0,0,0,.4)" stroke-width="0.8" opacity="0.92"/>';
+      });
+      setSvg('<svg viewBox="0 0 '+S+' '+S+'" xmlns="http://www.w3.org/2000/svg">'+g+pts+'</svg>');
+      legendEl.innerHTML='<span class="it"><span class="sw" style="background:'+col+'"></span>'+DIMLABEL[dim]+'</span>';
+      noteEl.textContent=DIMLABEL[dim]+' — auto-framed to the points (no regions here; regions are an Overworld concept). Axis: X vertical (+X top), Z horizontal (+Z right).';
+    }
+
+    function updateDimBtns(){ dimsEl.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-d')===curDim); }); }
+
+    function render(data){
+      lastData=data;
+      var all=(data&&data.points)||[];
+      var points=all.filter(function(p){ return pdim(p)===curDim; });
+      countEl.textContent=fmt(points.length);
+      updatedEl.textContent='Updated '+new Date().toLocaleTimeString('en-US');
+      if(!points.length){ emptyEl.textContent='No RTP points in the '+DIMLABEL[curDim]+' yet.'; }
+      emptyEl.style.display=points.length?'none':'flex';
+      updateDimBtns();
+      if(curDim==='overworld') drawOverworld(points); else drawPlain(points, curDim);
+    }
+
+    dimsEl.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ curDim=b.getAttribute('data-d'); saveDim(curDim); if(lastData) render(lastData); else load(); }; });
 
     mapwrap.addEventListener('mousemove', function(e){
       if(!screenPts.length){ tip.style.opacity=0; return; }
@@ -147,8 +182,9 @@
       for(var i=0;i<screenPts.length;i++){ var dx=screenPts[i].sx-mx, dy=screenPts[i].sy-my, d=dx*dx+dy*dy; if(d<bd){bd=d;best=screenPts[i];} }
       var tsvg=16*S/rect.width;
       if(best && bd<=tsvg*tsvg){
-        var p=best.p, rg=REGIONS[best.code];
-        tip.innerHTML='<b>'+(p.n||'?')+'</b><br>'+p.x+', '+p.z+'<br><span class="rg" style="color:'+rg.color+'">'+rg.name+'</span> · '+ago(p.t);
+        var p=best.p; var rline='';
+        if(best.code>=0){ var rg=REGIONS[best.code]; rline='<span class="rg" style="color:'+rg.color+'">'+rg.name+'</span> · '; }
+        tip.innerHTML='<b>'+(p.n||'?')+'</b><br>'+p.x+', '+p.z+'<br>'+rline+ago(p.t);
         tip.style.left=(best.sx/S*rect.width)+'px';
         tip.style.top=(best.sy/S*rect.height)+'px';
         tip.style.opacity=1;
@@ -163,7 +199,7 @@
         .catch(function(){ emptyEl.textContent='Could not load the map.'; emptyEl.style.display='flex'; });
     }
     refreshBtn.addEventListener('click', load);
-    buildLegend();
+    updateDimBtns();
     load();
     setInterval(load, 30000);
   })();
