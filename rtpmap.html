@@ -56,6 +56,14 @@
     .ovlbig-title{font-size:19px;font-weight:800;color:#f3f3f7}
     .ovlbig-sub{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:#8b8ba0;font-weight:700;margin:4px 0 14px}
     .mapbig-outer{width:min(78vh,820px);max-width:100%;margin:0 auto}
+  .coordfind{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:16px}
+    .coordfind .cf-lbl{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);font-weight:700}
+    .coordfind label{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);font-weight:600}
+    .coordfind input{width:96px;background:#1a1a28;border:1px solid rgba(255,255,255,.12);color:var(--text);border-radius:8px;padding:6px 9px;font-size:13px;font-variant-numeric:tabular-nums}
+    .coordfind input:focus{outline:none;border-color:rgba(255,255,255,.35)}
+    .cf-out{font-size:12.5px;color:var(--text);font-variant-numeric:tabular-nums}
+    .cf-out b{color:var(--text)}
+    .cf-muted{color:var(--muted)}
   </style>
 </head>
 <body>
@@ -87,6 +95,13 @@
         </div>
         <div class="tip" id="tip"></div>
         <div class="detail" id="detail"></div>
+      </div>
+      <div class="coordfind">
+        <span class="cf-lbl">Your coords</span>
+        <label>X <input id="cfX" type="number" inputmode="numeric" placeholder="X"></label>
+        <label>Z <input id="cfZ" type="number" inputmode="numeric" placeholder="Z"></label>
+        <button class="btn ghost" id="cfBtn" type="button">Find nearest</button>
+        <span class="cf-out" id="cfOut"></span>
       </div>
       <div class="legend" id="legend"></div>
       <p class="note" id="bordernote"></p>
@@ -227,6 +242,7 @@
       tilesBtn.classList.toggle('on', showTiles);
       if(curDim==='overworld') drawOverworld(points); else drawPlain(points, curDim);
       if(typeof mapBig!=='undefined' && mapBig && mapBig.classList.contains('open')){ var _s=mapwrap.querySelector('svg'); if(_s) mapBigWrap.innerHTML=_s.outerHTML; }
+      if(typeof updateCoordFind==='function') updateCoordFind();
     }
 
     dimsEl.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ curDim=b.getAttribute('data-d'); saveDim(curDim); if(lastData) render(lastData); else load(); }; });
@@ -300,6 +316,26 @@
     var mapBig=document.getElementById('mapBig'), mapBigWrap=document.getElementById('mapBigWrap'), mapBigSub=document.getElementById('mapBigSub');
     var mapBigTip=document.getElementById('mapBigTip'), mapBigDetail=document.getElementById('mapBigDetail'), mapBigOuter=document.getElementById('mapBigOuter');
     bindMap(mapBigWrap, mapBigTip, mapBigDetail, mapBigOuter);
+
+    var cfX=document.getElementById('cfX'), cfZ=document.getElementById('cfZ'), cfBtn=document.getElementById('cfBtn'), cfOut=document.getElementById('cfOut');
+    function nearestToXZ(x,z){
+      var best=null,bd=Infinity;
+      for(var i=0;i<screenPts.length;i++){ var q=screenPts[i].p; var dx=q.x-x, dz=q.z-z; var dd=Math.sqrt(dx*dx+dz*dz); if(dd<bd){ bd=dd; best=q; } }
+      return best?{dist:bd,q:best}:null;
+    }
+    function updateCoordFind(){
+      if(!cfOut) return;
+      var xv=cfX.value.trim(), zv=cfZ.value.trim();
+      if(xv===''||zv===''){ cfOut.textContent=''; return; }
+      var x=Number(xv), z=Number(zv);
+      if(!isFinite(x)||!isFinite(z)){ cfOut.textContent=''; return; }
+      if(!screenPts.length){ cfOut.innerHTML='<span class="cf-muted">No RTP points in the '+DIMLABEL[curDim]+' yet.</span>'; return; }
+      var n=nearestToXZ(x,z);
+      cfOut.innerHTML='Nearest '+DIMLABEL[curDim]+' point: <b>'+fmt(n.dist)+'</b> blocks — '+(n.q.n?n.q.n+' ':'')+'at '+n.q.x+', '+n.q.z;
+    }
+    cfX.addEventListener('input', updateCoordFind);
+    cfZ.addEventListener('input', updateCoordFind);
+    cfBtn.addEventListener('click', updateCoordFind);
     function openBig(){ var svg=mapwrap.querySelector('svg'); mapBigWrap.innerHTML = svg ? svg.outerHTML : ''; mapBigSub.textContent = DIMLABEL[curDim]+' · '+countEl.textContent+' points'; mapBig.classList.add('open'); }
     function closeBig(){ mapBig.classList.remove('open'); }
     document.getElementById('mapEnlarge').addEventListener('click', openBig);
