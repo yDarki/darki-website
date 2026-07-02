@@ -62,7 +62,7 @@
     <div class="toolbar">
       <input class="search" id="name" placeholder="Player name… (e.g. Ikeacpvp)" />
       <button class="btn" id="go">Search</button>
-      <button class="btn" id="refresh">Refresh</button>
+      <button class="btn ghost" id="refresh">Refresh</button>
       <button class="btn ghost" id="save">Save</button>
     </div>
     <div class="saved" id="saved"></div>
@@ -70,14 +70,15 @@
   </div>
   <script>
     const API='/api/player';
-    const nameEl=document.getElementById('name'), goEl=document.getElementById('go'), out=document.getElementById('out');
+    const nameEl=document.getElementById('name'), goEl=document.getElementById('go'), out=document.getElementById('out'), refreshEl=document.getElementById('refresh');
     const de=n=>Math.round(n).toLocaleString('de-DE');
     function abbr(n){ const a=Math.abs(n); if(a>=1e12)return (n/1e12).toFixed(2)+'T'; if(a>=1e9)return (n/1e9).toFixed(2)+'B'; if(a>=1e6)return (n/1e6).toFixed(2)+'M'; if(a>=1e3)return (n/1e3).toFixed(2)+'k'; return Math.round(n).toString(); }
     function playtime(ms){ const s=Math.floor(ms/1000); const d=Math.floor(s/86400); const h=Math.floor((s%86400)/3600); const m=Math.floor((s%3600)/60); if(d>0)return d+'d '+h+'h'; if(h>0)return h+'h '+m+'m'; return m+'m'; }
     function card(lbl,val,sub,cls){ return '<div class="stat"><div class="lbl">'+lbl+'</div><div class="val '+(cls||'')+'">'+val+'</div>'+(sub?'<div class="sub2">'+sub+'</div>':'')+'</div>'; }
     async function search(force){
       const name=nameEl.value.trim(); if(!name) return;
-      out.innerHTML='<div class="msg"><div class="spinner"></div>Loading stats…</div>'; goEl.disabled=true;
+      const busyBtn=force?refreshEl:goEl;
+      out.innerHTML='<div class="msg"><div class="spinner"></div>Loading stats…</div>'; busyBtn.disabled=true;
       try{
         const r=await fetch(API+'?name='+encodeURIComponent(name)+(force?'&_='+Date.now():'')); const j=await r.json();
         const s=j.stats;
@@ -103,7 +104,7 @@
         h+='</div>';
         out.innerHTML=h;
       }catch(e){ out.innerHTML='<div class="msg err">Error loading: '+e.message+'</div>'; }
-      finally{ goEl.disabled=false; }
+      finally{ busyBtn.disabled=false; }
     }
     goEl.addEventListener('click',()=>search(false));
     document.getElementById('refresh').addEventListener('click',()=>search(true));
