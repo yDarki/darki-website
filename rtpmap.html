@@ -97,12 +97,14 @@
     <button class="ovlbig-x" id="mapBigX">&times;</button>
     <div class="ovlbig-title">RTP Map</div>
     <div class="ovlbig-sub" id="mapBigSub"></div>
-    <div class="mapouter mapbig-outer">
+    <div class="mapouter mapbig-outer" id="mapBigOuter">
       <div class="axl axl-xt">+X</div>
       <div class="axl axl-xb">-X</div>
       <div class="axl axl-zl">-Z</div>
       <div class="axl axl-zr">+Z</div>
       <div class="mapwrap" id="mapBigWrap"></div>
+      <div class="tip" id="mapBigTip"></div>
+      <div class="detail" id="mapBigDetail"></div>
     </div>
   </div></div>
 
@@ -224,66 +226,69 @@
       tilesBtn.style.display=(curDim==='overworld')?'inline-flex':'none';
       tilesBtn.classList.toggle('on', showTiles);
       if(curDim==='overworld') drawOverworld(points); else drawPlain(points, curDim);
+      if(typeof mapBig!=='undefined' && mapBig && mapBig.classList.contains('open')){ var _s=mapwrap.querySelector('svg'); if(_s) mapBigWrap.innerHTML=_s.outerHTML; }
     }
 
     dimsEl.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ curDim=b.getAttribute('data-d'); saveDim(curDim); if(lastData) render(lastData); else load(); }; });
 
     tilesBtn.addEventListener('click', function(){ showTiles=!showTiles; try{ localStorage.setItem('rtpTiles', showTiles?'1':'0'); }catch(e){} if(lastData) render(lastData); else load(); });
 
-    mapwrap.addEventListener('mousemove', function(e){
-      if(!screenPts.length){ tip.style.opacity=0; return; }
-      var rect=mapwrap.getBoundingClientRect();
-      var mx=(e.clientX-rect.left)/rect.width*S, my=(e.clientY-rect.top)/rect.height*S;
-      var best=null,bd=1e9;
-      for(var i=0;i<screenPts.length;i++){ var dx=screenPts[i].sx-mx, dy=screenPts[i].sy-my, d=dx*dx+dy*dy; if(d<bd){bd=d;best=screenPts[i];} }
-      var tsvg=16*S/rect.width;
-      if(best && bd<=tsvg*tsvg){
-        var p=best.p; var rline='';
-        if(best.code>=0){ var rg=REGIONS[best.code]; rline='<span class="rg" style="color:'+rg.color+'">'+rg.name+'</span> · '; }
-        tip.innerHTML='<b>'+(p.n||'?')+'</b><br>'+p.x+', '+p.z+'<br>'+rline+ago(p.t);
-        tip.style.left=(mapwrap.offsetLeft+best.sx/S*rect.width)+'px';
-        tip.style.top=(mapwrap.offsetTop+best.sy/S*rect.height)+'px';
-        tip.style.transform=(best.sy>150?'translate(-50%,-130%)':'translate(-50%,30%)');
-        tip.style.opacity=1;
-      } else { tip.style.opacity=0; }
-    });
-    mapwrap.addEventListener('mouseleave', function(){ tip.style.opacity=0; });
-
-    function hideDetail(){ if(detail){ detail.classList.remove('show'); } }
+    function hideDetail(){ [detail, (typeof mapBigDetail!=='undefined'?mapBigDetail:null)].forEach(function(x){ if(x) x.classList.remove('show'); }); }
     function nearestOther(p){
       var best=null,bd=Infinity;
       for(var i=0;i<screenPts.length;i++){ var q=screenPts[i].p; if(q===p) continue; var dx=q.x-p.x, dz=q.z-p.z; var dd=Math.sqrt(dx*dx+dz*dz); if(dd<bd){ bd=dd; best=q; } }
       return best?{dist:bd,q:best}:null;
     }
-    function pointAt(e){
-      if(!screenPts.length) return null;
-      var rect=mapwrap.getBoundingClientRect();
-      var mx=(e.clientX-rect.left)/rect.width*S, my=(e.clientY-rect.top)/rect.height*S;
-      var best=null,bd=1e9;
-      for(var i=0;i<screenPts.length;i++){ var dx=screenPts[i].sx-mx, dy=screenPts[i].sy-my, dd=dx*dx+dy*dy; if(dd<bd){ bd=dd; best=screenPts[i]; } }
-      var tsvg=16*S/rect.width;
-      return (best && bd<=tsvg*tsvg)?best:null;
+    function bindMap(wrap, tip, detail, outer){
+      function pointAt(e){
+        if(!screenPts.length) return null;
+        var rect=wrap.getBoundingClientRect();
+        var mx=(e.clientX-rect.left)/rect.width*S, my=(e.clientY-rect.top)/rect.height*S;
+        var best=null,bd=1e9;
+        for(var i=0;i<screenPts.length;i++){ var dx=screenPts[i].sx-mx, dy=screenPts[i].sy-my, dd=dx*dx+dy*dy; if(dd<bd){ bd=dd; best=screenPts[i]; } }
+        var tsvg=16*S/rect.width;
+        return (best && bd<=tsvg*tsvg)?best:null;
+      }
+      wrap.addEventListener('mousemove', function(e){
+        if(!screenPts.length){ tip.style.opacity=0; return; }
+        var rect=wrap.getBoundingClientRect();
+        var mx=(e.clientX-rect.left)/rect.width*S, my=(e.clientY-rect.top)/rect.height*S;
+        var best=null,bd=1e9;
+        for(var i=0;i<screenPts.length;i++){ var dx=screenPts[i].sx-mx, dy=screenPts[i].sy-my, dd=dx*dx+dy*dy; if(dd<bd){bd=dd;best=screenPts[i];} }
+        var tsvg=16*S/rect.width;
+        if(best && bd<=tsvg*tsvg){
+          var p=best.p; var rline='';
+          if(best.code>=0){ var rg=REGIONS[best.code]; rline='<span class="rg" style="color:'+rg.color+'">'+rg.name+'</span> · '; }
+          tip.innerHTML='<b>'+(p.n||'?')+'</b><br>'+p.x+', '+p.z+'<br>'+rline+ago(p.t);
+          tip.style.left=(wrap.offsetLeft+best.sx/S*rect.width)+'px';
+          tip.style.top=(wrap.offsetTop+best.sy/S*rect.height)+'px';
+          tip.style.transform=(best.sy>150?'translate(-50%,-130%)':'translate(-50%,30%)');
+          tip.style.opacity=1;
+        } else { tip.style.opacity=0; }
+      });
+      wrap.addEventListener('mouseleave', function(){ tip.style.opacity=0; });
+      wrap.addEventListener('click', function(e){
+        var best=pointAt(e);
+        if(!best){ hideDetail(); return; }
+        var p=best.p, rline='';
+        if(best.code>=0){ var rg=REGIONS[best.code]; rline='<span class="rg" style="color:'+rg.color+'">'+rg.name+'</span> · '; }
+        var near=nearestOther(p);
+        var nline=near?('Nearest point: <b>'+fmt(near.dist)+'</b> blocks'+(near.q.n?' ('+near.q.n+')':'')):'No other point in this dimension.';
+        detail.innerHTML='<button class="dclose">×</button><b>'+(p.n||'?')+'</b><br>'+p.x+', '+p.z+'<br>'+rline+ago(p.t)+'<div class="dsep"></div><div class="dnear">'+nline+'</div>';
+        detail.classList.add('show');
+        var px=wrap.offsetLeft+best.sx/S*wrap.clientWidth;
+        var py=wrap.offsetTop+best.sy/S*wrap.clientHeight;
+        var ow=outer.clientWidth, dw=detail.offsetWidth, dh=detail.offsetHeight;
+        var lx=Math.max(dw/2+2, Math.min(ow-dw/2-2, px));
+        var above=(py-dh-12)>0;
+        detail.style.left=lx+'px';
+        detail.style.top=(above?py-12:py+12)+'px';
+        detail.style.transform='translate(-50%,'+(above?'-100%':'0')+')';
+        var cb=detail.querySelector('.dclose');
+        if(cb) cb.addEventListener('click', function(ev){ ev.stopPropagation(); hideDetail(); });
+      });
     }
-    mapwrap.addEventListener('click', function(e){
-      var best=pointAt(e);
-      if(!best){ hideDetail(); return; }
-      var p=best.p, rline='';
-      if(best.code>=0){ var rg=REGIONS[best.code]; rline='<span class="rg" style="color:'+rg.color+'">'+rg.name+'</span> · '; }
-      var near=nearestOther(p);
-      var nline=near?('Nearest point: <b>'+fmt(near.dist)+'</b> blocks'+(near.q.n?' ('+near.q.n+')':'')):'No other point in this dimension.';
-      detail.innerHTML='<button class="dclose" id="dclose">×</button><b>'+(p.n||'?')+'</b><br>'+p.x+', '+p.z+'<br>'+rline+ago(p.t)+'<div class="dsep"></div><div class="dnear">'+nline+'</div>';
-      detail.classList.add('show');
-      var px=mapwrap.offsetLeft+best.sx/S*mapwrap.clientWidth;
-      var py=mapwrap.offsetTop+best.sy/S*mapwrap.clientHeight;
-      var ow=mapouter.clientWidth, dw=detail.offsetWidth, dh=detail.offsetHeight;
-      var lx=Math.max(dw/2+2, Math.min(ow-dw/2-2, px));
-      var above=(py-dh-12)>0;
-      detail.style.left=lx+'px';
-      detail.style.top=(above?py-12:py+12)+'px';
-      detail.style.transform='translate(-50%,'+(above?'-100%':'0')+')';
-      var cb=document.getElementById('dclose');
-      if(cb) cb.addEventListener('click', function(ev){ ev.stopPropagation(); hideDetail(); });
-    });
+    bindMap(mapwrap, tip, detail, mapouter);
 
     function load(){
       fetch('/api/rtp?_='+Date.now(),{cache:'no-store'})
@@ -293,6 +298,8 @@
     }
     refreshBtn.addEventListener('click', load);
     var mapBig=document.getElementById('mapBig'), mapBigWrap=document.getElementById('mapBigWrap'), mapBigSub=document.getElementById('mapBigSub');
+    var mapBigTip=document.getElementById('mapBigTip'), mapBigDetail=document.getElementById('mapBigDetail'), mapBigOuter=document.getElementById('mapBigOuter');
+    bindMap(mapBigWrap, mapBigTip, mapBigDetail, mapBigOuter);
     function openBig(){ var svg=mapwrap.querySelector('svg'); mapBigWrap.innerHTML = svg ? svg.outerHTML : ''; mapBigSub.textContent = DIMLABEL[curDim]+' · '+countEl.textContent+' points'; mapBig.classList.add('open'); }
     function closeBig(){ mapBig.classList.remove('open'); }
     document.getElementById('mapEnlarge').addEventListener('click', openBig);
