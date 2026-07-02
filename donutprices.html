@@ -53,6 +53,8 @@
   .apidown .dot{width:8px;height:8px;border-radius:50%;background:#ff6b6b;box-shadow:0 0 10px #ff6b6b;flex-shrink:0}
   .apidown.show{display:flex}
   .apidown small{font-weight:500;color:#e89a9a;display:block;margin-top:2px}
+  @keyframes btnflash{from{box-shadow:0 0 0 0 rgba(255,255,255,.55)}to{box-shadow:0 0 0 9px rgba(255,255,255,0)}}
+  .btn.flash{animation:btnflash .5s ease-out}
 </style>
 </head>
 <body>
@@ -336,5 +338,6 @@
 })();
 </script>
 <script>fetch('/api/player?ping=1').then(function(r){return r.json();}).then(function(j){if(j&&j.up===false)document.getElementById('apiDown').classList.add('show');}).catch(function(){});</script>
+  <script>document.querySelectorAll('.btn').forEach(function(b){b.addEventListener('click',function(){b.classList.add('flash');});b.addEventListener('animationend',function(){b.classList.remove('flash');});});</script>
 </body>
 </html>
