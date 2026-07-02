@@ -126,7 +126,7 @@
         pts+='<circle cx="'+psx.toFixed(1)+'" cy="'+psy.toFixed(1)+'" r="4.2" fill="'+REGIONS[code].color+'" stroke="rgba(0,0,0,.4)" stroke-width="0.8" opacity="0.92"/>';
       });
       setSvg('<svg viewBox="0 0 '+S+' '+S+'" xmlns="http://www.w3.org/2000/svg">'+g+pts+'</svg>');
-      legendEl.innerHTML=REGIONS.map(function(r){ return '<span class="it"><span class="sw" style="background:'+r.color+'"></span>'+r.name+'</span>'; }).join('');
+      var rcnt=[0,0,0,0,0,0]; screenPts.forEach(function(s){ if(s.code>=0&&s.code<6) rcnt[s.code]++; }); legendEl.innerHTML=REGIONS.map(function(r,i){ return '<span class="it"><span class="sw" style="background:'+r.color+'"></span>'+r.name+' ('+rcnt[i]+')</span>'; }).join('');
       noteEl.textContent='Overworld — framed to the ±225k region area; regions from the Miep / StackingDev DonutSMP map. Axis: X vertical (+X top), Z horizontal (+Z right).';
     }
 
@@ -154,7 +154,7 @@
         pts+='<circle cx="'+psx.toFixed(1)+'" cy="'+psy.toFixed(1)+'" r="4.2" fill="'+col+'" stroke="rgba(0,0,0,.4)" stroke-width="0.8" opacity="0.92"/>';
       });
       setSvg('<svg viewBox="0 0 '+S+' '+S+'" xmlns="http://www.w3.org/2000/svg">'+g+pts+'</svg>');
-      legendEl.innerHTML='<span class="it"><span class="sw" style="background:'+col+'"></span>'+DIMLABEL[dim]+'</span>';
+      legendEl.innerHTML='<span class="it"><span class="sw" style="background:'+col+'"></span>'+DIMLABEL[dim]+' ('+points.length+')</span>';
       noteEl.textContent=DIMLABEL[dim]+' — auto-framed to the points (no regions here; regions are an Overworld concept). Axis: X vertical (+X top), Z horizontal (+Z right).';
     }
 
