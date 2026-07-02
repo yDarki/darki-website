@@ -50,6 +50,8 @@
   .chip .rm:hover{background:rgba(255,90,90,.22);color:#ff9b9b}
   .btn.ghost{background:#1a1a28;color:#f3f3f7;border:1px solid rgba(255,255,255,.14)}
   .btn.ghost:hover{background:#22222e}
+  @keyframes btnflash{from{box-shadow:0 0 0 0 rgba(255,255,255,.55)}to{box-shadow:0 0 0 9px rgba(255,255,255,0)}}
+  .btn.flash{animation:btnflash .5s ease-out}
 </style>
 </head>
 <body>
@@ -138,5 +140,6 @@
       render();
     })();
   </script>
+  <script>document.querySelectorAll('.btn').forEach(function(b){b.addEventListener('click',function(){b.classList.add('flash');});b.addEventListener('animationend',function(){b.classList.remove('flash');});});</script>
 </body>
 </html>
