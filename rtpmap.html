@@ -46,6 +46,16 @@
     .note{color:var(--muted);font-size:12.5px;line-height:1.6;margin-top:12px}
     @keyframes btnflash{from{box-shadow:0 0 0 0 rgba(255,255,255,.55)}to{box-shadow:0 0 0 9px rgba(255,255,255,0)}}
     .btn.flash{animation:btnflash .5s ease-out}
+    .iconbtn{background:#1a1a28;border:1px solid rgba(255,255,255,.10);color:#b8bccc;width:34px;height:34px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.15s}
+    .iconbtn:hover{color:#fff;border-color:rgba(255,255,255,.32)}
+    .ovlbig{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:28px;background:rgba(6,6,10,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .2s}
+    .ovlbig.open{opacity:1;pointer-events:auto}
+    .ovlbig-card{width:min(1080px,96vw);background:#0b0b12;border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:24px;position:relative}
+    .ovlbig-x{position:absolute;top:14px;right:14px;background:none;border:1px solid rgba(255,255,255,.14);color:#8b8ba0;width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:18px;z-index:2}
+    .ovlbig-x:hover{color:#fff;border-color:#fff}
+    .ovlbig-title{font-size:19px;font-weight:800;color:#f3f3f7}
+    .ovlbig-sub{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:#8b8ba0;font-weight:700;margin:4px 0 14px}
+    .mapbig-outer{width:min(78vh,820px);max-width:100%;margin:0 auto}
   </style>
 </head>
 <body>
@@ -65,6 +75,7 @@
         <div class="stat" id="updated"></div>
         <button class="btn ghost" id="refresh">Refresh</button>
         <button class="seg" id="tiles" type="button">Region tiles</button>
+        <button class="iconbtn" id="mapEnlarge" title="Enlarge" aria-label="Enlarge map"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg></button>
       </div>
       <div class="mapouter" id="mapouter">
         <div class="axl axl-xt">+X</div>
@@ -81,6 +92,19 @@
       <p class="note" id="bordernote"></p>
     </div>
   </div>
+
+  <div class="ovlbig" id="mapBig"><div class="ovlbig-card">
+    <button class="ovlbig-x" id="mapBigX">&times;</button>
+    <div class="ovlbig-title">RTP Map</div>
+    <div class="ovlbig-sub" id="mapBigSub"></div>
+    <div class="mapouter mapbig-outer">
+      <div class="axl axl-xt">+X</div>
+      <div class="axl axl-xb">-X</div>
+      <div class="axl axl-zl">-Z</div>
+      <div class="axl axl-zr">+Z</div>
+      <div class="mapwrap" id="mapBigWrap"></div>
+    </div>
+  </div></div>
 
   <script>
   (function(){
@@ -268,6 +292,13 @@
         .catch(function(){ emptyEl.textContent='Could not load the map.'; emptyEl.style.display='flex'; });
     }
     refreshBtn.addEventListener('click', load);
+    var mapBig=document.getElementById('mapBig'), mapBigWrap=document.getElementById('mapBigWrap'), mapBigSub=document.getElementById('mapBigSub');
+    function openBig(){ var svg=mapwrap.querySelector('svg'); mapBigWrap.innerHTML = svg ? svg.outerHTML : ''; mapBigSub.textContent = DIMLABEL[curDim]+' · '+countEl.textContent+' points'; mapBig.classList.add('open'); }
+    function closeBig(){ mapBig.classList.remove('open'); }
+    document.getElementById('mapEnlarge').addEventListener('click', openBig);
+    document.getElementById('mapBigX').addEventListener('click', closeBig);
+    mapBig.addEventListener('click', function(e){ if(e.target===mapBig) closeBig(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeBig(); });
     updateDimBtns();
     load();
     setInterval(load, 30000);
