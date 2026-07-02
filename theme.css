@@ -9,3 +9,8 @@ a{text-decoration:none;color:inherit}
 .bg{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(rgba(255,255,255,.09) 1.2px,transparent 1.2px);background-size:24px 24px}
 @keyframes shine{0%{background-position:0% center}100%{background-position:100% center}}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* Segmented / toggle buttons — shared, consistent selected state across the site */
+.seg{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:7px 14px;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;transition:.15s}
+.seg:hover{color:var(--text);border-color:rgba(255,255,255,.28)}
+.seg.on,.seg.active{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.55);color:#fff;font-weight:700}
