@@ -251,6 +251,11 @@
       for(var i=0;i<screenPts.length;i++){ var q=screenPts[i].p; if(q===p) continue; var dx=q.x-p.x, dz=q.z-p.z; var dd=Math.sqrt(dx*dx+dz*dz); if(dd<bd){ bd=dd; best=q; } }
       return best?{dist:bd,q:best}:null;
     }
+    function nearestInRegion(p, code){
+      var best=null,bd=Infinity;
+      for(var i=0;i<screenPts.length;i++){ var s=screenPts[i]; if(s.code!==code) continue; var q=s.p; if(q===p) continue; var dx=q.x-p.x, dz=q.z-p.z; var dd=Math.sqrt(dx*dx+dz*dz); if(dd<bd){ bd=dd; best=q; } }
+      return best?{dist:bd,q:best}:null;
+    }
     function bindMap(wrap, tip, detail, outer){
       var vb={x:0,y:0,w:1000,h:1000};
       function applyVB(){ var svg=wrap.querySelector('svg'); if(svg) svg.setAttribute('viewBox', vb.x+' '+vb.y+' '+vb.w+' '+vb.h); }
@@ -283,12 +288,21 @@
         var tsvg=16*vb.w/rect.width;
         if(best && bd<=tsvg*tsvg){
           var p=best.p; var rline='';
-          if(best.code>=0){ var rg=REGIONS[best.code]; rline='<span class="rg" style="color:'+rg.color+'">'+rg.name+'</span> · '; }
-          tip.innerHTML='<b>'+(p.n||'?')+'</b><br>'+p.x+', '+p.z+'<br>'+rline+ago(p.t);
+          if(best.code>=0){ var rg=REGIONS[best.code]; rline='<br><span class="rg" style="color:'+rg.color+'">'+rg.name+'</span>'; }
+          tip.innerHTML=p.x+', '+p.z+rline;
           var fyp=(best.sy-vb.y)/vb.h;
           tip.style.left=(wrap.offsetLeft+(best.sx-vb.x)/vb.w*rect.width)+'px';
           tip.style.top=(wrap.offsetTop+fyp*rect.height)+'px';
           tip.style.transform=(fyp>0.15?'translate(-50%,-130%)':'translate(-50%,30%)');
+          tip.style.opacity=1;
+        } else if(showTiles && curDim==='overworld'){
+          var zw=ORIGIN+mx/S*EXTENT, xw=ORIGIN+EXTENT-my/S*EXTENT;
+          var code=regionCode(xw,zw); var rg2=REGIONS[code];
+          var cnt=0; for(var j=0;j<screenPts.length;j++){ if(screenPts[j].code===code) cnt++; }
+          tip.innerHTML='<span class="rg" style="color:'+rg2.color+'">'+rg2.name+'</span><br>'+cnt+' RTP spot'+(cnt===1?'':'s');
+          tip.style.left=(wrap.offsetLeft+e.clientX-rect.left)+'px';
+          tip.style.top=(wrap.offsetTop+e.clientY-rect.top)+'px';
+          tip.style.transform='translate(-50%,-130%)';
           tip.style.opacity=1;
         } else { tip.style.opacity=0; }
       });
@@ -298,9 +312,11 @@
         if(!best){ hideDetail(); return; }
         var p=best.p, rline='';
         if(best.code>=0){ var rg=REGIONS[best.code]; rline='<span class="rg" style="color:'+rg.color+'">'+rg.name+'</span> · '; }
-        var near=nearestOther(p);
-        var nline=near?('Nearest point: <b>'+fmt(near.dist)+'</b> blocks'+(near.q.n?' ('+near.q.n+')':'')):'No other point in this dimension.';
-        detail.innerHTML='<button class="dclose">×</button><b>'+(p.n||'?')+'</b><br>'+p.x+', '+p.z+'<br>'+rline+ago(p.t)+'<div class="dsep"></div><div class="dnear">'+nline+'</div>';
+        var near, label;
+        if(best.code>=0){ near=nearestInRegion(p, best.code); label='Nearest in region'; }
+        else { near=nearestOther(p); label='Nearest point'; }
+        var nline=near?(label+': <b>'+fmt(near.dist)+'</b> blocks'):'No other point in this region.';
+        detail.innerHTML='<button class="dclose">×</button>'+p.x+', '+p.z+'<br>'+rline+ago(p.t)+'<div class="dsep"></div><div class="dnear">'+nline+'</div>';
         detail.classList.add('show');
         var rect=wrap.getBoundingClientRect();
         var px=wrap.offsetLeft+(best.sx-vb.x)/vb.w*wrap.clientWidth;
