@@ -25,6 +25,19 @@
     .btn:hover{transform:translateY(-2px)}
     .mapwrap{position:relative;width:100%;aspect-ratio:1/1;background:var(--card-2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
     .mapwrap svg{display:block;width:100%;height:100%}
+    .mapouter{position:relative;padding:22px 24px}
+    .axl{position:absolute;color:rgba(255,255,255,.72);font-size:15px;font-weight:700;pointer-events:none;font-variant-numeric:tabular-nums}
+    .axl-xt{top:0;left:50%;transform:translateX(-50%)}
+    .axl-xb{bottom:0;left:50%;transform:translateX(-50%)}
+    .axl-zl{left:2px;top:50%;transform:translateY(-50%)}
+    .axl-zr{right:2px;top:50%;transform:translateY(-50%)}
+    .detail{position:absolute;z-index:8;background:#0a0a0c;border:1px solid rgba(255,255,255,.22);border-radius:10px;padding:10px 26px 11px 12px;font-size:12.5px;color:var(--text);white-space:nowrap;box-shadow:0 8px 26px rgba(0,0,0,.5);display:none;font-variant-numeric:tabular-nums}
+    .detail.show{display:block}
+    .detail .dsep{height:1px;background:rgba(255,255,255,.12);margin:7px 0}
+    .detail .dnear{color:var(--muted)}
+    .detail .dnear b{color:var(--text)}
+    .detail .dclose{position:absolute;top:3px;right:5px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1;padding:2px}
+    .detail .dclose:hover{color:var(--text)}
     .tip{position:absolute;pointer-events:none;background:#0a0a0c;border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:6px 9px;font-size:12px;color:var(--text);opacity:0;transform:translate(-50%,-130%);transition:opacity .12s;white-space:nowrap;z-index:5;font-variant-numeric:tabular-nums}
     .tip b{color:var(--text)}
     .tip .rg{font-weight:700}
@@ -52,9 +65,16 @@
         <div class="stat" id="updated"></div>
         <button class="btn" id="refresh">Refresh</button>
       </div>
-      <div class="mapwrap" id="mapwrap">
+      <div class="mapouter" id="mapouter">
+        <div class="axl axl-xt">+X</div>
+        <div class="axl axl-xb">-X</div>
+        <div class="axl axl-zl">-Z</div>
+        <div class="axl axl-zr">+Z</div>
+        <div class="mapwrap" id="mapwrap">
+          <div class="empty" id="empty">Loading…</div>
+        </div>
         <div class="tip" id="tip"></div>
-        <div class="empty" id="empty">Loading…</div>
+        <div class="detail" id="detail"></div>
       </div>
       <div class="legend" id="legend"></div>
       <p class="note" id="bordernote"></p>
@@ -72,6 +92,8 @@
     var legendEl=document.getElementById('legend');
     var refreshBtn=document.getElementById('refresh');
     var dimsEl=document.getElementById('dims');
+    var mapouter=document.getElementById('mapouter');
+    var detail=document.getElementById('detail');
     var screenPts=[];
     var S=1000;
     var lastData=null;
@@ -100,8 +122,6 @@
     function fmt(n){ return Math.round(n).toLocaleString('en-US'); }
     function setSvg(svg){ var old=mapwrap.querySelector('svg'); if(old) old.remove(); if(svg) mapwrap.insertAdjacentHTML('afterbegin', svg); }
     function pdim(p){ var d=(p&&p.d)||'overworld'; return (d==='nether'||d==='end')?d:'overworld'; }
-
-    function axisLabels(){ return '<text x="500" y="36" text-anchor="middle" fill="rgba(255,255,255,.8)" font-size="27" font-weight="700" font-family="sans-serif">+X</text><text x="500" y="988" text-anchor="middle" fill="rgba(255,255,255,.8)" font-size="27" font-weight="700" font-family="sans-serif">-X</text><text x="980" y="508" text-anchor="end" fill="rgba(255,255,255,.8)" font-size="27" font-weight="700" font-family="sans-serif">+Z</text><text x="20" y="508" fill="rgba(255,255,255,.8)" font-size="27" font-weight="700" font-family="sans-serif">-Z</text>'; }
     function frame(){ return '<rect x="1.5" y="1.5" width="'+(S-3)+'" height="'+(S-3)+'" fill="none" stroke="rgba(255,255,255,.34)" stroke-width="2.5"/>'; }
 
     function drawOverworld(points){
@@ -116,7 +136,7 @@
       }
       var c0=sx(0).toFixed(1), c1=sy(0).toFixed(1);
       g+='<line x1="'+c0+'" y1="0" x2="'+c0+'" y2="'+S+'" stroke="rgba(255,255,255,.34)" stroke-width="2" stroke-dasharray="6 6"/><line x1="0" y1="'+c1+'" x2="'+S+'" y2="'+c1+'" stroke="rgba(255,255,255,.34)" stroke-width="2" stroke-dasharray="6 6"/>';
-      g+=frame()+axisLabels();
+      g+=frame();
       screenPts=[];
       var pts='';
       points.forEach(function(p){
@@ -145,7 +165,7 @@
       for(var i=1;i<4;i++){ var v=(i/4*S).toFixed(1); g+='<line x1="'+v+'" y1="0" x2="'+v+'" y2="'+S+'" stroke="rgba(255,255,255,.08)"/><line x1="0" y1="'+v+'" x2="'+S+'" y2="'+v+'" stroke="rgba(255,255,255,.08)"/>'; }
       if(0>=z0 && 0<=z1){ var cz=sx(0).toFixed(1); g+='<line x1="'+cz+'" y1="0" x2="'+cz+'" y2="'+S+'" stroke="rgba(255,255,255,.34)" stroke-width="2" stroke-dasharray="6 6"/>'; }
       if(0>=x0 && 0<=x1){ var cx=sy(0).toFixed(1); g+='<line x1="0" y1="'+cx+'" x2="'+S+'" y2="'+cx+'" stroke="rgba(255,255,255,.34)" stroke-width="2" stroke-dasharray="6 6"/>'; }
-      g+=frame()+axisLabels();
+      g+=frame();
       screenPts=[];
       var pts='';
       points.forEach(function(p){
@@ -162,6 +182,7 @@
 
     function render(data){
       lastData=data;
+      hideDetail();
       var all=(data&&data.points)||[];
       var points=all.filter(function(p){ return pdim(p)===curDim; });
       countEl.textContent=fmt(points.length);
@@ -185,12 +206,49 @@
         var p=best.p; var rline='';
         if(best.code>=0){ var rg=REGIONS[best.code]; rline='<span class="rg" style="color:'+rg.color+'">'+rg.name+'</span> · '; }
         tip.innerHTML='<b>'+(p.n||'?')+'</b><br>'+p.x+', '+p.z+'<br>'+rline+ago(p.t);
-        tip.style.left=(best.sx/S*rect.width)+'px';
-        tip.style.top=(best.sy/S*rect.height)+'px';
+        tip.style.left=(mapwrap.offsetLeft+best.sx/S*rect.width)+'px';
+        tip.style.top=(mapwrap.offsetTop+best.sy/S*rect.height)+'px';
+        tip.style.transform=(best.sy>150?'translate(-50%,-130%)':'translate(-50%,30%)');
         tip.style.opacity=1;
       } else { tip.style.opacity=0; }
     });
     mapwrap.addEventListener('mouseleave', function(){ tip.style.opacity=0; });
+
+    function hideDetail(){ if(detail){ detail.classList.remove('show'); } }
+    function nearestOther(p){
+      var best=null,bd=Infinity;
+      for(var i=0;i<screenPts.length;i++){ var q=screenPts[i].p; if(q===p) continue; var dx=q.x-p.x, dz=q.z-p.z; var dd=Math.sqrt(dx*dx+dz*dz); if(dd<bd){ bd=dd; best=q; } }
+      return best?{dist:bd,q:best}:null;
+    }
+    function pointAt(e){
+      if(!screenPts.length) return null;
+      var rect=mapwrap.getBoundingClientRect();
+      var mx=(e.clientX-rect.left)/rect.width*S, my=(e.clientY-rect.top)/rect.height*S;
+      var best=null,bd=1e9;
+      for(var i=0;i<screenPts.length;i++){ var dx=screenPts[i].sx-mx, dy=screenPts[i].sy-my, dd=dx*dx+dy*dy; if(dd<bd){ bd=dd; best=screenPts[i]; } }
+      var tsvg=16*S/rect.width;
+      return (best && bd<=tsvg*tsvg)?best:null;
+    }
+    mapwrap.addEventListener('click', function(e){
+      var best=pointAt(e);
+      if(!best){ hideDetail(); return; }
+      var p=best.p, rline='';
+      if(best.code>=0){ var rg=REGIONS[best.code]; rline='<span class="rg" style="color:'+rg.color+'">'+rg.name+'</span> · '; }
+      var near=nearestOther(p);
+      var nline=near?('Nearest point: <b>'+fmt(near.dist)+'</b> blocks'+(near.q.n?' ('+near.q.n+')':'')):'No other point in this dimension.';
+      detail.innerHTML='<button class="dclose" id="dclose">×</button><b>'+(p.n||'?')+'</b><br>'+p.x+', '+p.z+'<br>'+rline+ago(p.t)+'<div class="dsep"></div><div class="dnear">'+nline+'</div>';
+      detail.classList.add('show');
+      var px=mapwrap.offsetLeft+best.sx/S*mapwrap.clientWidth;
+      var py=mapwrap.offsetTop+best.sy/S*mapwrap.clientHeight;
+      var ow=mapouter.clientWidth, dw=detail.offsetWidth, dh=detail.offsetHeight;
+      var lx=Math.max(dw/2+2, Math.min(ow-dw/2-2, px));
+      var above=(py-dh-12)>0;
+      detail.style.left=lx+'px';
+      detail.style.top=(above?py-12:py+12)+'px';
+      detail.style.transform='translate(-50%,'+(above?'-100%':'0')+')';
+      var cb=document.getElementById('dclose');
+      if(cb) cb.addEventListener('click', function(ev){ ev.stopPropagation(); hideDetail(); });
+    });
 
     function load(){
       fetch('/api/rtp?_='+Date.now(),{cache:'no-store'})
