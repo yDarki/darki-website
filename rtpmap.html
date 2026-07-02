@@ -43,7 +43,6 @@
     .legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:14px}
     .legend .it{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted)}
     .legend .sw{width:11px;height:11px;border-radius:3px;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
-    .note{color:var(--muted);font-size:12.5px;line-height:1.6;margin-top:12px}
     @keyframes btnflash{from{box-shadow:0 0 0 0 rgba(255,255,255,.55)}to{box-shadow:0 0 0 9px rgba(255,255,255,0)}}
     .btn.flash{animation:btnflash .5s ease-out}
     .iconbtn{background:#1a1a28;border:1px solid rgba(255,255,255,.10);color:#b8bccc;width:34px;height:34px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:.15s}
@@ -104,7 +103,6 @@
         <span class="cf-out" id="cfOut"></span>
       </div>
       <div class="legend" id="legend"></div>
-      <p class="note" id="bordernote"></p>
     </div>
   </div>
 
@@ -130,7 +128,6 @@
     var tip=document.getElementById('tip');
     var countEl=document.getElementById('count');
     var updatedEl=document.getElementById('updated');
-    var noteEl=document.getElementById('bordernote');
     var legendEl=document.getElementById('legend');
     var refreshBtn=document.getElementById('refresh');
     var dimsEl=document.getElementById('dims');
@@ -195,7 +192,6 @@
       });
       setSvg('<svg viewBox="0 0 '+S+' '+S+'" xmlns="http://www.w3.org/2000/svg">'+g+pts+'</svg>');
       var rcnt=[0,0,0,0,0,0]; screenPts.forEach(function(s){ if(s.code>=0&&s.code<6) rcnt[s.code]++; }); legendEl.innerHTML=REGIONS.map(function(r,i){ return '<span class="it"><span class="sw" style="background:'+r.color+'"></span>'+r.name+' ('+rcnt[i]+')</span>'; }).join('');
-      noteEl.textContent='Overworld — framed to the ±225k region area; regions from the Miep / StackingDev DonutSMP map. Axis: X vertical (+X top), Z horizontal (+Z right).';
     }
 
     function drawPlain(points, dim){
@@ -223,7 +219,6 @@
       });
       setSvg('<svg viewBox="0 0 '+S+' '+S+'" xmlns="http://www.w3.org/2000/svg">'+g+pts+'</svg>');
       legendEl.innerHTML='<span class="it"><span class="sw" style="background:'+col+'"></span>'+DIMLABEL[dim]+' ('+points.length+')</span>';
-      noteEl.textContent=DIMLABEL[dim]+' — auto-framed to the points (no regions here; regions are an Overworld concept). Axis: X vertical (+X top), Z horizontal (+Z right).';
     }
 
     function updateDimBtns(){ dimsEl.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-d')===curDim); }); }
