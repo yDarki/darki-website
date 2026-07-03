@@ -9,7 +9,7 @@
 //   GET                  -> { border, points }
 //   GET  ?check           -> { kvBound, tokenSet }
 //   GET  ?list   (master) -> { count, whitelist }
-//   POST          (user)  -> add a point { x, z, border? }
+//   POST          (user)  -> add point(s): { x, z, dim, border } or a batch { points: [ ... ] }
 //   POST ?op=add (master) -> body { token, name } : whitelist a user
 //   POST ?op=del (master) -> body { token } : remove a user
 //   POST ?reset  (master) -> clear all points
@@ -78,42 +78,47 @@ export async function onRequest(context) {
   if (!isMaster && wlName === undefined) return json({ error: 'unauthorized' }, 401);
 
   let body; try { body = await request.json(); } catch (e) { return json({ error: 'bad json' }, 400); }
-  const x = Math.round(Number(body.x));
-  const z = Math.round(Number(body.z));
-  if (!isFinite(x) || !isFinite(z)) return json({ error: 'bad coords' }, 400);
-  let dim = String(body.dim || 'overworld').toLowerCase();
-  if (dim !== 'nether' && dim !== 'end') dim = 'overworld';
+  // Accept a single point {x,z,dim,border} OR a batch {points:[...]}. Batching keeps KV writes low:
+  // one 'points' write per request instead of one per point.
+  const items = Array.isArray(body.points) ? body.points : [body];
+  if (items.length === 0 || items.length > 200) return json({ error: 'bad batch' }, 400);
 
   // name is server-controlled (from the token), not client-controlled
-  let name = isMaster ? String(body.name || 'admin') : String(wlName);
-  name = name.slice(0, 32).replace(/[^A-Za-z0-9_ .-]/g, '');
+  const name = (isMaster ? String(body.name || 'admin') : String(wlName))
+    .slice(0, 32).replace(/[^A-Za-z0-9_ .-]/g, '');
 
-  // border: per-dimension. Update from the point's own world border, then enforce it for that dimension.
   let borders = {}; try { borders = JSON.parse((await kv.get('borders')) || '{}'); } catch (e) {}
-  if (body.border && Number(body.border.size) > 0) {
-    const nb = { size: Math.round(Number(body.border.size)), cx: Math.round(Number(body.border.cx) || 0), cz: Math.round(Number(body.border.cz) || 0) };
-    const ob = borders[dim];
-    // Only write when the border actually changed — it is a server constant, so this saves a KV write per point.
-    if (!ob || ob.size !== nb.size || ob.cx !== nb.cx || ob.cz !== nb.cz) {
-      borders[dim] = nb;
-      await kv.put('borders', JSON.stringify(borders));
-    }
-  }
-  const bdim = borders[dim];
-  if (bdim && bdim.size > 0) {
-    const half = bdim.size / 2 + 64;
-    if (Math.abs(x - bdim.cx) > half || Math.abs(z - bdim.cz) > half) return json({ error: 'out of bounds' }, 400);
-  }
-
   let points = []; try { points = JSON.parse((await kv.get('points')) || '[]'); } catch (e) { points = []; }
   const t = Date.now();
-  const last = points[points.length - 1];
-  const dup = last && last.n === name && last.x === x && last.z === z && (last.d || 'overworld') === dim && (t - last.t) < 5000;
-  if (!dup) {
-    points.push({ n: name, x: x, z: z, t: t, d: dim });
-    if (points.length > 5000) points = points.slice(points.length - 5000);
-    await kv.put('points', JSON.stringify(points));
+  let added = 0, bordersChanged = false;
+
+  for (const it of items) {
+    const x = Math.round(Number(it.x));
+    const z = Math.round(Number(it.z));
+    if (!isFinite(x) || !isFinite(z)) continue;
+    let dim = String(it.dim || 'overworld').toLowerCase();
+    if (dim !== 'nether' && dim !== 'end') dim = 'overworld';
+
+    // border: per-dimension, only mark changed (single KV write at the end).
+    if (it.border && Number(it.border.size) > 0) {
+      const nb = { size: Math.round(Number(it.border.size)), cx: Math.round(Number(it.border.cx) || 0), cz: Math.round(Number(it.border.cz) || 0) };
+      const ob = borders[dim];
+      if (!ob || ob.size !== nb.size || ob.cx !== nb.cx || ob.cz !== nb.cz) { borders[dim] = nb; bordersChanged = true; }
+    }
+    const bdim = borders[dim];
+    if (bdim && bdim.size > 0) {
+      const half = bdim.size / 2 + 64;
+      if (Math.abs(x - bdim.cx) > half || Math.abs(z - bdim.cz) > half) continue; // skip out-of-bounds
+    }
+
+    const last = points[points.length - 1];
+    const dup = last && last.n === name && last.x === x && last.z === z && (last.d || 'overworld') === dim && (t - last.t) < 5000;
+    if (!dup) { points.push({ n: name, x: x, z: z, t: t, d: dim }); added++; }
   }
 
-  return json({ ok: true, count: points.length }, 200);
+  if (points.length > 5000) points = points.slice(points.length - 5000);
+  if (bordersChanged) await kv.put('borders', JSON.stringify(borders));
+  if (added > 0) await kv.put('points', JSON.stringify(points));
+
+  return json({ ok: true, count: points.length, added: added }, 200);
 }
