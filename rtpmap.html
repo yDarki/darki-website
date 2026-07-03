@@ -21,7 +21,7 @@
     .stat b{color:var(--text);font-variant-numeric:tabular-nums}
     .btn{margin-left:auto;background:#fff;color:#0a0a0c;border:none;padding:9px 16px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:.12s}
     .btn:hover{transform:translateY(-2px)}
-    .mapwrap{position:relative;width:100%;aspect-ratio:1/1;background:var(--card-2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+    .mapwrap{position:relative;width:100%;aspect-ratio:1/1;background:var(--card-2);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:grab;user-select:none}
     .mapwrap svg{display:block;width:100%;height:100%}
     .mapouter{position:relative;padding:22px 24px}
     .axl{position:absolute;color:rgba(255,255,255,.72);font-size:15px;font-weight:700;pointer-events:none;font-variant-numeric:tabular-nums}
@@ -266,6 +266,7 @@
     }
     function bindMap(wrap, tip, detail, outer){
       var vb={x:0,y:0,w:1000,h:1000};
+      var dragging=false, dragMoved=false, dragSX=0, dragSY=0, dragVX=0, dragVY=0;
       function applyVB(){ var svg=wrap.querySelector('svg'); if(!svg) return; svg.setAttribute('viewBox', vb.x+' '+vb.y+' '+vb.w+' '+vb.h); var k=vb.w/1000, r=(4.2*k).toFixed(2), sw=(0.8*k).toFixed(2); var cs=svg.querySelectorAll('circle'); for(var ci=0;ci<cs.length;ci++){ cs[ci].setAttribute('r', r); cs[ci].setAttribute('stroke-width', sw); } }
       wrap.addEventListener('wheel', function(e){
         e.preventDefault();
@@ -280,6 +281,8 @@
         // keep the hover tooltip glued to its point while zooming (mousemove doesn't fire during a wheel)
         wrap.dispatchEvent(new MouseEvent('mousemove', { clientX: e.clientX, clientY: e.clientY, bubbles: true }));
       }, {passive:false});
+      wrap.addEventListener('mousedown', function(e){ if(e.button!==0) return; dragging=true; dragMoved=false; dragSX=e.clientX; dragSY=e.clientY; dragVX=vb.x; dragVY=vb.y; wrap.style.cursor='grabbing'; e.preventDefault(); });
+      document.addEventListener('mouseup', function(){ if(dragging){ dragging=false; wrap.style.cursor=''; } });
       function pointAt(e){
         if(!screenPts.length) return null;
         var rect=wrap.getBoundingClientRect();
@@ -290,6 +293,16 @@
         return (best && bd<=tsvg*tsvg)?best:null;
       }
       wrap.addEventListener('mousemove', function(e){
+        if(dragging){
+          if(Math.abs(e.clientX-dragSX)+Math.abs(e.clientY-dragSY)>3) dragMoved=true;
+          if(dragMoved){
+            var rd=wrap.getBoundingClientRect();
+            vb.x=Math.max(0,Math.min(1000-vb.w, dragVX-(e.clientX-dragSX)/rd.width*vb.w));
+            vb.y=Math.max(0,Math.min(1000-vb.h, dragVY-(e.clientY-dragSY)/rd.height*vb.h));
+            applyVB(); tip.style.opacity=0;
+          }
+          return;
+        }
         if(!screenPts.length){ tip.style.opacity=0; return; }
         var rect=wrap.getBoundingClientRect();
         var mx=vb.x+(e.clientX-rect.left)/rect.width*vb.w, my=vb.y+(e.clientY-rect.top)/rect.height*vb.h;
@@ -323,6 +336,7 @@
       });
       wrap.addEventListener('mouseleave', function(){ tip.style.opacity=0; });
       wrap.addEventListener('click', function(e){
+        if(dragMoved) return;
         var best=pointAt(e);
         if(!best){ hideDetail(); return; }
         var p=best.p, rline='';
