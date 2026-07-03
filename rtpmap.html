@@ -138,6 +138,7 @@
     var screenPts=[];
     var S=1000;
     var lastData=null;
+    var allBorders={};
 
     function loadDim(){ try{ var d=localStorage.getItem('rtpDim'); return (d==='nether'||d==='end')?d:'overworld'; }catch(e){ return 'overworld'; } }
     function saveDim(d){ try{ localStorage.setItem('rtpDim', d); }catch(e){} }
@@ -196,12 +197,18 @@
 
     function drawPlain(points, dim){
       var col=DIMCOLOR[dim]||'#8bd0ff';
-      var minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
-      points.forEach(function(p){ if(p.x<minX)minX=p.x; if(p.x>maxX)maxX=p.x; if(p.z<minZ)minZ=p.z; if(p.z>maxZ)maxZ=p.z; });
-      if(!isFinite(minX)){ minX=-1000;maxX=1000;minZ=-1000;maxZ=1000; }
-      var cxw=(minX+maxX)/2, czw=(minZ+maxZ)/2;
-      var half=Math.max((maxX-minX),(maxZ-minZ))/2;
-      half=Math.max(half*1.15, 500);
+      var cxw, czw, half;
+      var bd=allBorders[dim];
+      if(bd && bd.size>0){
+        cxw=bd.cx; czw=bd.cz; half=bd.size/2;
+      } else {
+        var minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
+        points.forEach(function(p){ if(p.x<minX)minX=p.x; if(p.x>maxX)maxX=p.x; if(p.z<minZ)minZ=p.z; if(p.z>maxZ)maxZ=p.z; });
+        if(!isFinite(minX)){ minX=-1000;maxX=1000;minZ=-1000;maxZ=1000; }
+        // centre on (0,0) so the +X/-X/+Z/-Z labels line up with the axis crosshair
+        half=Math.max(Math.abs(minX),Math.abs(maxX),Math.abs(minZ),Math.abs(maxZ),500)*1.12;
+        cxw=0; czw=0;
+      }
       var x0=cxw-half, x1=cxw+half, z0=czw-half, z1=czw+half;
       function sx(z){ return (z-z0)/(z1-z0)*S; }
       function sy(x){ return (x1-x)/(x1-x0)*S; }
@@ -225,6 +232,7 @@
 
     function render(data){
       lastData=data;
+      allBorders=(data && data.borders) || {};
       hideDetail();
       var all=(data&&data.points)||[];
       var points=all.filter(function(p){ return pdim(p)===curDim; });
