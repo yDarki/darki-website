@@ -57,7 +57,7 @@
     <h1><svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:8px"><path d="M16.8 4H25a3 3 0 0 1 3 3v8.2a3 3 0 0 1-.88 2.12l-9.8 9.8a3 3 0 0 1-4.24 0l-7.2-7.2a3 3 0 0 1 0-4.24l9.8-9.8A3 3 0 0 1 16.8 4Z" fill="#2a230f" stroke="#ffcf5f" stroke-width="2" stroke-linejoin="round"/><circle cx="21.8" cy="10.2" r="2" fill="#ffcf5f"/></svg><span class="grad">DonutSMP Prices</span></h1>
     <p class="sub">Real auction house prices from the DonutSMP server (official API).</p>
 
-    <div class="apidown" id="apiDown"><span class="dot"></span><span>DonutSMP API currently unavailable &mdash; prices cannot load right now. <small>This is on the DonutSMP side, not the site. Please try again shortly.</small></span></div>
+    <div class="apidown" id="apiDown"><span class="dot"></span><span>DonutSMP API access is temporarily restricted &mdash; live prices can&rsquo;t load right now. <small>This is on DonutSMP&rsquo;s side, not the site. We&rsquo;ve requested access again; prices will return once it&rsquo;s approved.</small></span></div>
 
     <div class="toolbar">
       <input class="search" id="search" placeholder="Search item… (e.g. netherite)" />
@@ -329,7 +329,7 @@
   openPanel=function(it){ openItemOverlay(it); };
 })();
 </script>
-<script>fetch('/api/player?ping=1').then(function(r){return r.json();}).then(function(j){if(j&&j.up===false)document.getElementById('apiDown').classList.add('show');}).catch(function(){});</script>
+<script>fetch('/api/player?ping=1').then(function(r){return r.json();}).then(function(j){if(j&&(j.up===false||(j.status&&j.status>=400)))document.getElementById('apiDown').classList.add('show');}).catch(function(){});</script>
   <script>document.querySelectorAll('.btn').forEach(function(b){b.addEventListener('click',function(){b.classList.add('flash');});b.addEventListener('animationend',function(){b.classList.remove('flash');});});</script>
 </body>
 </html>
