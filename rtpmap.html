@@ -266,7 +266,7 @@
     }
     function bindMap(wrap, tip, detail, outer){
       var vb={x:0,y:0,w:1000,h:1000};
-      function applyVB(){ var svg=wrap.querySelector('svg'); if(svg) svg.setAttribute('viewBox', vb.x+' '+vb.y+' '+vb.w+' '+vb.h); }
+      function applyVB(){ var svg=wrap.querySelector('svg'); if(!svg) return; svg.setAttribute('viewBox', vb.x+' '+vb.y+' '+vb.w+' '+vb.h); var k=vb.w/1000, r=(4.2*k).toFixed(2), sw=(0.8*k).toFixed(2); var cs=svg.querySelectorAll('circle'); for(var ci=0;ci<cs.length;ci++){ cs[ci].setAttribute('r', r); cs[ci].setAttribute('stroke-width', sw); } }
       wrap.addEventListener('wheel', function(e){
         e.preventDefault();
         var rect=wrap.getBoundingClientRect();
