@@ -307,7 +307,12 @@
           var zw=ORIGIN+mx/S*EXTENT, xw=ORIGIN+EXTENT-my/S*EXTENT;
           var code=regionCode(xw,zw); var rg2=REGIONS[code];
           var cnt=0; for(var j=0;j<screenPts.length;j++){ if(screenPts[j].code===code) cnt++; }
-          tip.innerHTML='<span class="rg" style="color:'+rg2.color+'">'+rg2.name+'</span><br>'+cnt+' RTP spot'+(cnt===1?'':'s');
+          var zc=clampCell(zw), xc=clampCell(xw);
+          var cx0=ORIGIN+xc*CELL, cx1=cx0+CELL, cz0=ORIGIN+zc*CELL, cz1=cz0+CELL;
+          var ccnt=0; for(var jj=0;jj<screenPts.length;jj++){ var cq=screenPts[jj].p; if(clampCell(cq.z)===zc && clampCell(cq.x)===xc) ccnt++; }
+          tip.innerHTML='<span class="rg" style="color:'+rg2.color+'">'+rg2.name+'</span> · '+cnt+' spot'+(cnt===1?'':'s')
+            +'<br>This tile: <b>'+ccnt+'</b> spot'+(ccnt===1?'':'s')
+            +'<br>X '+fmt(cx0)+' to '+fmt(cx1)+' · Z '+fmt(cz0)+' to '+fmt(cz1);
           tip.style.left=(wrap.offsetLeft+e.clientX-rect.left)+'px';
           tip.style.top=(wrap.offsetTop+e.clientY-rect.top)+'px';
           tip.style.transform='translate(-50%,-130%)';
@@ -320,11 +325,16 @@
         if(!best){ hideDetail(); return; }
         var p=best.p, rline='';
         if(best.code>=0){ var rg=REGIONS[best.code]; rline='<span class="rg" style="color:'+rg.color+'">'+rg.name+'</span> · '; }
-        var near, label;
-        if(best.code>=0){ near=nearestInRegion(p, best.code); label='Nearest in region'; }
-        else { near=nearestOther(p); label='Nearest point'; }
-        var nline=near?(label+': <b>'+fmt(near.dist)+'</b> blocks'):'No other point in this region.';
-        detail.innerHTML='<button class="dclose">×</button>'+p.x+', '+p.z+'<br>'+rline+ago(p.t)+'<div class="dsep"></div><div class="dnear">'+nline+'</div>';
+        var nlines;
+        if(best.code>=0){
+          var nr=nearestInRegion(p, best.code), no=nearestOther(p);
+          nlines='<div class="dnear">Nearest in region: '+(nr?'<b>'+fmt(nr.dist)+'</b> blocks':'—')+'</div>'
+               +'<div class="dnear">Nearest: '+(no?'<b>'+fmt(no.dist)+'</b> blocks':'—')+'</div>';
+        } else {
+          var no2=nearestOther(p);
+          nlines='<div class="dnear">Nearest: '+(no2?'<b>'+fmt(no2.dist)+'</b> blocks':'No other point.')+'</div>';
+        }
+        detail.innerHTML='<button class="dclose">×</button>'+p.x+', '+p.z+'<br>'+rline+ago(p.t)+'<div class="dsep"></div>'+nlines;
         detail.classList.add('show');
         var rect=wrap.getBoundingClientRect();
         var px=wrap.offsetLeft+(best.sx-vb.x)/vb.w*wrap.clientWidth;
