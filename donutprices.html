@@ -42,13 +42,6 @@
   .loading,.error{padding:40px;text-align:center;color:var(--muted)}
   .spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;margin:0 auto 14px;animation:spin 1s linear infinite}
   .attrib{margin-top:16px;font-size:13px;color:var(--muted)} .attrib a{color:var(--accent);font-weight:600}
-
-  .soon-head{color:var(--muted);font-size:13px;letter-spacing:2px;text-transform:uppercase;font-weight:600;margin:26px 0 12px}
-  .soon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-  .soon-card{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 12px;opacity:.55}
-  .soon-card img{width:22px;height:22px;image-rendering:pixelated}
-  .soon-card span{flex:1;font-size:14px;text-transform:capitalize}
-  .soon-card b{font-size:11px;color:var(--accent);background:var(--card-2);border:1px solid var(--border);padding:2px 7px;border-radius:7px;font-weight:700}
   .apidown{display:none;align-items:center;gap:10px;background:rgba(255,80,80,.10);border:1px solid rgba(255,120,120,.38);color:#ffb3b3;border-radius:12px;padding:12px 16px;margin:18px 0 0;font-size:14px;font-weight:600}
   .apidown .dot{width:8px;height:8px;border-radius:50%;background:#ff6b6b;box-shadow:0 0 10px #ff6b6b;flex-shrink:0}
   .apidown.show{display:flex}
@@ -72,7 +65,6 @@
     </div>
     <div class="status" id="status">Loading data…</div>
     <div id="tableWrap"><div class="loading"><div class="spinner"></div>Loading prices…</div></div>
-    <div id="soonWrap"></div>
     <p class="attrib">Price / each = typical sale price (median of recent sales per unit); if there are no recent sales, the cheapest current offer. "Last sale" = most recent sale. Source: official DonutSMP API.</p>
   </div>
 
@@ -148,7 +140,7 @@
         const r=await apiGet();
         const data=await r.json();
         if(data.error) throw new Error(data.error);
-        const _all=(data.items||[]); items=_all.filter(x=>x && x.id && !x.soon && (x.price!=null||x.cheapest1!=null||x.cheapestAny!=null)); const _soon=_all.filter(x=>x && x.soon); var _sw=document.getElementById('soonWrap'); if(_sw){ _sw.innerHTML=_soon.length?('<div class="soon-head">Coming soon</div><div class="soon-grid">'+_soon.map(function(it){return '<div class="soon-card"><img src="'+tex(it.id)+'" onerror="this.style.visibility=&#39;hidden&#39;"><span>'+pretty(it.id)+'</span><b>Soon</b></div>';}).join('')+'</div>'):''; }
+        const _all=(data.items||[]); items=_all.filter(x=>x && x.id && !x.soon && (x.price!=null||x.cheapest1!=null||x.cheapestAny!=null));
         const ts=Date.now();
         try{ localStorage.setItem(CACHE_KEY,JSON.stringify({ts,items})); }catch(e){}
         setStatus(ts,items.length); render();
