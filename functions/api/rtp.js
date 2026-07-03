@@ -36,10 +36,10 @@ export async function onRequest(context) {
       return json({ count: Object.keys(wl).length, whitelist: wl }, 200);
     }
     if (!kv) return json({ border: null, points: [] }, 200);
-    let points = []; let border = null;
+    let points = []; let borders = {};
     try { points = JSON.parse((await kv.get('points')) || '[]'); } catch (e) {}
-    try { border = JSON.parse((await kv.get('border')) || 'null'); } catch (e) {}
-    return json({ border: border, points: points }, 200);
+    try { borders = JSON.parse((await kv.get('borders')) || '{}'); } catch (e) {}
+    return json({ border: borders.overworld || null, borders: borders, points: points }, 200);
   }
 
   // ---- POST ----
@@ -88,15 +88,16 @@ export async function onRequest(context) {
   let name = isMaster ? String(body.name || 'admin') : String(wlName);
   name = name.slice(0, 32).replace(/[^A-Za-z0-9_ .-]/g, '');
 
-  // border: update if a valid one is sent, then enforce it
-  let border = null; try { border = JSON.parse((await kv.get('border')) || 'null'); } catch (e) {}
-  if (dim === 'overworld' && body.border && Number(body.border.size) > 0) {
-    border = { size: Math.round(Number(body.border.size)), cx: Math.round(Number(body.border.cx) || 0), cz: Math.round(Number(body.border.cz) || 0) };
-    await kv.put('border', JSON.stringify(border));
+  // border: per-dimension. Update from the point's own world border, then enforce it for that dimension.
+  let borders = {}; try { borders = JSON.parse((await kv.get('borders')) || '{}'); } catch (e) {}
+  if (body.border && Number(body.border.size) > 0) {
+    borders[dim] = { size: Math.round(Number(body.border.size)), cx: Math.round(Number(body.border.cx) || 0), cz: Math.round(Number(body.border.cz) || 0) };
+    await kv.put('borders', JSON.stringify(borders));
   }
-  if (dim === 'overworld' && border && border.size > 0) {
-    const half = border.size / 2 + 64;
-    if (Math.abs(x - border.cx) > half || Math.abs(z - border.cz) > half) return json({ error: 'out of bounds' }, 400);
+  const bdim = borders[dim];
+  if (bdim && bdim.size > 0) {
+    const half = bdim.size / 2 + 64;
+    if (Math.abs(x - bdim.cx) > half || Math.abs(z - bdim.cz) > half) return json({ error: 'out of bounds' }, 400);
   }
 
   let points = []; try { points = JSON.parse((await kv.get('points')) || '[]'); } catch (e) { points = []; }
