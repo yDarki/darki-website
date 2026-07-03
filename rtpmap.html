@@ -277,6 +277,8 @@
         vb.x=Math.max(0,Math.min(1000-nw,cxp-fx*nw));
         vb.y=Math.max(0,Math.min(1000-nh,cyp-fy*nh));
         vb.w=nw; vb.h=nh; applyVB();
+        // keep the hover tooltip glued to its point while zooming (mousemove doesn't fire during a wheel)
+        wrap.dispatchEvent(new MouseEvent('mousemove', { clientX: e.clientX, clientY: e.clientY, bubbles: true }));
       }, {passive:false});
       function pointAt(e){
         if(!screenPts.length) return null;
