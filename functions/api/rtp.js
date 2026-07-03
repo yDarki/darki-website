@@ -91,8 +91,13 @@ export async function onRequest(context) {
   // border: per-dimension. Update from the point's own world border, then enforce it for that dimension.
   let borders = {}; try { borders = JSON.parse((await kv.get('borders')) || '{}'); } catch (e) {}
   if (body.border && Number(body.border.size) > 0) {
-    borders[dim] = { size: Math.round(Number(body.border.size)), cx: Math.round(Number(body.border.cx) || 0), cz: Math.round(Number(body.border.cz) || 0) };
-    await kv.put('borders', JSON.stringify(borders));
+    const nb = { size: Math.round(Number(body.border.size)), cx: Math.round(Number(body.border.cx) || 0), cz: Math.round(Number(body.border.cz) || 0) };
+    const ob = borders[dim];
+    // Only write when the border actually changed — it is a server constant, so this saves a KV write per point.
+    if (!ob || ob.size !== nb.size || ob.cx !== nb.cx || ob.cz !== nb.cz) {
+      borders[dim] = nb;
+      await kv.put('borders', JSON.stringify(borders));
+    }
   }
   const bdim = borders[dim];
   if (bdim && bdim.size > 0) {
