@@ -21,7 +21,7 @@
     .stat b{color:var(--text);font-variant-numeric:tabular-nums}
     .btn{margin-left:auto;background:#fff;color:#0a0a0c;border:none;padding:9px 16px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:.12s}
     .btn:hover{transform:translateY(-2px)}
-    .mapwrap{position:relative;width:100%;aspect-ratio:1/1;background:var(--card-2);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:grab;user-select:none}
+    .mapwrap{position:relative;width:100%;aspect-ratio:1/1;background:var(--card-2);border:1.5px solid rgba(255,255,255,.3);border-radius:12px;overflow:hidden;cursor:grab;user-select:none}
     .mapwrap svg{display:block;width:100%;height:100%}
     .mapouter{position:relative;padding:22px 24px}
     .axl{position:absolute;color:rgba(255,255,255,.72);font-size:15px;font-weight:700;pointer-events:none;font-variant-numeric:tabular-nums}
@@ -173,7 +173,7 @@
     function fmt(n){ return Math.round(n).toLocaleString('en-US'); }
     function setSvg(svg){ var old=mapwrap.querySelector('svg'); if(old) old.remove(); if(svg) mapwrap.insertAdjacentHTML('afterbegin', svg); }
     function pdim(p){ var d=(p&&p.d)||'overworld'; return (d==='nether'||d==='end')?d:'overworld'; }
-    function frame(){ return '<rect x="1.5" y="1.5" width="'+(S-3)+'" height="'+(S-3)+'" fill="none" stroke="rgba(255,255,255,.34)" stroke-width="2.5"/>'; }
+    function frame(){ return ''; }
 
     function drawOverworld(points){
       function sx(z){ return (z-ORIGIN)/EXTENT*S; }
