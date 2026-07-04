@@ -349,6 +349,7 @@
         var best=pointAt(e);
         if(!best){ hideDetail(); return; }
         var p=best.p, rline='';
+        var cnt=0; for(var ci2=0;ci2<screenPts.length;ci2++){ if(screenPts[ci2].p.x===p.x && screenPts[ci2].p.z===p.z) cnt++; }
         if(best.code>=0){ var rg=REGIONS[best.code]; rline='<span class="rg" style="color:'+rg.color+'">'+rg.name+'</span> · '; }
         var nlines;
         if(best.code>=0){
@@ -359,7 +360,7 @@
           var no2=nearestOther(p);
           nlines='<div class="dnear">Nearest: '+(no2?'<b>'+fmt(no2.dist)+'</b> blocks':'No other point.')+'</div>';
         }
-        detail.innerHTML='<button class="dclose">×</button>'+p.x+', '+p.z+'<br>'+rline+ago(p.t)+'<div class="dsep"></div>'+nlines;
+        detail.innerHTML='<button class="dclose">×</button>'+p.x+', '+p.z+'<br>'+rline+ago(p.t)+'<div class="dnear">Landings here: <b>'+cnt+'</b></div><div class="dsep"></div>'+nlines;
         detail.classList.add('show');
         var rect=wrap.getBoundingClientRect();
         var px=wrap.offsetLeft+(best.sx-vb.x)/vb.w*wrap.clientWidth;
