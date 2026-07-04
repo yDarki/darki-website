@@ -117,6 +117,15 @@ export async function onRequest(context) {
   }
 
   if (points.length > 5000) points = points.slice(points.length - 5000);
+
+  // Daily write budget: cap RTP KV writes so they can't exhaust the shared account write limit (prices + money history).
+  const RTP_DAILY_WRITE_CAP = 500;
+  const dayStart = Date.UTC(new Date(t).getUTCFullYear(), new Date(t).getUTCMonth(), new Date(t).getUTCDate());
+  let priorWrites = 0; { const seen = {}; for (const p of points) { if (p && p.t >= dayStart && p.t !== t) seen[p.t] = 1; } priorWrites = Object.keys(seen).length; }
+  if (added > 0 && priorWrites >= RTP_DAILY_WRITE_CAP) {
+    return json({ ok: true, added: 0, capped: true, writesToday: priorWrites }, 200);
+  }
+
   if (bordersChanged) await kv.put('borders', JSON.stringify(borders));
   if (added > 0) await kv.put('points', JSON.stringify(points));
 
