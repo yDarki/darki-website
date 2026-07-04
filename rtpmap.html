@@ -70,6 +70,7 @@
   .lastpanel .la-pt{background:var(--card-2,#1b1b28);border:1px solid var(--border,rgba(255,255,255,.08));border-radius:8px;padding:4px 9px;color:var(--text,#f2f2f7);font-variant-numeric:tabular-nums}
   .lastpanel .la-muted{color:var(--muted,#8c8ca3)}
   #lastAdded.on{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.4);color:#fff}
+  .labar{margin-top:14px}
 </style>
 </head>
 <body>
@@ -88,11 +89,9 @@
         <div class="stat"><b id="count">–</b> points</div>
         <div class="stat" id="updated"></div>
         <button class="btn ghost" id="refresh">Refresh</button>
-        <button class="btn ghost" id="lastAdded" type="button">Last added</button>
         <button class="seg" id="tiles" type="button">Region tiles</button>
         <button class="iconbtn" id="mapEnlarge" title="Enlarge" aria-label="Enlarge map"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg></button>
       </div>
-      <div class="lastpanel" id="lastPanel"></div>
       <div class="mapouter" id="mapouter">
         <div class="axl axl-xt">+X</div>
         <div class="axl axl-xb">-X</div>
@@ -108,9 +107,10 @@
         <span class="cf-lbl">Your coords</span>
         <label>X <input id="cfX" type="number" inputmode="numeric" placeholder="X"></label>
         <label>Z <input id="cfZ" type="number" inputmode="numeric" placeholder="Z"></label>
-        <button class="btn ghost" id="cfBtn" type="button">Find nearest</button>
         <span class="cf-out" id="cfOut"></span>
       </div>
+      <div class="labar"><button class="btn ghost" id="lastAdded" type="button">Last added</button></div>
+      <div class="lastpanel" id="lastPanel"></div>
       <div class="legend" id="legend"></div>
     </div>
   </div>
@@ -411,7 +411,7 @@
     var mapBigTip=document.getElementById('mapBigTip'), mapBigDetail=document.getElementById('mapBigDetail'), mapBigOuter=document.getElementById('mapBigOuter');
     var bigMap=bindMap(mapBigWrap, mapBigTip, mapBigDetail, mapBigOuter);
 
-    var cfX=document.getElementById('cfX'), cfZ=document.getElementById('cfZ'), cfBtn=document.getElementById('cfBtn'), cfOut=document.getElementById('cfOut');
+    var cfX=document.getElementById('cfX'), cfZ=document.getElementById('cfZ'), cfOut=document.getElementById('cfOut');
     function nearestToXZ(x,z){
       var best=null,bd=Infinity;
       for(var i=0;i<screenPts.length;i++){ var q=screenPts[i].p; var dx=q.x-x, dz=q.z-z; var dd=Math.sqrt(dx*dx+dz*dz); if(dd<bd){ bd=dd; best=q; } }
@@ -429,7 +429,6 @@
     }
     cfX.addEventListener('input', updateCoordFind);
     cfZ.addEventListener('input', updateCoordFind);
-    cfBtn.addEventListener('click', updateCoordFind);
     function openBig(){ var svg=mapwrap.querySelector('svg'); mapBigWrap.innerHTML = svg ? svg.outerHTML : ''; if(typeof bigMap!=='undefined' && bigMap) bigMap.reset(); mapBigSub.textContent = DIMLABEL[curDim]+' · '+countEl.textContent+' points'; mapBig.classList.add('open'); }
     function closeBig(){ mapBig.classList.remove('open'); }
     document.getElementById('mapEnlarge').addEventListener('click', openBig);
