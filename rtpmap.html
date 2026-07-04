@@ -63,7 +63,14 @@
     .cf-out{font-size:12.5px;color:var(--text);font-variant-numeric:tabular-nums}
     .cf-out b{color:var(--text)}
     .cf-muted{color:var(--muted)}
-  </style>
+    .lastpanel{display:none;margin:10px 0 0;background:var(--card,#15151f);border:1px solid var(--border,rgba(255,255,255,.08));border-radius:12px;padding:12px 14px;font-size:13px}
+  .lastpanel.show{display:block}
+  .lastpanel h4{font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted,#8c8ca3);margin:0 0 8px;font-weight:700}
+  .lastpanel .la-pts{display:flex;flex-wrap:wrap;gap:6px}
+  .lastpanel .la-pt{background:var(--card-2,#1b1b28);border:1px solid var(--border,rgba(255,255,255,.08));border-radius:8px;padding:4px 9px;color:var(--text,#f2f2f7);font-variant-numeric:tabular-nums}
+  .lastpanel .la-muted{color:var(--muted,#8c8ca3)}
+  #lastAdded.on{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.4);color:#fff}
+</style>
 </head>
 <body>
   <div class="bg"></div>
@@ -81,9 +88,11 @@
         <div class="stat"><b id="count">–</b> points</div>
         <div class="stat" id="updated"></div>
         <button class="btn ghost" id="refresh">Refresh</button>
+        <button class="btn ghost" id="lastAdded" type="button">Last added</button>
         <button class="seg" id="tiles" type="button">Region tiles</button>
         <button class="iconbtn" id="mapEnlarge" title="Enlarge" aria-label="Enlarge map"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg></button>
       </div>
+      <div class="lastpanel" id="lastPanel"></div>
       <div class="mapouter" id="mapouter">
         <div class="axl axl-xt">+X</div>
         <div class="axl axl-xb">-X</div>
@@ -367,6 +376,29 @@
       return { applyVB:applyVB, reset:function(){ vb.x=0; vb.y=0; vb.w=1000; vb.h=1000; applyVB(); } };
     }
     var smallMap=bindMap(mapwrap, tip, detail, mapouter);
+    (function(){
+      var laBtn=document.getElementById('lastAdded');
+      var laPanel=document.getElementById('lastPanel');
+      if(laBtn&&laPanel){
+        var fillLast=function(){
+          var pts=(typeof lastData!=='undefined'&&lastData&&lastData.points)||[];
+          if(!pts.length){ laPanel.innerHTML='<h4>Last added</h4><div class="la-muted">No RTP points yet.</div>'; return; }
+          var maxT=0; for(var i=0;i<pts.length;i++){ if(pts[i].t>maxT) maxT=pts[i].t; }
+          var batch=pts.filter(function(p){ return p.t===maxT; });
+          var dim=(batch[0].d||'overworld');
+          var h='<h4>Last added &middot; '+batch.length+' point'+(batch.length===1?'':'s')+' &middot; '+(DIMLABEL[dim]||dim)+' &middot; '+ago(maxT)+'</h4><div class="la-pts">';
+          batch.forEach(function(p){ h+='<span class="la-pt">'+p.x+', '+p.z+'</span>'; });
+          h+='</div>';
+          laPanel.innerHTML=h;
+        };
+        laBtn.addEventListener('click',function(){
+          var open=laPanel.classList.toggle('show');
+          laBtn.classList.toggle('on', open);
+          if(open) fillLast();
+        });
+        if(typeof render==='function'){ var _origRender=render; render=function(d){ _origRender(d); if(laPanel.classList.contains('show')) fillLast(); }; }
+      }
+    })();
 
     function load(){
       fetch('/api/rtp?_='+Date.now(),{cache:'no-store'})
