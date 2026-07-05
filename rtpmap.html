@@ -21,7 +21,7 @@
     .stat b{color:var(--text);font-variant-numeric:tabular-nums}
     .btn{margin-left:auto;background:#fff;color:#0a0a0c;border:none;padding:9px 16px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:.12s}
     .btn:hover{transform:translateY(-2px)}
-    .mapwrap{position:relative;width:100%;aspect-ratio:1/1;background:var(--card-2);border:1.5px solid rgba(255,255,255,.3);border-radius:12px;overflow:hidden;cursor:grab;user-select:none}
+    .mapwrap{position:relative;width:100%;aspect-ratio:1/1;background:var(--card-2);border:1.5px solid rgba(255,255,255,.3);border-radius:12px;overflow:hidden;cursor:grab;user-select:none}.mapwrap.picking{cursor:crosshair}
     .mapwrap svg{display:block;width:100%;height:100%}
     .mapouter{position:relative;padding:22px 24px}
     .axl{position:absolute;color:rgba(255,255,255,.72);font-size:15px;font-weight:700;pointer-events:none;font-variant-numeric:tabular-nums}
@@ -107,6 +107,7 @@
         <span class="cf-lbl">Your coords</span>
         <label>X <input id="cfX" type="number" inputmode="numeric" placeholder="X"></label>
         <label>Z <input id="cfZ" type="number" inputmode="numeric" placeholder="Z"></label>
+        <button class="seg" id="pickLoc" type="button">Pick location</button>
         <span class="cf-out" id="cfOut"></span>
       </div>
       <div class="labar"><button class="btn ghost" id="lastAdded" type="button">Last added</button></div>
@@ -148,6 +149,11 @@
     var S=1000;
     var lastData=null;
     var allBorders={};
+    var pickMode=false, pickedLoc=null;
+    var plainX0=0, plainX1=0, plainZ0=0, plainZ1=0;
+    function worldFromSVG(px,py){ if(curDim==='overworld'){ return { z: ORIGIN + px/S*EXTENT, x: (ORIGIN+EXTENT) - py/S*EXTENT }; } return { z: plainZ0 + px/S*(plainZ1-plainZ0), x: plainX1 - py/S*(plainX1-plainX0) }; }
+    function svgFromWorld(x,z){ if(curDim==='overworld'){ return { sx:(z-ORIGIN)/EXTENT*S, sy:((ORIGIN+EXTENT)-x)/EXTENT*S }; } return { sx:(z-plainZ0)/(plainZ1-plainZ0)*S, sy:(plainX1-x)/(plainX1-plainX0)*S }; }
+    function drawPickMarker(){ var svg=mapwrap.querySelector('svg'); if(!svg) return; var old=svg.querySelector('#pickMark'); if(old&&old.parentNode) old.parentNode.removeChild(old); if(!pickedLoc) return; var s=svgFromWorld(pickedLoc.x,pickedLoc.z); var c='#ffd23f'; var m='<g id="pickMark" pointer-events="none"><line x1="'+(s.sx-14).toFixed(1)+'" y1="'+s.sy.toFixed(1)+'" x2="'+(s.sx+14).toFixed(1)+'" y2="'+s.sy.toFixed(1)+'" stroke="'+c+'" stroke-width="1.6" vector-effect="non-scaling-stroke"/><line x1="'+s.sx.toFixed(1)+'" y1="'+(s.sy-14).toFixed(1)+'" x2="'+s.sx.toFixed(1)+'" y2="'+(s.sy+14).toFixed(1)+'" stroke="'+c+'" stroke-width="1.6" vector-effect="non-scaling-stroke"/><circle cx="'+s.sx.toFixed(1)+'" cy="'+s.sy.toFixed(1)+'" r="3" fill="'+c+'"/></g>'; svg.insertAdjacentHTML('beforeend', m); }
 
     function loadDim(){ try{ var d=localStorage.getItem('rtpDim'); return (d==='nether'||d==='end')?d:'overworld'; }catch(e){ return 'overworld'; } }
     function saveDim(d){ try{ localStorage.setItem('rtpDim', d); }catch(e){} }
@@ -219,6 +225,7 @@
         cxw=0; czw=0;
       }
       var x0=cxw-half, x1=cxw+half, z0=czw-half, z1=czw+half;
+      plainX0=x0; plainX1=x1; plainZ0=z0; plainZ1=z1;
       function sx(z){ return (z-z0)/(z1-z0)*S; }
       function sy(x){ return (x1-x)/(x1-x0)*S; }
       var g='';
@@ -253,6 +260,7 @@
       tilesBtn.style.display=(curDim==='overworld')?'inline-flex':'none';
       tilesBtn.classList.toggle('on', showTiles);
       if(curDim==='overworld') drawOverworld(points); else drawPlain(points, curDim);
+      drawPickMarker();
       if(typeof smallMap!=='undefined' && smallMap) smallMap.applyVB();
       if(typeof mapBig!=='undefined' && mapBig && mapBig.classList.contains('open')){ var _s=mapwrap.querySelector('svg'); if(_s){ mapBigWrap.innerHTML=_s.outerHTML; if(typeof bigMap!=='undefined' && bigMap) bigMap.applyVB(); } }
       if(typeof updateCoordFind==='function') updateCoordFind();
@@ -346,6 +354,7 @@
       wrap.addEventListener('mouseleave', function(){ tip.style.opacity=0; });
       wrap.addEventListener('click', function(e){
         if(dragMoved) return;
+        if(pickMode){ var _r=wrap.getBoundingClientRect(); var _mx=vb.x+(e.clientX-_r.left)/_r.width*vb.w, _my=vb.y+(e.clientY-_r.top)/_r.height*vb.h; var _w=worldFromSVG(_mx,_my); pickedLoc={x:Math.round(_w.x), z:Math.round(_w.z)}; if(cfX) cfX.value=pickedLoc.x; if(cfZ) cfZ.value=pickedLoc.z; if(typeof updateCoordFind==='function') updateCoordFind(); drawPickMarker(); return; }
         var best=pointAt(e);
         if(!best){ hideDetail(); return; }
         var p=best.p, rline='';
@@ -430,6 +439,7 @@
     }
     cfX.addEventListener('input', updateCoordFind);
     cfZ.addEventListener('input', updateCoordFind);
+    var pickLocBtn=document.getElementById('pickLoc'); if(pickLocBtn){ pickLocBtn.addEventListener('click', function(){ pickMode=!pickMode; pickLocBtn.classList.toggle('on', pickMode); mapwrap.classList.toggle('picking', pickMode); if(!pickMode){ pickedLoc=null; drawPickMarker(); } }); }
     function openBig(){ var svg=mapwrap.querySelector('svg'); mapBigWrap.innerHTML = svg ? svg.outerHTML : ''; if(typeof bigMap!=='undefined' && bigMap) bigMap.reset(); mapBigSub.textContent = DIMLABEL[curDim]+' · '+countEl.textContent+' points'; mapBig.classList.add('open'); }
     function closeBig(){ mapBig.classList.remove('open'); }
     document.getElementById('mapEnlarge').addEventListener('click', openBig);
