@@ -12,7 +12,7 @@ export async function onRequest(context) {
   const postHeaders = { Authorization: 'Bearer ' + token, Accept: 'application/json', 'Content-Type': 'application/json' };
   const base = 'https://api.donutsmp.net/v1/';
   const url = new URL(request.url);
-  if (url.searchParams.get('reset') && env.DONUT_TOKEN && url.searchParams.get('reset') === env.DONUT_TOKEN) { try { const kv = env.PRICE_HISTORY; if (kv) await kv.put('series', '[]'); return new Response(JSON.stringify({ reset: true }), { status: 200, headers: { 'Content-Type': 'application/json' } }); } catch (e) { return new Response(JSON.stringify({ reset: false, error: String(e) }), { status: 200, headers: { 'Content-Type': 'application/json' } }); } }
+  if (url.searchParams.get('reset')) { const provided = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim(); if (!env.DONUT_TOKEN || provided !== env.DONUT_TOKEN) { return new Response(JSON.stringify({ reset: false, error: 'unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } }); } try { const kv = env.PRICE_HISTORY; if (kv) { await kv.put('series', '[]'); await kv.put('sevents', '{}'); } return new Response(JSON.stringify({ reset: true, cleared: ['series','sevents'] }), { status: 200, headers: { 'Content-Type': 'application/json' } }); } catch (e) { return new Response(JSON.stringify({ reset: false, error: String(e) }), { status: 200, headers: { 'Content-Type': 'application/json' } }); } }
   if (url.searchParams.get('history')) {
     const hid = url.searchParams.get('history');
     const hcors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=120' };
