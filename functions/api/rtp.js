@@ -69,6 +69,13 @@ export async function onRequest(context) {
   // admin: reset all points (master only)
   if (url.searchParams.get('reset')) {
     if (!isMaster) return json({ error: 'unauthorized' }, 401);
+    const rd = String(url.searchParams.get('reset')).toLowerCase();
+    if (rd === 'overworld' || rd === 'nether' || rd === 'end') {
+      let pp = []; try { pp = JSON.parse((await kv.get('points')) || '[]'); } catch (e) { pp = []; }
+      const kept = pp.filter(function (p) { return (p.d || 'overworld') !== rd; });
+      await kv.put('points', JSON.stringify(kept));
+      return json({ ok: true, reset: rd, removed: pp.length - kept.length, count: kept.length }, 200);
+    }
     await kv.put('points', '[]');
     return json({ ok: true, reset: true, count: 0 }, 200);
   }
@@ -116,7 +123,7 @@ export async function onRequest(context) {
     if (!dup) { points.push({ n: name, x: x, z: z, t: t, d: dim }); added++; }
   }
 
-  if (points.length > 5000) points = points.slice(points.length - 5000);
+  { var PER_DIM = 5000; var byd = {}; for (var _i = 0; _i < points.length; _i++) { var _p = points[_i]; var _d = _p.d || 'overworld'; (byd[_d] = byd[_d] || []).push(_p); } var merged = []; for (var _k in byd) { var _a = byd[_k]; if (_a.length > PER_DIM) _a = _a.slice(_a.length - PER_DIM); for (var _j = 0; _j < _a.length; _j++) merged.push(_a[_j]); } merged.sort(function (a, b) { return (a.t || 0) - (b.t || 0); }); points = merged; }
 
   // Daily write budget: cap RTP KV writes so they can't exhaust the shared account write limit (prices + money history).
   const RTP_DAILY_WRITE_CAP = 500;
