@@ -142,7 +142,7 @@
         if(data.error) throw new Error(data.error);
         const _all=(data.items||[]); items=_all.filter(x=>x && x.id && !x.soon && (x.price!=null||x.cheapest1!=null||x.cheapestAny!=null));
         const ts=Date.now();
-        try{ localStorage.setItem(CACHE_KEY,JSON.stringify({ts,items})); }catch(e){}
+        if(items.length){ try{ localStorage.setItem(CACHE_KEY,JSON.stringify({ts,items})); }catch(e){} }
         setStatus(ts,items.length); render();
       }catch(err){
         tableWrap.innerHTML='<div class="error">Could not load prices.<br><br>Reason: '+err.message+'.</div>';
