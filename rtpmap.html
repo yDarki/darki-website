@@ -21,7 +21,7 @@
     .stat b{color:var(--text);font-variant-numeric:tabular-nums}
     .btn{margin-left:auto;background:#fff;color:#0a0a0c;border:none;padding:9px 16px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:.12s}
     .btn:hover{transform:translateY(-2px)}
-    .mapwrap{position:relative;width:100%;aspect-ratio:1/1;background:var(--card-2);border:1.5px solid rgba(255,255,255,.3);border-radius:12px;overflow:hidden;cursor:grab;user-select:none}.mapwrap.picking{cursor:crosshair} .mapwrap svg circle.pt{r:var(--pr,4.2px);stroke-width:var(--pw,0.8px)}
+    .mapwrap{position:relative;width:100%;aspect-ratio:1/1;background:var(--card-2);border:1.5px solid rgba(255,255,255,.3);border-radius:12px;overflow:hidden;cursor:grab;user-select:none}.mapwrap.picking{cursor:crosshair} .mapwrap svg{display:block;width:100%;height:100%} .ptcanvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
     .mapwrap svg{display:block;width:100%;height:100%}
     .mapouter{position:relative;padding:22px 24px}
     .axl{position:absolute;color:rgba(255,255,255,.72);font-size:15px;font-weight:700;pointer-events:none;font-variant-numeric:tabular-nums}
@@ -153,7 +153,7 @@
     var plainX0=0, plainX1=0, plainZ0=0, plainZ1=0;
     function worldFromSVG(px,py){ if(curDim==='overworld'){ return { z: ORIGIN + px/S*EXTENT, x: (ORIGIN+EXTENT) - py/S*EXTENT }; } return { z: plainZ0 + px/S*(plainZ1-plainZ0), x: plainX1 - py/S*(plainX1-plainX0) }; }
     function svgFromWorld(x,z){ if(curDim==='overworld'){ return { sx:(z-ORIGIN)/EXTENT*S, sy:((ORIGIN+EXTENT)-x)/EXTENT*S }; } return { sx:(z-plainZ0)/(plainZ1-plainZ0)*S, sy:(plainX1-x)/(plainX1-plainX0)*S }; }
-    function drawPickMarker(){ var svg=mapwrap.querySelector('svg'); if(!svg) return; var old=svg.querySelector('#pickMark'); if(old&&old.parentNode) old.parentNode.removeChild(old); if(!pickedLoc) return; var s=svgFromWorld(pickedLoc.x,pickedLoc.z); var c='#ffd23f'; var m='<g id="pickMark" pointer-events="none"><line x1="'+(s.sx-14).toFixed(1)+'" y1="'+s.sy.toFixed(1)+'" x2="'+(s.sx+14).toFixed(1)+'" y2="'+s.sy.toFixed(1)+'" stroke="'+c+'" stroke-width="1.6" vector-effect="non-scaling-stroke"/><line x1="'+s.sx.toFixed(1)+'" y1="'+(s.sy-14).toFixed(1)+'" x2="'+s.sx.toFixed(1)+'" y2="'+(s.sy+14).toFixed(1)+'" stroke="'+c+'" stroke-width="1.6" vector-effect="non-scaling-stroke"/><circle cx="'+s.sx.toFixed(1)+'" cy="'+s.sy.toFixed(1)+'" r="3" fill="'+c+'"/></g>'; svg.insertAdjacentHTML('beforeend', m); }
+    function drawPickMarker(){ if(typeof smallMap!=='undefined' && smallMap) smallMap.applyVB(); }
 
     function loadDim(){ try{ var d=localStorage.getItem('rtpDim'); return (d==='nether'||d==='end')?d:'overworld'; }catch(e){ return 'overworld'; } }
     function saveDim(d){ try{ localStorage.setItem('rtpDim', d); }catch(e){} }
@@ -204,7 +204,7 @@
         var psx=clampS(sx(p.z)), psy=clampS(sy(p.x));
         var code=regionCode(p.x,p.z);
         screenPts.push({sx:psx,sy:psy,p:p,code:code});
-        pts+='<circle class="pt" cx="'+psx.toFixed(1)+'" cy="'+psy.toFixed(1)+'" r="4.2" fill="'+REGIONS[code].color+'" stroke="rgba(0,0,0,.4)" stroke-width="0.8" opacity="0.92"/>';
+        
       });
       setSvg('<svg viewBox="0 0 '+S+' '+S+'" xmlns="http://www.w3.org/2000/svg">'+g+pts+'</svg>');
       var rcnt=[0,0,0,0,0,0]; screenPts.forEach(function(s){ if(s.code>=0&&s.code<6) rcnt[s.code]++; }); legendEl.innerHTML=REGIONS.map(function(r,i){ return '<span class="it"><span class="sw" style="background:'+r.color+'"></span>'+r.name+' ('+rcnt[i]+')</span>'; }).join('');
@@ -238,7 +238,7 @@
       points.forEach(function(p){
         var psx=clampS(sx(p.z)), psy=clampS(sy(p.x));
         screenPts.push({sx:psx,sy:psy,p:p,code:-1});
-        pts+='<circle class="pt" cx="'+psx.toFixed(1)+'" cy="'+psy.toFixed(1)+'" r="4.2" fill="'+col+'" stroke="rgba(0,0,0,.4)" stroke-width="0.8" opacity="0.92"/>';
+        
       });
       setSvg('<svg viewBox="0 0 '+S+' '+S+'" xmlns="http://www.w3.org/2000/svg">'+g+pts+'</svg>');
       legendEl.innerHTML='<span class="it"><span class="sw" style="background:'+col+'"></span>'+DIMLABEL[dim]+' ('+points.length+')</span>';
@@ -262,7 +262,7 @@
       if(curDim==='overworld') drawOverworld(points); else drawPlain(points, curDim);
       drawPickMarker();
       if(typeof smallMap!=='undefined' && smallMap) smallMap.applyVB();
-      if(typeof mapBig!=='undefined' && mapBig && mapBig.classList.contains('open')){ var _s=mapwrap.querySelector('svg'); if(_s){ mapBigWrap.innerHTML=_s.outerHTML; if(typeof bigMap!=='undefined' && bigMap) bigMap.applyVB(); } }
+      if(typeof mapBig!=='undefined' && mapBig && mapBig.classList.contains('open')){ var _s=mapwrap.querySelector('svg'); if(_s){ var _ob2=mapBigWrap.querySelector('svg'); if(_ob2) _ob2.remove(); mapBigWrap.insertAdjacentHTML('afterbegin', _s.outerHTML); if(typeof bigMap!=='undefined' && bigMap) bigMap.applyVB(); } }
       if(typeof updateCoordFind==='function') updateCoordFind();
     }
 
@@ -284,7 +284,10 @@
     function bindMap(wrap, tip, detail, outer){
       var vb={x:0,y:0,w:1000,h:1000};
       var dragging=false, dragMoved=false, dragSX=0, dragSY=0, dragVX=0, dragVY=0;
-      function applyVB(){ var svg=wrap.querySelector('svg'); if(!svg) return; svg.setAttribute('viewBox', vb.x+' '+vb.y+' '+vb.w+' '+vb.h); var k=vb.w/1000; svg.style.setProperty('--pr', (4.2*k).toFixed(2)+'px'); svg.style.setProperty('--pw', (0.8*k).toFixed(2)+'px'); }
+      var cv=wrap.querySelector('canvas.ptcanvas'); if(!cv){ cv=document.createElement('canvas'); cv.className='ptcanvas'; wrap.appendChild(cv); }
+      function paintPoints(){ var cw=cv.clientWidth, ch=cv.clientHeight; if(!cw||!ch) return; var dpr=window.devicePixelRatio||1; if(cv.width!==Math.round(cw*dpr)){ cv.width=Math.round(cw*dpr); cv.height=Math.round(ch*dpr); } var ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cw,ch); var dcol=(typeof DIMCOLOR!=='undefined'&&DIMCOLOR[curDim])||'#8bd0ff'; ctx.lineWidth=0.8; ctx.strokeStyle='rgba(0,0,0,.4)'; for(var i=0;i<screenPts.length;i++){ var s=screenPts[i]; var px=(s.sx-vb.x)/vb.w*cw, py=(s.sy-vb.y)/vb.h*ch; if(px<-4||px>cw+4||py<-4||py>ch+4) continue; ctx.beginPath(); ctx.arc(px,py,3,0,6.2832); ctx.fillStyle=(s.code>=0?REGIONS[s.code].color:dcol); ctx.fill(); ctx.stroke(); } if(pickedLoc){ var sw=svgFromWorld(pickedLoc.x,pickedLoc.z); var mx=(sw.sx-vb.x)/vb.w*cw, my=(sw.sy-vb.y)/vb.h*ch; ctx.strokeStyle='#ffd23f'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.moveTo(mx-9,my); ctx.lineTo(mx+9,my); ctx.moveTo(mx,my-9); ctx.lineTo(mx,my+9); ctx.stroke(); ctx.fillStyle='#ffd23f'; ctx.beginPath(); ctx.arc(mx,my,2.4,0,6.2832); ctx.fill(); } }
+      function applyVB(){ var svg=wrap.querySelector('svg'); if(svg) svg.setAttribute('viewBox', vb.x+' '+vb.y+' '+vb.w+' '+vb.h); paintPoints(); }
+      window.addEventListener('resize', applyVB);
       wrap.addEventListener('wheel', function(e){
         e.preventDefault();
         var rect=wrap.getBoundingClientRect();
@@ -440,7 +443,7 @@
     cfX.addEventListener('input', updateCoordFind);
     cfZ.addEventListener('input', updateCoordFind);
     var pickLocBtn=document.getElementById('pickLoc'); if(pickLocBtn){ pickLocBtn.addEventListener('click', function(){ pickMode=!pickMode; pickLocBtn.classList.toggle('on', pickMode); mapwrap.classList.toggle('picking', pickMode); if(!pickMode){ pickedLoc=null; drawPickMarker(); } }); }
-    function openBig(){ var svg=mapwrap.querySelector('svg'); mapBigWrap.innerHTML = svg ? svg.outerHTML : ''; if(typeof bigMap!=='undefined' && bigMap) bigMap.reset(); mapBigSub.textContent = DIMLABEL[curDim]+' · '+countEl.textContent+' points'; mapBig.classList.add('open'); }
+    function openBig(){ var svg=mapwrap.querySelector('svg'); var _ob=mapBigWrap.querySelector('svg'); if(_ob) _ob.remove(); if(svg) mapBigWrap.insertAdjacentHTML('afterbegin', svg.outerHTML); if(typeof bigMap!=='undefined' && bigMap) bigMap.reset(); mapBigSub.textContent = DIMLABEL[curDim]+' · '+countEl.textContent+' points'; mapBig.classList.add('open'); }
     function closeBig(){ mapBig.classList.remove('open'); }
     document.getElementById('mapEnlarge').addEventListener('click', openBig);
     document.getElementById('mapBigX').addEventListener('click', closeBig);
