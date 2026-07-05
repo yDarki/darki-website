@@ -21,7 +21,7 @@
     .stat b{color:var(--text);font-variant-numeric:tabular-nums}
     .btn{margin-left:auto;background:#fff;color:#0a0a0c;border:none;padding:9px 16px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:.12s}
     .btn:hover{transform:translateY(-2px)}
-    .mapwrap{position:relative;width:100%;aspect-ratio:1/1;background:var(--card-2);border:1.5px solid rgba(255,255,255,.3);border-radius:12px;overflow:hidden;cursor:grab;user-select:none}.mapwrap.picking{cursor:crosshair}
+    .mapwrap{position:relative;width:100%;aspect-ratio:1/1;background:var(--card-2);border:1.5px solid rgba(255,255,255,.3);border-radius:12px;overflow:hidden;cursor:grab;user-select:none}.mapwrap.picking{cursor:crosshair} .mapwrap svg circle.pt{r:var(--pr,4.2px);stroke-width:var(--pw,0.8px)}
     .mapwrap svg{display:block;width:100%;height:100%}
     .mapouter{position:relative;padding:22px 24px}
     .axl{position:absolute;color:rgba(255,255,255,.72);font-size:15px;font-weight:700;pointer-events:none;font-variant-numeric:tabular-nums}
@@ -204,7 +204,7 @@
         var psx=clampS(sx(p.z)), psy=clampS(sy(p.x));
         var code=regionCode(p.x,p.z);
         screenPts.push({sx:psx,sy:psy,p:p,code:code});
-        pts+='<circle cx="'+psx.toFixed(1)+'" cy="'+psy.toFixed(1)+'" r="4.2" fill="'+REGIONS[code].color+'" stroke="rgba(0,0,0,.4)" stroke-width="0.8" opacity="0.92"/>';
+        pts+='<circle class="pt" cx="'+psx.toFixed(1)+'" cy="'+psy.toFixed(1)+'" r="4.2" fill="'+REGIONS[code].color+'" stroke="rgba(0,0,0,.4)" stroke-width="0.8" opacity="0.92"/>';
       });
       setSvg('<svg viewBox="0 0 '+S+' '+S+'" xmlns="http://www.w3.org/2000/svg">'+g+pts+'</svg>');
       var rcnt=[0,0,0,0,0,0]; screenPts.forEach(function(s){ if(s.code>=0&&s.code<6) rcnt[s.code]++; }); legendEl.innerHTML=REGIONS.map(function(r,i){ return '<span class="it"><span class="sw" style="background:'+r.color+'"></span>'+r.name+' ('+rcnt[i]+')</span>'; }).join('');
@@ -238,7 +238,7 @@
       points.forEach(function(p){
         var psx=clampS(sx(p.z)), psy=clampS(sy(p.x));
         screenPts.push({sx:psx,sy:psy,p:p,code:-1});
-        pts+='<circle cx="'+psx.toFixed(1)+'" cy="'+psy.toFixed(1)+'" r="4.2" fill="'+col+'" stroke="rgba(0,0,0,.4)" stroke-width="0.8" opacity="0.92"/>';
+        pts+='<circle class="pt" cx="'+psx.toFixed(1)+'" cy="'+psy.toFixed(1)+'" r="4.2" fill="'+col+'" stroke="rgba(0,0,0,.4)" stroke-width="0.8" opacity="0.92"/>';
       });
       setSvg('<svg viewBox="0 0 '+S+' '+S+'" xmlns="http://www.w3.org/2000/svg">'+g+pts+'</svg>');
       legendEl.innerHTML='<span class="it"><span class="sw" style="background:'+col+'"></span>'+DIMLABEL[dim]+' ('+points.length+')</span>';
@@ -284,7 +284,7 @@
     function bindMap(wrap, tip, detail, outer){
       var vb={x:0,y:0,w:1000,h:1000};
       var dragging=false, dragMoved=false, dragSX=0, dragSY=0, dragVX=0, dragVY=0;
-      function applyVB(){ var svg=wrap.querySelector('svg'); if(!svg) return; svg.setAttribute('viewBox', vb.x+' '+vb.y+' '+vb.w+' '+vb.h); var k=vb.w/1000, r=(4.2*k).toFixed(2), sw=(0.8*k).toFixed(2); var cs=svg.querySelectorAll('circle'); for(var ci=0;ci<cs.length;ci++){ cs[ci].setAttribute('r', r); cs[ci].setAttribute('stroke-width', sw); } }
+      function applyVB(){ var svg=wrap.querySelector('svg'); if(!svg) return; svg.setAttribute('viewBox', vb.x+' '+vb.y+' '+vb.w+' '+vb.h); var k=vb.w/1000; svg.style.setProperty('--pr', (4.2*k).toFixed(2)+'px'); svg.style.setProperty('--pw', (0.8*k).toFixed(2)+'px'); }
       wrap.addEventListener('wheel', function(e){
         e.preventDefault();
         var rect=wrap.getBoundingClientRect();
