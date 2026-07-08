@@ -65,7 +65,7 @@
   function renderUnlock(cfg){
     app.innerHTML=
       '<div id="offbanner"></div>'+
-      '<div class="step"><label>1 &middot; In Minecraft bezahlen</label>'+
+      '<div class="step" id="paystep"><label>1 &middot; In Minecraft bezahlen</label>'+
         '<div class="note">Zahle <span class="price">'+abbr(cfg.price)+'</span> ('+de(cfg.price)+' $) an <span class="pill">'+cfg.collector+'</span> für <b>'+cfg.durationDays+' Tage</b> Zugriff:</div>'+
         '<div class="row"><span class="pill" style="font-size:15px">/pay '+cfg.collector+' '+cfg.price+'</span></div></div>'+
       '<div class="step"><label>2 &middot; Freischalten</label>'+
@@ -78,7 +78,18 @@
         '<div class="err" id="err2"></div></div>';
 
     var offb=document.getElementById('offbanner');
-    async function checkOnline(){ try { var r=await fetch(API+'?online=1'); var j=await r.json(); if(j && j.online===false){ offb.innerHTML='<div style="background:rgba(232,164,76,.12);border:1px solid rgba(232,164,76,.4);color:#f0c987;border-radius:12px;padding:12px 14px;margin-bottom:18px;font-size:13.5px"><b>'+(j.collector||'Der Account')+' ist gerade offline.</b> Du kannst trotzdem zahlen — die Freischaltung passiert automatisch, sobald er wieder online ist.</div>'; } else { offb.innerHTML=''; } } catch(e){ offb.innerHTML=''; } }
+    async function checkOnline(){
+      var ps=document.getElementById('paystep');
+      try {
+        var r=await fetch(API+'?online=1'); var j=await r.json();
+        if(j && j.online===false){
+          offb.innerHTML='<div style="background:rgba(255,90,90,.12);border:1px solid rgba(255,90,90,.45);color:#ff9b9b;border-radius:12px;padding:12px 14px;margin-bottom:18px;font-size:14px"><b>Bitte jetzt NICHT bezahlen.</b><br>'+(j.collector||'Der Account')+' ist offline und kann Zahlungen nicht verarbeiten. Warte, bis er wieder online ist — sonst kann deine Zahlung nicht zugeordnet werden.</div>';
+          if(ps) ps.style.display='none';
+        } else {
+          offb.innerHTML=''; if(ps) ps.style.display='';
+        }
+      } catch(e){ offb.innerHTML=''; if(ps) ps.style.display=''; }
+    }
     checkOnline();
 
     var claimBtn=document.getElementById('claim'), ignEl=document.getElementById('ign'), err1=document.getElementById('err1');
