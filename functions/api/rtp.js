@@ -23,6 +23,17 @@ export async function onRequest(context) {
 
   if (url.searchParams.get('check')) return json({ ok: true, kvBound: !!kv, tokenSet: !!master }, 200);
 
+  // Paywall: website map reads (GET) require a valid access token; the mod upload (POST) and master use their own tokens.
+  if (request.method === 'GET') {
+    const _masterOk = master && (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim() === master;
+    if (!_masterOk) {
+      const _acc = request.headers.get('X-Access-Token') || '';
+      let _ok = false;
+      try { const _kv = env.PRICE_HISTORY; if (_acc && _kv) { const _r = await _kv.get('ac:token:' + _acc); if (_r) { const _t = JSON.parse(_r); _ok = _t && _t.expires > Date.now(); } } } catch (e) {}
+      if (!_ok) return json({ error: 'locked' }, 403);
+    }
+  }
+
   const authHeader = request.headers.get('Authorization') || '';
   const provided = (authHeader.startsWith('Bearer ') ? authHeader.slice(7) : (request.headers.get('X-RTP-Token') || '')).trim();
   const isMaster = !!master && provided === String(master).trim();
