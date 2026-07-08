@@ -44,6 +44,26 @@ export async function onRequest(context) {
     return json({ price: cfg.price, durationDays: cfg.durationDays, collector: cfg.collector });
   }
 
+  // ---- admin: revoke access (debug/reset) ----
+  if (url.searchParams.has('revoke')) {
+    if (!isAdmin()) return json({ error: 'unauthorized' }, 401);
+    const what = url.searchParams.get('revoke');
+    if (what === 'all') {
+      let n = 0;
+      for (const prefix of ['ac:token:', 'ac:paid:']) {
+        let cursor = undefined;
+        do {
+          const list = await kv.list({ prefix: prefix, cursor: cursor });
+          for (const k of list.keys) { await kv.delete(k.name); n++; }
+          cursor = list.list_complete ? null : list.cursor;
+        } while (cursor);
+      }
+      return json({ ok: true, revoked: n });
+    }
+    await kv.delete('ac:token:' + what);
+    return json({ ok: true, revoked: 1, token: what });
+  }
+
   // ---- mod reports a payment: POST ?paid { ign, amount } ----
   if (url.searchParams.has('paid')) {
     if (!isAdmin()) return json({ error: 'unauthorized' }, 401);
