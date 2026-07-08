@@ -60,6 +60,14 @@ export async function onRequest(context) {
       }
       return json({ ok: true, revoked: n });
     }
+    if (what === 'ign') {
+      const ign = norm(url.searchParams.get('name') || '');
+      if (!ign) return json({ error: 'no-name' }, 400);
+      const rec = await getJSON(kv, 'ac:paid:' + ign, null);
+      let removed = 0;
+      if (rec) { if (rec.boundToken) { await kv.delete('ac:token:' + rec.boundToken); removed++; } await kv.delete('ac:paid:' + ign); removed++; }
+      return json({ ok: true, revoked: removed, ign: ign });
+    }
     await kv.delete('ac:token:' + what);
     return json({ ok: true, revoked: 1, token: what });
   }
