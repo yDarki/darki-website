@@ -64,6 +64,7 @@
 
   function renderUnlock(cfg){
     app.innerHTML=
+      '<div id="offbanner"></div>'+
       '<div class="step"><label>1 &middot; In Minecraft bezahlen</label>'+
         '<div class="note">Zahle <span class="price">'+abbr(cfg.price)+'</span> ('+de(cfg.price)+' $) an <span class="pill">'+cfg.collector+'</span> für <b>'+cfg.durationDays+' Tage</b> Zugriff:</div>'+
         '<div class="row"><span class="pill" style="font-size:15px">/pay '+cfg.collector+' '+cfg.price+'</span></div></div>'+
@@ -75,6 +76,10 @@
       '<div class="step"><label>Freunde-Code</label>'+
         '<div class="row"><input id="code" placeholder="Code" autocomplete="off"><button class="btn ghost" id="redeem">Einlösen</button></div>'+
         '<div class="err" id="err2"></div></div>';
+
+    var offb=document.getElementById('offbanner');
+    async function checkOnline(){ try { var r=await fetch(API+'?online=1'); var j=await r.json(); if(j && j.online===false){ offb.innerHTML='<div style="background:rgba(232,164,76,.12);border:1px solid rgba(232,164,76,.4);color:#f0c987;border-radius:12px;padding:12px 14px;margin-bottom:18px;font-size:13.5px"><b>'+(j.collector||'Der Account')+' ist gerade offline.</b> Du kannst trotzdem zahlen — die Freischaltung passiert automatisch, sobald er wieder online ist.</div>'; } else { offb.innerHTML=''; } } catch(e){ offb.innerHTML=''; } }
+    checkOnline();
 
     var claimBtn=document.getElementById('claim'), ignEl=document.getElementById('ign'), err1=document.getElementById('err1');
     var tries=0, polling=null;
@@ -90,7 +95,7 @@
       }catch(e){ err1.textContent='Fehler: '+e.message; }
       finally{ claimBtn.disabled=false; }
     }
-    claimBtn.addEventListener('click',function(){ tries=0; tryClaim(false); });
+    claimBtn.addEventListener('click',function(){ tries=0; checkOnline(); tryClaim(false); });
     ignEl.addEventListener('keydown',function(e){ if(e.key==='Enter'){ tries=0; tryClaim(false); } });
 
     var redeemBtn=document.getElementById('redeem'), codeEl=document.getElementById('code'), err2=document.getElementById('err2');
