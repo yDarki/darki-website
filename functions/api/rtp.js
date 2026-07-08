@@ -80,6 +80,17 @@ export async function onRequest(context) {
     return json({ ok: true, reset: true, count: 0 }, 200);
   }
 
+  if (url.searchParams.get('prune')) {
+    if (!isMaster) return json({ error: 'unauthorized' }, 401);
+    const pdim = String(url.searchParams.get('prune')).toLowerCase();
+    if (pdim !== 'overworld' && pdim !== 'nether' && pdim !== 'end') return json({ error: 'bad dim' }, 400);
+    let pp = []; try { pp = JSON.parse((await kv.get('points')) || '[]'); } catch (e) { pp = []; }
+    const tc = {}; for (let i = 0; i < pp.length; i++) tc[pp[i].t] = (tc[pp[i].t] || 0) + 1;
+    const kept = pp.filter(function (p) { const d = (p.d || 'overworld'); if (d !== pdim) return true; return tc[p.t] > 1; });
+    await kv.put('points', JSON.stringify(kept));
+    return json({ ok: true, pruned: pdim, removed: pp.length - kept.length, count: kept.length }, 200);
+  }
+
   // posting a point: must be master or a whitelisted token
   const wlName = wl[provided];
   if (!isMaster && wlName === undefined) return json({ error: 'unauthorized' }, 401);
