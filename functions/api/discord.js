@@ -144,6 +144,7 @@ export async function onRequest(context) {
       { name: 'unlink', description: 'Stop price alerts and unlink this Discord' },
       { name: 'alerts', description: 'Show your current DonutSMP price alerts' }
     ];
+    commands.forEach(function (c) { c.integration_types = [0, 1]; c.contexts = [0, 1, 2]; });
     const useGuild = (guild && guild !== 'true' && guild !== '1');
     const endpoint = useGuild
       ? 'https://discord.com/api/v10/applications/' + APP_ID + '/guilds/' + guild + '/commands'
@@ -182,7 +183,8 @@ export async function onRequest(context) {
           if (al.dest === 'channel' && al.channelId) {
             await sendMessage(env.DISCORD_BOT_TOKEN, al.channelId, '<@' + link.discordId + '> ' + msg);
           } else {
-            const dm = await openDM(env.DISCORD_BOT_TOKEN, link.discordId);
+            let dm = link.dmChannelId;
+            if (!dm) dm = await openDM(env.DISCORD_BOT_TOKEN, link.discordId);
             if (dm) await sendMessage(env.DISCORD_BOT_TOKEN, dm, msg);
           }
           fired++;
@@ -268,7 +270,8 @@ export async function onRequest(context) {
       if (name === 'link') {
         const code = String(opts.code || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
         if (!code) return reply(':warning: Please provide the code shown on the website.');
-        await kv.put(K_LINK(code), JSON.stringify({ discordId: user.id, username: uname, linkedAt: Date.now() }));
+        const ch = interaction.channel; const dmChannelId = (ch && ch.type === 1) ? ch.id : '';
+        await kv.put(K_LINK(code), JSON.stringify({ discordId: user.id, username: uname, dmChannelId: dmChannelId, linkedAt: Date.now() }));
         return reply(':white_check_mark: Linked as **' + uname + '**! Head back to the website — you can now set up price alerts, and I will ping you here.');
       }
       if (name === 'unlink') {
