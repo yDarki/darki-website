@@ -102,13 +102,17 @@
     var masked = '••••••';
     app.innerHTML =
       '<div class="steps">'+
-        '<div class="step"><div class="n">1</div><div class="tx">In Discord, send the bot this command — as a direct message, or in any server where it can see you:'+
+        '<div class="step"><div class="n">1</div><div class="tx">Add the bot to your Discord account — this lets you use its commands in your DMs. No server needed.'+
+          '<div class="codebox"><a class="btn" id="install" target="_blank" rel="noopener">Add bot to Discord</a></div></div></div>'+
+        '<div class="step"><div class="n">2</div><div class="tx">Then DM the bot this command:'+
           '<div class="codebox"><span class="cmd">/link <span id="cmdcode">'+masked+'</span></span><button class="btn ghost reveal" id="reveal">Reveal code</button></div>'+
           '<small>Your personal code — it links this browser to your Discord. Keep it private.</small></div></div>'+
-        '<div class="step"><div class="n">2</div><div class="tx">This page updates automatically once you\'re linked.'+
+        '<div class="step"><div class="n">3</div><div class="tx">This page updates automatically once you\'re linked.'+
           '<div class="linkstate"><span class="pulse"></span><span id="wait">Waiting for you to link…</span></div></div></div>'+
       '</div>'+
-      '<div class="helper">Bot not responding to your DM? <a id="invite" target="_blank" rel="noopener">Add it to a server &rarr;</a> (optional — only needed if your DMs are closed).</div>';
+      '<div class="helper">Prefer a server? <a id="invite" target="_blank" rel="noopener">Add the bot to a server &rarr;</a> instead (optional).</div>';
+    var ins = document.getElementById('install');
+    if(ins) ins.href = 'https://discord.com/oauth2/authorize?client_id=1524403907550249161&integration_type=1&scope=applications.commands';
     var inv = document.getElementById('invite');
     if(inv) inv.href = 'https://discord.com/oauth2/authorize?client_id=1524403907550249161&scope=bot+applications.commands&permissions=2048';
     var revealed = false;
