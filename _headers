@@ -1,3 +1,6 @@
 # Always revalidate shared CSS/JS so an updated page never loads stale styles.
 /theme.css
   Cache-Control: public, max-age=0, must-revalidate
+
+/gate.js
+  Cache-Control: public, max-age=0, must-revalidate
