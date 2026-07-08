@@ -5,6 +5,13 @@ export async function onRequest(context) {
   const env = context.env || {};
   const cors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=60' };
   const token = env.DONUT_TOKEN;
+  const _admin = env.DONUT_TOKEN && (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim() === env.DONUT_TOKEN;
+  if (!_admin) {
+    const _acc = request.headers.get('X-Access-Token') || '';
+    let _ok = false;
+    try { const _kv = env.PRICE_HISTORY; if (_acc && _kv) { const _r = await _kv.get('ac:token:' + _acc); if (_r) { const _t = JSON.parse(_r); _ok = _t && _t.expires > Date.now(); } } } catch (e) {}
+    if (!_ok) return new Response(JSON.stringify({ error: 'locked' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' } });
+  }
   if (!token) { return new Response(JSON.stringify({ error: 'no token configured' }), { status: 500, headers: cors }); }
   const auth = { Authorization: 'Bearer ' + token, Accept: 'application/json' };
   const base = 'https://api.donutsmp.net/v1/';
