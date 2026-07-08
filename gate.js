@@ -1,11 +1,32 @@
-// Site paywall gate. Redirects visitors without valid access to /access.html.
-// Included in the <head> of every gated page. access.html and /api/* are not gated.
+// Site paywall gate + API access enforcement.
+// - Attaches the access token to all same-origin /api/ requests so the server can enforce the paywall.
+// - Redirects visitors without valid access to /access.html.
+// access.html and /api/access are never gated.
 (function () {
-  var p = location.pathname;
-  if (/\/access(\.html)?$/.test(p)) return; // never gate the unlock page itself
   var KEY = 'acToken';
-  var tk = localStorage.getItem(KEY);
-  // Hide the page immediately until access is confirmed (avoids a content flash).
+  var tk = localStorage.getItem(KEY) || '';
+
+  // 1) Attach X-Access-Token to same-origin /api/ requests (server-side enforcement).
+  if (tk && window.fetch) {
+    var _fetch = window.fetch.bind(window);
+    window.fetch = function (input, init) {
+      try {
+        var url = (typeof input === 'string') ? input : (input && input.url) || '';
+        var isApi = url.indexOf('/api/') === 0 || url.indexOf(location.origin + '/api/') === 0;
+        if (isApi) {
+          init = init || {};
+          var h = new Headers((init && init.headers) || (typeof input !== 'string' && input && input.headers) || {});
+          if (!h.has('X-Access-Token')) h.set('X-Access-Token', tk);
+          init.headers = h;
+        }
+      } catch (e) {}
+      return _fetch(input, init);
+    };
+  }
+
+  if (/\/access(\.html)?$/.test(location.pathname)) return; // never gate the unlock page
+
+  // 2) Hide the page until access is confirmed; redirect if not.
   var hide = document.createElement('style');
   hide.id = '__gate';
   hide.textContent = 'html{visibility:hidden!important}';
@@ -16,5 +37,5 @@
   fetch('/api/access?check=1&token=' + encodeURIComponent(tk))
     .then(function (r) { return r.json(); })
     .then(function (j) { if (j && j.access) show(); else lock(); })
-    .catch(function () { show(); }); // fail-open on network error so the site is not broken if the API hiccups
+    .catch(function () { show(); });
 })();
