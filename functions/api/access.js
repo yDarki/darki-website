@@ -72,6 +72,20 @@ export async function onRequest(context) {
     return json({ ok: true, revoked: 1, token: what });
   }
 
+  // ---- collector online status (ungated; used by the unlock page) ----
+  if (url.searchParams.has('online')) {
+    const cfg = await getConfig(kv);
+    const name = cfg.collector;
+    try {
+      const r = await fetch('https://api.donutsmp.net/v1/lookup/' + encodeURIComponent(name), { headers: { Authorization: 'Bearer ' + env.DONUT_TOKEN, Accept: 'application/json' } });
+      if (!r.ok) return json({ collector: name, online: null });
+      const j = await r.json();
+      const lk = (j && j.result !== undefined) ? j.result : j;
+      const online = !!(lk && lk.location);
+      return json({ collector: name, online: online });
+    } catch (e) { return json({ collector: name, online: null }); }
+  }
+
   // ---- mod reports a payment: POST ?paid { ign, amount } ----
   if (url.searchParams.has('paid')) {
     if (!isAdmin()) return json({ error: 'unauthorized' }, 401);
