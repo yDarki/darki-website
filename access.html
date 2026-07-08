@@ -30,8 +30,8 @@
   .ok{color:var(--ac);font-size:14px;font-weight:700}
   .divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:11px;margin:24px 0;text-transform:uppercase;letter-spacing:1.5px}
   .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border)}
-  .granted{text-align:center}
-  .granted .big{font-size:40px;line-height:1}
+  .granted{text-align:center;padding:6px 0}
+  .check{width:52px;height:52px;border-radius:50%;background:rgba(91,217,154,.12);border:1px solid rgba(91,217,154,.35);display:flex;align-items:center;justify-content:center;margin:0 auto}
 </style>
 </head>
 <body>
@@ -56,10 +56,11 @@
 
   function renderGranted(j){
     var friend=j.friend?' (friend access)':'';
-    app.innerHTML='<div class="granted"><div class="big">&#9989;</div>'+
-      '<p class="ok" style="margin-top:10px">You have access'+friend+'.</p>'+
-      '<p class="note">'+(j.friend?'Unlocked permanently.':'Valid until <b>'+fmtDate(j.expires)+'</b>.')+'</p>'+
-      '<div class="row" style="justify-content:center;margin-top:16px"><a class="btn" href="index.html">Go to the site &rarr;</a></div></div>';
+    app.innerHTML='<div class="granted">'+
+      '<div class="check"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5bd99a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>'+
+      '<p class="ok" style="margin-top:14px;font-size:16px">You have access'+friend+'.</p>'+
+      '<p class="note" style="margin-top:4px">'+(j.friend?'Unlocked permanently.':'Valid until <b>'+fmtDate(j.expires)+'</b>.')+'</p>'+
+      '<div class="row" style="justify-content:center;margin-top:18px"><a class="btn" href="index.html">Go to the site &rarr;</a></div></div>';
   }
 
   function renderUnlock(cfg){
