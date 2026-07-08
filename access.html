@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Zugang &middot; DonutSMP Stats</title>
+<title>Access &middot; DonutSMP Stats</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="stylesheet" href="/theme.css" />
 <style>
@@ -39,10 +39,10 @@
   <div class="wrap">
     <h1>
       <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#5bd99a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      <span class="grad">Zugang</span>
+      <span class="grad">Access</span>
     </h1>
-    <p class="sub">Diese Seite ist kostenpflichtig. Zahl in Minecraft und schalte den Zugriff frei.</p>
-    <div id="app" class="card"><div class="msg"><div class="spinner"></div>Lade…</div></div>
+    <p class="sub">This site requires access. Pay in Minecraft to unlock it.</p>
+    <div id="app" class="card"><div class="msg"><div class="spinner"></div>Loading&hellip;</div></div>
   </div>
 <script>
   var API='/api/access', KEY='acToken';
@@ -50,31 +50,31 @@
   function mk(){ var a='abcdefghijklmnopqrstuvwxyz0123456789', s=''; for(var i=0;i<24;i++) s+=a[Math.floor(Math.random()*a.length)]; return s; }
   function token(){ var t=localStorage.getItem(KEY); if(!t){ t=mk(); localStorage.setItem(KEY,t); } return t; }
   function abbr(n){ n=+n; if(n>=1e12)return (n/1e12)+'T'; if(n>=1e9)return (n/1e9)+'B'; if(n>=1e6)return (n/1e6)+'M'; if(n>=1e3)return (n/1e3)+'k'; return String(n); }
-  function de(n){ return Math.round(+n).toLocaleString('de-DE'); }
-  function fmtDate(ms){ try{ return new Date(ms).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}); }catch(e){ return ''; } }
+  function num(n){ return Math.round(+n).toLocaleString('en-US'); }
+  function fmtDate(ms){ try{ return new Date(ms).toLocaleDateString('en-US',{day:'2-digit',month:'2-digit',year:'numeric'}); }catch(e){ return ''; } }
   var TK=token();
 
   function renderGranted(j){
-    var friend=j.friend?' (Freunde-Zugang)':'';
+    var friend=j.friend?' (friend access)':'';
     app.innerHTML='<div class="granted"><div class="big">&#9989;</div>'+
-      '<p class="ok" style="margin-top:10px">Du hast Zugriff'+friend+'.</p>'+
-      '<p class="note">'+(j.friend?'Dauerhaft freigeschaltet.':'Gültig bis <b>'+fmtDate(j.expires)+'</b>.')+'</p>'+
-      '<div class="row" style="justify-content:center;margin-top:14px"><a class="btn" href="index.html">Zur Seite &rarr;</a></div></div>';
+      '<p class="ok" style="margin-top:10px">You have access'+friend+'.</p>'+
+      '<p class="note">'+(j.friend?'Unlocked permanently.':'Valid until <b>'+fmtDate(j.expires)+'</b>.')+'</p>'+
+      '<div class="row" style="justify-content:center;margin-top:14px"><a class="btn" href="index.html">Go to the site &rarr;</a></div></div>';
   }
 
   function renderUnlock(cfg){
     app.innerHTML=
       '<div id="offbanner"></div>'+
-      '<div class="step" id="paystep"><label>1 &middot; In Minecraft bezahlen</label>'+
-        '<div class="note">Zahle <span class="price">'+abbr(cfg.price)+'</span> ('+de(cfg.price)+' $) an <span class="pill">'+cfg.collector+'</span> für <b>'+cfg.durationDays+' Tage</b> Zugriff:</div>'+
+      '<div class="step" id="paystep"><label>1 &middot; Pay in Minecraft</label>'+
+        '<div class="note">Pay <span class="price">'+abbr(cfg.price)+'</span> ('+num(cfg.price)+' $) to <span class="pill">'+cfg.collector+'</span> for <b>'+cfg.durationDays+' days</b> of access:</div>'+
         '<div class="row"><span class="pill" style="font-size:15px">/pay '+cfg.collector+' '+cfg.price+'</span></div></div>'+
-      '<div class="step"><label>2 &middot; Freischalten</label>'+
-        '<div class="note">Gib deinen Minecraft-Namen ein (den, mit dem du gezahlt hast):</div>'+
-        '<div class="row"><input id="ign" placeholder="Minecraft-Name" autocomplete="off"><button class="btn" id="claim">Freischalten</button></div>'+
+      '<div class="step"><label>2 &middot; Unlock</label>'+
+        '<div class="note">Enter your Minecraft name (the one you paid with):</div>'+
+        '<div class="row"><input id="ign" placeholder="Minecraft name" autocomplete="off"><button class="btn" id="claim">Unlock</button></div>'+
         '<div class="err" id="err1"></div></div>'+
-      '<div class="divider">oder</div>'+
-      '<div class="step"><label>Freunde-Code</label>'+
-        '<div class="row"><input id="code" placeholder="Code" autocomplete="off"><button class="btn ghost" id="redeem">Einlösen</button></div>'+
+      '<div class="divider">or</div>'+
+      '<div class="step"><label>Friend code</label>'+
+        '<div class="row"><input id="code" placeholder="Code" autocomplete="off"><button class="btn ghost" id="redeem">Redeem</button></div>'+
         '<div class="err" id="err2"></div></div>';
 
     var offb=document.getElementById('offbanner');
@@ -83,7 +83,7 @@
       try {
         var r=await fetch(API+'?online=1'); var j=await r.json();
         if(j && j.online===false){
-          offb.innerHTML='<div style="background:rgba(255,90,90,.12);border:1px solid rgba(255,90,90,.45);color:#ff9b9b;border-radius:12px;padding:12px 14px;margin-bottom:18px;font-size:14px"><b>Bitte jetzt NICHT bezahlen.</b><br>'+(j.collector||'Der Account')+' ist offline und kann Zahlungen nicht verarbeiten. Warte, bis er wieder online ist — sonst kann deine Zahlung nicht zugeordnet werden.</div>';
+          offb.innerHTML='<div style="background:rgba(255,90,90,.12);border:1px solid rgba(255,90,90,.45);color:#ff9b9b;border-radius:12px;padding:12px 14px;margin-bottom:18px;font-size:14px"><b>Do not pay right now.</b><br>'+(j.collector||'The account')+' is offline and cannot process payments. Wait until they are back online &mdash; otherwise your payment cannot be matched to you.</div>';
           if(ps) ps.style.display='none';
         } else {
           offb.innerHTML=''; if(ps) ps.style.display='';
@@ -95,15 +95,15 @@
     var claimBtn=document.getElementById('claim'), ignEl=document.getElementById('ign'), err1=document.getElementById('err1');
     var tries=0, polling=null;
     async function tryClaim(auto){
-      var ign=ignEl.value.trim(); if(!ign){ err1.textContent='Bitte Namen eingeben.'; return; }
+      var ign=ignEl.value.trim(); if(!ign){ err1.textContent='Please enter a name.'; return; }
       claimBtn.disabled=true; if(!auto) err1.textContent='';
       try{
         var r=await fetch(API+'?claim=1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ign:ign,token:TK})});
         var j=await r.json();
         if(j.access){ if(polling){clearInterval(polling);polling=null;} renderGranted(j); return; }
-        if(j.error==='claimed'){ err1.textContent='Dieser Name ist bereits mit einem anderen Gerät verknüpft.'; if(polling){clearInterval(polling);polling=null;} }
-        else { err1.textContent='Noch keine gültige Zahlung für "'+ign+'" gefunden. Zahl zuerst — ich prüfe automatisch weiter…'; if(!polling){ polling=setInterval(function(){ tries++; if(tries>40){clearInterval(polling);polling=null;} tryClaim(true); },5000); } }
-      }catch(e){ err1.textContent='Fehler: '+e.message; }
+        if(j.error==='claimed'){ err1.textContent='This name is already linked to another device.'; if(polling){clearInterval(polling);polling=null;} }
+        else { err1.textContent='No valid payment found for "'+ign+'" yet. Pay first &mdash; I keep checking automatically…'; if(!polling){ polling=setInterval(function(){ tries++; if(tries>40){clearInterval(polling);polling=null;} tryClaim(true); },5000); } }
+      }catch(e){ err1.textContent='Error: '+e.message; }
       finally{ claimBtn.disabled=false; }
     }
     claimBtn.addEventListener('click',function(){ tries=0; checkOnline(); tryClaim(false); });
@@ -111,13 +111,13 @@
 
     var redeemBtn=document.getElementById('redeem'), codeEl=document.getElementById('code'), err2=document.getElementById('err2');
     async function tryRedeem(){
-      var code=codeEl.value.trim(); if(!code){ err2.textContent='Bitte Code eingeben.'; return; }
+      var code=codeEl.value.trim(); if(!code){ err2.textContent='Please enter a code.'; return; }
       redeemBtn.disabled=true; err2.textContent='';
       try{
         var r=await fetch(API+'?redeem=1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code,token:TK})});
         var j=await r.json();
-        if(j.access) renderGranted(j); else err2.textContent='Ungültiger Code.';
-      }catch(e){ err2.textContent='Fehler: '+e.message; }
+        if(j.access) renderGranted(j); else err2.textContent='Invalid code.';
+      }catch(e){ err2.textContent='Error: '+e.message; }
       finally{ redeemBtn.disabled=false; }
     }
     redeemBtn.addEventListener('click',tryRedeem);
@@ -130,7 +130,7 @@
       if(j.access){ renderGranted(j); return; }
       var cr=await fetch(API+'?config=1'); var cfg=await cr.json();
       renderUnlock(cfg);
-    }catch(e){ app.innerHTML='<div class="msg">Konnte nicht laden: '+e.message+'</div>'; }
+    }catch(e){ app.innerHTML='<div class="msg">Could not load: '+e.message+'</div>'; }
   })();
 </script>
 </body>
