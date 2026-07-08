@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Price Alerts</title>
+<title>Discord Bot</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="stylesheet" href="/theme.css" />
 <style>
@@ -61,6 +61,12 @@
   .saved-note.show{opacity:1}
   .hint{color:var(--muted);font-size:12.5px;line-height:1.5;margin-top:16px;background:#0c0c14;border:1px solid var(--border);border-radius:10px;padding:12px 14px}
   @media(max-width:560px){ .alert{grid-template-columns:1fr} .rm{justify-self:start} input.num,input.chan{width:100%} }
+  .btn.reveal{padding:7px 13px;font-size:12.5px}
+  .cmd{font-family:"Consolas",ui-monospace,monospace;font-size:16px;background:#0c0c14;border:1px solid var(--border);border-radius:9px;padding:8px 14px;color:#e6e6f0}
+  .cmd #cmdcode{letter-spacing:2px;color:#c7ccf7;font-weight:700}
+  .helper{margin-top:20px;padding-top:16px;border-top:1px solid var(--border);color:var(--muted);font-size:13px}
+  .helper a{color:var(--dc);font-weight:600;cursor:pointer}
+  .helper a:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -69,7 +75,7 @@
     <a class="back" href="index.html">&larr; Dashboard</a>
     <h1>
       <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#5865f2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-      <span class="grad">Price Alerts</span>
+      <span class="grad">Discord Bot</span>
     </h1>
     <p class="sub">Connect a Discord bot and get pinged when an item's price drops below or rises above an amount you choose.</p>
 
@@ -93,19 +99,21 @@
 
   // ---- LINKING VIEW ----
   function renderLink(){
+    var masked = '••••••';
     app.innerHTML =
       '<div class="steps">'+
-        '<div class="step"><div class="n">1</div><div class="tx">Add the bot to a server you\'re in (or make sure you share one with it), so it can message you.'+
-          '<div class="codebox"><a class="btn ghost" id="invite" target="_blank" rel="noopener">Add bot to server</a></div></div></div>'+
-        '<div class="step"><div class="n">2</div><div class="tx">In Discord, send the bot this command (in the server or a DM):'+
-          '<div class="codebox"><span class="cmd">/link '+code+'</span></div>'+
-          '<small>Your personal code — it links this browser to your Discord.</small></div></div>'+
-        '<div class="step"><div class="n">3</div><div class="tx">This page updates automatically once you\'re linked.'+
+        '<div class="step"><div class="n">1</div><div class="tx">In Discord, send the bot this command — as a direct message, or in any server where it can see you:'+
+          '<div class="codebox"><span class="cmd">/link <span id="cmdcode">'+masked+'</span></span><button class="btn ghost reveal" id="reveal">Reveal code</button></div>'+
+          '<small>Your personal code — it links this browser to your Discord. Keep it private.</small></div></div>'+
+        '<div class="step"><div class="n">2</div><div class="tx">This page updates automatically once you\'re linked.'+
           '<div class="linkstate"><span class="pulse"></span><span id="wait">Waiting for you to link…</span></div></div></div>'+
-        '<div class="codebox" style="margin-top:18px"><span style="color:var(--muted);font-size:13px">Your code:</span><span class="code">'+code+'</span></div>'+
-      '</div>';
+      '</div>'+
+      '<div class="helper">Bot not responding to your DM? <a id="invite" target="_blank" rel="noopener">Add it to a server &rarr;</a> (optional — only needed if your DMs are closed).</div>';
     var inv = document.getElementById('invite');
     if(inv) inv.href = 'https://discord.com/oauth2/authorize?client_id=1524403907550249161&scope=bot+applications.commands&permissions=2048';
+    var revealed = false;
+    var btn = document.getElementById('reveal'), cc = document.getElementById('cmdcode');
+    btn.onclick = function(){ revealed = !revealed; cc.textContent = revealed ? code : masked; btn.textContent = revealed ? 'Hide code' : 'Reveal code'; };
   }
 
   // ---- OVERVIEW VIEW ----
