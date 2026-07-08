@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Price Alerts</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="stylesheet" href="/theme.css" />
+<style>
+  :root{ --dc:#5865f2; }
+  .wrap{position:relative;z-index:1;max-width:820px;margin:0 auto;padding:28px 22px 60px}
+  .back{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 16px;color:var(--muted);font-weight:600;font-size:14px;margin-bottom:22px;transition:.2s}
+  .back:hover{color:var(--text);border-color:var(--dc);background:var(--card-2)}
+  h1{font-size:clamp(26px,5vw,38px);font-weight:800;letter-spacing:-1px;display:flex;align-items:center;gap:12px}
+  h1 .grad{background:linear-gradient(105deg,#fff,#c7ccf7 45%,#8b93f0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--muted);font-size:15px;margin-top:8px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;margin-top:22px}
+  .msg{color:var(--muted);font-size:14px;padding:30px 0;text-align:center}
+  .spinner{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--dc);border-radius:50%;margin:0 auto 12px;animation:spin 1s linear infinite}
+  .btn{background:linear-gradient(120deg,var(--dc),#7b83ff);color:#fff;border:none;padding:11px 20px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:.12s}
+  .btn:hover{transform:translateY(-2px)} .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .btn.ghost{background:#1a1a28;color:#f3f3f7;border:1px solid rgba(255,255,255,.14);box-shadow:none}
+  .btn.ghost:hover{background:#22222e}
+
+  /* linking */
+  .steps{display:flex;flex-direction:column;gap:16px}
+  .step{display:flex;gap:14px;align-items:flex-start}
+  .step .n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--dc);color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+  .step .tx{font-size:14.5px;line-height:1.55;color:var(--text)}
+  .step .tx small{color:var(--muted);display:block;margin-top:2px;font-size:13px}
+  .codebox{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px}
+  .code{font-family:"Consolas",ui-monospace,monospace;font-size:26px;font-weight:800;letter-spacing:4px;background:#0c0c14;border:1px dashed rgba(136,143,242,.5);color:#c7ccf7;padding:12px 20px;border-radius:12px}
+  .cmd{font-family:"Consolas",ui-monospace,monospace;background:#0c0c14;border:1px solid var(--border);border-radius:8px;padding:3px 8px;color:#e6e6f0}
+  .linkstate{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-top:14px}
+  .linkstate .pulse{width:8px;height:8px;border-radius:50%;background:#e8a44c;box-shadow:0 0 9px #e8a44c;animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+
+  /* linked / overview */
+  .linked{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(88,101,242,.14),rgba(123,131,255,.06));border:1px solid rgba(136,143,242,.35);border-radius:14px;padding:14px 18px}
+  .linked .ava{width:36px;height:36px;border-radius:50%;background:var(--dc);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800}
+  .linked .nm{font-weight:800;font-size:16px} .linked .st{color:#9fa6f0;font-size:12.5px}
+  .linked .unlink{margin-left:auto;color:var(--muted);font-size:12.5px;cursor:pointer;text-decoration:underline}
+  .linked .unlink:hover{color:#ff9b9b}
+
+  .rowhead{display:flex;justify-content:space-between;align-items:center;margin:26px 0 12px}
+  .rowhead h2{font-size:16px;font-weight:800}
+  .alert{background:#0e0e17;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;display:grid;grid-template-columns:1fr auto;gap:12px 14px;align-items:center}
+  .alert .line{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .fld label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:5px}
+  select,input.num,input.chan{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);font-size:14px;font-family:inherit;outline:none}
+  select:focus,input:focus{border-color:var(--dc)}
+  input.num{width:150px} input.chan{width:200px}
+  .seg{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:9px;padding:8px 14px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:.14s}
+  .seg:hover{color:var(--text);border-color:rgba(255,255,255,.3)}
+  .seg.on{background:rgba(136,143,242,.18);border-color:var(--dc);color:#fff}
+  .rm{justify-self:end;align-self:start;width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);font-size:16px;cursor:pointer;line-height:1}
+  .rm:hover{background:rgba(255,90,90,.2);color:#ff9b9b;border-color:rgba(255,120,120,.4)}
+  .chanwrap{display:none} .chanwrap.show{display:block}
+  .foot{display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap}
+  .saved-note{color:#5bd99a;font-size:13px;font-weight:700;opacity:0;transition:.2s}
+  .saved-note.show{opacity:1}
+  .hint{color:var(--muted);font-size:12.5px;line-height:1.5;margin-top:16px;background:#0c0c14;border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  @media(max-width:560px){ .alert{grid-template-columns:1fr} .rm{justify-self:start} input.num,input.chan{width:100%} }
+</style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="wrap">
+    <a class="back" href="index.html">&larr; Dashboard</a>
+    <h1>
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#5865f2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      <span class="grad">Price Alerts</span>
+    </h1>
+    <p class="sub">Connect a Discord bot and get pinged when an item's price drops below or rises above an amount you choose.</p>
+
+    <div id="app" class="card"><div class="msg"><div class="spinner"></div>Loading…</div></div>
+  </div>
+
+<script>
+  const API = '/api/discord';
+  const ITEMS = ['netherite_ingot','netherite_scrap','netherite_block','diamond','diamond_block','iron_ingot','iron_block','gold_ingot','gold_block','obsidian','crying_obsidian','respawn_anchor','end_crystal','golden_apple','enchanted_golden_apple','elytra','shulker_shell','totem_of_undying','dragon_head'];
+  const app = document.getElementById('app');
+  const KEY = 'dcPairCode';
+
+  function makeCode(){ var a='ABCDEFGHJKMNPQRSTUVWXYZ23456789', s=''; for(var i=0;i<6;i++) s+=a[Math.floor(Math.random()*a.length)]; return s; }
+  function getCode(){ var c=localStorage.getItem(KEY); if(!c){ c=makeCode(); localStorage.setItem(KEY,c); } return c; }
+  function pretty(id){ return id.replace(/_/g,' ').replace(/\b\w/g,function(m){return m.toUpperCase();}); }
+  function abbr(n){ n=+n; var a=Math.abs(n); if(a>=1e9)return (n/1e9).toFixed(2)+'B'; if(a>=1e6)return (n/1e6).toFixed(2)+'M'; if(a>=1e3)return (n/1e3).toFixed(1)+'k'; return String(Math.round(n)); }
+  function parseAmt(s){ s=String(s).trim().toLowerCase().replace(/[, ]/g,''); var m=s.match(/^([0-9]*\.?[0-9]+)([kmb])?$/); if(!m) return 0; var v=parseFloat(m[1]); if(m[2]==='k')v*=1e3; if(m[2]==='m')v*=1e6; if(m[2]==='b')v*=1e9; return Math.round(v); }
+
+  const code = getCode();
+  let alerts = [];
+
+  // ---- LINKING VIEW ----
+  function renderLink(){
+    app.innerHTML =
+      '<div class="steps">'+
+        '<div class="step"><div class="n">1</div><div class="tx">Add the bot to a server you\'re in (or make sure you share one with it), so it can message you.'+
+          '<div class="codebox"><a class="btn ghost" id="invite" target="_blank" rel="noopener">Add bot to server</a></div></div></div>'+
+        '<div class="step"><div class="n">2</div><div class="tx">In Discord, send the bot this command (in the server or a DM):'+
+          '<div class="codebox"><span class="cmd">/link '+code+'</span></div>'+
+          '<small>Your personal code — it links this browser to your Discord.</small></div></div>'+
+        '<div class="step"><div class="n">3</div><div class="tx">This page updates automatically once you\'re linked.'+
+          '<div class="linkstate"><span class="pulse"></span><span id="wait">Waiting for you to link…</span></div></div></div>'+
+        '<div class="codebox" style="margin-top:18px"><span style="color:var(--muted);font-size:13px">Your code:</span><span class="code">'+code+'</span></div>'+
+      '</div>';
+    var inv = document.getElementById('invite');
+    if(inv) inv.href = 'https://discord.com/oauth2/authorize?client_id=1524403907550249161&scope=bot+applications.commands&permissions=2048';
+  }
+
+  // ---- OVERVIEW VIEW ----
+  function alertRow(a){
+    a = a || { id:'', item:ITEMS[0], dir:'below', amount:0, dest:'dm', channelId:'' };
+    var el = document.createElement('div'); el.className='alert'; el.dataset.id=a.id||'';
+    var opts = ITEMS.map(function(it){ return '<option value="'+it+'"'+(it===a.item?' selected':'')+'>'+pretty(it)+'</option>'; }).join('');
+    el.innerHTML =
+      '<div class="line" style="flex-direction:column;align-items:stretch;gap:12px">'+
+        '<div class="line">'+
+          '<div class="fld"><label>Item</label><select class="item">'+opts+'</select></div>'+
+          '<div class="fld"><label>When price is</label><div><button class="seg dir'+(a.dir==='below'?' on':'')+'" data-dir="below">Below</button> <button class="seg dir'+(a.dir==='above'?' on':'')+'" data-dir="above">Above</button></div></div>'+
+          '<div class="fld"><label>Amount ($)</label><input class="num" value="'+(a.amount?a.amount:'')+'" placeholder="e.g. 1M or 50000"></div>'+
+        '</div>'+
+        '<div class="line">'+
+          '<div class="fld"><label>Notify via</label><div><button class="seg dest'+(a.dest==='dm'?' on':'')+'" data-dest="dm">DM</button> <button class="seg dest'+(a.dest==='channel'?' on':'')+'" data-dest="channel">Channel</button></div></div>'+
+          '<div class="fld chanwrap'+(a.dest==='channel'?' show':'')+'"><label>Channel ID</label><input class="chan" value="'+(a.channelId||'')+'" placeholder="right-click channel &rarr; Copy ID"></div>'+
+        '</div>'+
+      '</div>'+
+      '<button class="rm" title="Remove">&times;</button>';
+    el.querySelectorAll('.dir').forEach(function(b){ b.onclick=function(){ el.querySelectorAll('.dir').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); }; });
+    el.querySelectorAll('.dest').forEach(function(b){ b.onclick=function(){ el.querySelectorAll('.dest').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); el.querySelector('.chanwrap').classList.toggle('show', b.dataset.dest==='channel'); }; });
+    el.querySelector('.rm').onclick=function(){ el.remove(); };
+    return el;
+  }
+
+  function renderOverview(username){
+    var initial=(username||'D').charAt(0).toUpperCase();
+    app.innerHTML =
+      '<div class="linked"><div class="ava">'+initial+'</div><div><div class="nm">'+username+'</div><div class="st">Linked &middot; alerts will be sent to you</div></div><span class="unlink" id="unlink">unlink</span></div>'+
+      '<div class="rowhead"><h2>Your alerts</h2><button class="btn ghost" id="add">+ Add alert</button></div>'+
+      '<div id="list"></div>'+
+      '<div class="foot"><button class="btn" id="save">Save alerts</button><span class="saved-note" id="note">Saved &check;</span></div>'+
+      '<div class="hint">Prices are checked every few minutes. You get one ping when an item crosses your threshold; it re-arms once the price crosses back. For <b>Channel</b> alerts, enable Discord Developer Mode (Settings &rarr; Advanced), then right-click a channel &rarr; Copy Channel ID — and make sure the bot can post there.</div>';
+
+    var list=document.getElementById('list');
+    function draw(){ list.innerHTML=''; (alerts.length?alerts:[null]).forEach(function(a){ list.appendChild(alertRow(a)); }); }
+    draw();
+    document.getElementById('add').onclick=function(){ list.appendChild(alertRow(null)); };
+    document.getElementById('unlink').onclick=function(){
+      if(!confirm('Unlink this Discord? Use /unlink in Discord to fully remove it. This clears the code from this browser.')) return;
+      localStorage.removeItem(KEY); location.reload();
+    };
+    document.getElementById('save').onclick=function(){ save(list); };
+  }
+
+  function collect(list){
+    var out=[];
+    list.querySelectorAll('.alert').forEach(function(el){
+      var amount=parseAmt(el.querySelector('.num').value);
+      if(!amount) return;
+      out.push({
+        id: el.dataset.id||undefined,
+        item: el.querySelector('.item').value,
+        dir: el.querySelector('.dir.on').dataset.dir,
+        amount: amount,
+        dest: el.querySelector('.dest.on').dataset.dest,
+        channelId: el.querySelector('.chan').value.trim()
+      });
+    });
+    return out;
+  }
+
+  async function save(list){
+    var btn=document.getElementById('save'); btn.disabled=true; btn.textContent='Saving…';
+    try{
+      var payload=collect(list);
+      var r=await fetch(API+'?alerts='+encodeURIComponent(code),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({alerts:payload})});
+      var j=await r.json();
+      if(j&&j.alerts){ alerts=j.alerts; var n=document.getElementById('note'); n.classList.add('show'); setTimeout(function(){n.classList.remove('show');},2000); }
+      else alert('Could not save: '+(j&&j.error||'unknown'));
+    }catch(e){ alert('Error: '+e.message); }
+    finally{ btn.disabled=false; btn.textContent='Save alerts'; }
+  }
+
+  // ---- boot: poll link status ----
+  let polling=null, linkedShown=false;
+  async function checkStatus(first){
+    try{
+      var r=await fetch(API+'?status='+encodeURIComponent(code)); var j=await r.json();
+      if(j&&j.linked){
+        if(linkedShown) return;
+        linkedShown=true; if(polling){clearInterval(polling);polling=null;}
+        try{ var ar=await fetch(API+'?alerts='+encodeURIComponent(code)); var aj=await ar.json(); alerts=(aj&&aj.alerts)||[]; }catch(e){}
+        renderOverview(j.username||'Discord user');
+      } else if(first){ renderLink(); if(!polling) polling=setInterval(function(){checkStatus(false);},4000); }
+    }catch(e){ if(first){ renderLink(); if(!polling) polling=setInterval(function(){checkStatus(false);},4000); } }
+  }
+  checkStatus(true);
+</script>
+</body>
+</html>
