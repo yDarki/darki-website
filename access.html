@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Zugang &middot; DonutSMP Stats</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="stylesheet" href="/theme.css" />
+<style>
+  :root{ --ac:#5bd99a; }
+  .wrap{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:48px 22px 60px}
+  h1{font-size:clamp(26px,5vw,38px);font-weight:800;letter-spacing:-1px;display:flex;align-items:center;gap:12px;justify-content:center}
+  h1 .grad{background:linear-gradient(105deg,#fff,#bff0d6 45%,#5bd99a);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--muted);font-size:15px;margin-top:10px;text-align:center}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;margin-top:26px}
+  .msg{color:var(--muted);font-size:14px;padding:26px 0;text-align:center}
+  .spinner{width:30px;height:30px;border:3px solid var(--border);border-top-color:var(--ac);border-radius:50%;margin:0 auto 12px;animation:spin 1s linear infinite}
+  .btn{background:linear-gradient(120deg,var(--ac),#3fbf82);color:#08120c;border:none;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:800;cursor:pointer;transition:.12s;font-family:inherit}
+  .btn:hover{transform:translateY(-2px)} .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .btn.ghost{background:#1a1a28;color:#f3f3f7;border:1px solid rgba(255,255,255,.14)}
+  .btn.ghost:hover{background:#22222e}
+  label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 6px}
+  input{width:100%;background:#0c0c12;border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:15px;outline:none;font-family:inherit}
+  input:focus{border-color:var(--ac)}
+  .pill{display:inline-block;background:#0c0c14;border:1px solid var(--border);border-radius:9px;padding:4px 10px;color:#e6e6f0;font-family:"Consolas",ui-monospace,monospace;font-size:14px}
+  .price{font-size:22px;font-weight:800;color:var(--ac)}
+  .step{margin-bottom:18px} .row{display:flex;gap:10px;margin-top:8px}
+  .note{color:var(--muted);font-size:13px;line-height:1.55;margin-top:8px}
+  .err{color:#ff8a8a;font-size:13.5px;margin-top:8px;min-height:18px}
+  .ok{color:var(--ac);font-size:14px;font-weight:700}
+  .divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;margin:22px 0;text-transform:uppercase;letter-spacing:1px}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border)}
+  .granted{text-align:center}
+  .granted .big{font-size:44px;line-height:1}
+</style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="wrap">
+    <h1>
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#5bd99a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span class="grad">Zugang</span>
+    </h1>
+    <p class="sub">Diese Seite ist kostenpflichtig. Zahl in Minecraft und schalte den Zugriff frei.</p>
+    <div id="app" class="card"><div class="msg"><div class="spinner"></div>Lade…</div></div>
+  </div>
+<script>
+  var API='/api/access', KEY='acToken';
+  var app=document.getElementById('app');
+  function mk(){ var a='abcdefghijklmnopqrstuvwxyz0123456789', s=''; for(var i=0;i<24;i++) s+=a[Math.floor(Math.random()*a.length)]; return s; }
+  function token(){ var t=localStorage.getItem(KEY); if(!t){ t=mk(); localStorage.setItem(KEY,t); } return t; }
+  function abbr(n){ n=+n; if(n>=1e12)return (n/1e12)+'T'; if(n>=1e9)return (n/1e9)+'B'; if(n>=1e6)return (n/1e6)+'M'; if(n>=1e3)return (n/1e3)+'k'; return String(n); }
+  function de(n){ return Math.round(+n).toLocaleString('de-DE'); }
+  function fmtDate(ms){ try{ return new Date(ms).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}); }catch(e){ return ''; } }
+  var TK=token();
+
+  function renderGranted(j){
+    var friend=j.friend?' (Freunde-Zugang)':'';
+    app.innerHTML='<div class="granted"><div class="big">&#9989;</div>'+
+      '<p class="ok" style="margin-top:10px">Du hast Zugriff'+friend+'.</p>'+
+      '<p class="note">'+(j.friend?'Dauerhaft freigeschaltet.':'Gültig bis <b>'+fmtDate(j.expires)+'</b>.')+'</p>'+
+      '<div class="row" style="justify-content:center;margin-top:14px"><a class="btn" href="index.html">Zur Seite &rarr;</a></div></div>';
+  }
+
+  function renderUnlock(cfg){
+    app.innerHTML=
+      '<div class="step"><label>1 &middot; In Minecraft bezahlen</label>'+
+        '<div class="note">Zahle <span class="price">'+abbr(cfg.price)+'</span> ('+de(cfg.price)+' $) an <span class="pill">'+cfg.collector+'</span> für <b>'+cfg.durationDays+' Tage</b> Zugriff:</div>'+
+        '<div class="row"><span class="pill" style="font-size:15px">/pay '+cfg.collector+' '+cfg.price+'</span></div></div>'+
+      '<div class="step"><label>2 &middot; Freischalten</label>'+
+        '<div class="note">Gib deinen Minecraft-Namen ein (den, mit dem du gezahlt hast):</div>'+
+        '<div class="row"><input id="ign" placeholder="Minecraft-Name" autocomplete="off"><button class="btn" id="claim">Freischalten</button></div>'+
+        '<div class="err" id="err1"></div></div>'+
+      '<div class="divider">oder</div>'+
+      '<div class="step"><label>Freunde-Code</label>'+
+        '<div class="row"><input id="code" placeholder="Code" autocomplete="off"><button class="btn ghost" id="redeem">Einlösen</button></div>'+
+        '<div class="err" id="err2"></div></div>';
+
+    var claimBtn=document.getElementById('claim'), ignEl=document.getElementById('ign'), err1=document.getElementById('err1');
+    var tries=0, polling=null;
+    async function tryClaim(auto){
+      var ign=ignEl.value.trim(); if(!ign){ err1.textContent='Bitte Namen eingeben.'; return; }
+      claimBtn.disabled=true; if(!auto) err1.textContent='';
+      try{
+        var r=await fetch(API+'?claim=1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ign:ign,token:TK})});
+        var j=await r.json();
+        if(j.access){ if(polling){clearInterval(polling);polling=null;} renderGranted(j); return; }
+        if(j.error==='claimed'){ err1.textContent='Dieser Name ist bereits mit einem anderen Gerät verknüpft.'; if(polling){clearInterval(polling);polling=null;} }
+        else { err1.textContent='Noch keine gültige Zahlung für "'+ign+'" gefunden. Zahl zuerst — ich prüfe automatisch weiter…'; if(!polling){ polling=setInterval(function(){ tries++; if(tries>40){clearInterval(polling);polling=null;} tryClaim(true); },5000); } }
+      }catch(e){ err1.textContent='Fehler: '+e.message; }
+      finally{ claimBtn.disabled=false; }
+    }
+    claimBtn.addEventListener('click',function(){ tries=0; tryClaim(false); });
+    ignEl.addEventListener('keydown',function(e){ if(e.key==='Enter'){ tries=0; tryClaim(false); } });
+
+    var redeemBtn=document.getElementById('redeem'), codeEl=document.getElementById('code'), err2=document.getElementById('err2');
+    async function tryRedeem(){
+      var code=codeEl.value.trim(); if(!code){ err2.textContent='Bitte Code eingeben.'; return; }
+      redeemBtn.disabled=true; err2.textContent='';
+      try{
+        var r=await fetch(API+'?redeem=1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code,token:TK})});
+        var j=await r.json();
+        if(j.access) renderGranted(j); else err2.textContent='Ungültiger Code.';
+      }catch(e){ err2.textContent='Fehler: '+e.message; }
+      finally{ redeemBtn.disabled=false; }
+    }
+    redeemBtn.addEventListener('click',tryRedeem);
+    codeEl.addEventListener('keydown',function(e){ if(e.key==='Enter') tryRedeem(); });
+  }
+
+  (async function(){
+    try{
+      var r=await fetch(API+'?check=1&token='+encodeURIComponent(TK)); var j=await r.json();
+      if(j.access){ renderGranted(j); return; }
+      var cr=await fetch(API+'?config=1'); var cfg=await cr.json();
+      renderUnlock(cfg);
+    }catch(e){ app.innerHTML='<div class="msg">Konnte nicht laden: '+e.message+'</div>'; }
+  })();
+</script>
+</body>
+</html>
