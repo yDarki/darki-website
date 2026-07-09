@@ -33,9 +33,15 @@
   (document.head || document.documentElement).appendChild(hide);
   function show() { var s = document.getElementById('__gate'); if (s && s.parentNode) s.parentNode.removeChild(s); }
   function lock() { location.replace('/access.html'); }
-  if (!tk) { lock(); return; }
-  fetch('/api/access?check=1&token=' + encodeURIComponent(tk))
+  function decide() {
+    if (!tk) { lock(); return; }
+    fetch('/api/access?check=1&token=' + encodeURIComponent(tk))
+      .then(function (r) { return r.json(); })
+      .then(function (j) { if (j && j.access) show(); else lock(); })
+      .catch(function () { show(); });
+  }
+  fetch('/api/access?config=1')
     .then(function (r) { return r.json(); })
-    .then(function (j) { if (j && j.access) show(); else lock(); })
-    .catch(function () { show(); });
+    .then(function (c) { if (c && c.open === true) { show(); } else { decide(); } })
+    .catch(function () { decide(); });
 })();
