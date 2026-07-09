@@ -9,7 +9,7 @@
 // exact message (best when a single price-list message is edited over time); leave it '' to scan the
 // last messages of the channel and auto-pick the one that looks like a price list.
 const SOURCES = [
-  { name: 'Spawner Kingdom', channelId: '1517497598582329464', messageId: '1517499186692755506' }
+  { name: "Marie's server for DonutSMP", channelId: '1517497598582329464', messageId: '1517499186692755506' }
 ];
 
 const CORS = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' };
