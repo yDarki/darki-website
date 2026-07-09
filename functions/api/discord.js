@@ -13,11 +13,7 @@ const PUBLIC_KEY = '8f39f237efb9b9032cc4a5f5974d882a3754552fa9b8f4fc1d7fb2ee019a
 // Items the user can watch (must match ids the DonutSMP API understands).
 const ITEMS = [
   'netherite_ingot', 'netherite_scrap', 'netherite_block',
-  'diamond', 'diamond_block', 'iron_ingot', 'iron_block',
-  'gold_ingot', 'gold_block', 'obsidian', 'crying_obsidian',
-  'respawn_anchor', 'end_crystal', 'golden_apple',
-  'enchanted_golden_apple', 'elytra', 'shulker_shell',
-  'totem_of_undying', 'dragon_head'
+  'enchanted_golden_apple', 'elytra', 'dragon_head'
 ];
 
 const CORS = {
