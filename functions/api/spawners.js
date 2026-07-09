@@ -57,7 +57,7 @@ async function fetchMessageText(botToken, channelId, messageId) {
   try {
     if (messageId) {
       var r = await fetch('https://discord.com/api/v10/channels/' + channelId + '/messages/' + messageId, { headers: headers });
-      if (!r.ok) return { ok: false, status: r.status };
+      if (!r.ok) { var eb = ''; try { eb = await r.text(); } catch (e) {} return { ok: false, status: r.status, detail: eb.slice(0, 200) }; }
       var msg = await r.json();
       return { ok: true, text: (msg && msg.content) || '', ts: msg && (msg.edited_timestamp || msg.timestamp) };
     }
@@ -89,7 +89,7 @@ export async function onRequest(context) {
     for (const src of SOURCES) {
       if (!src || !src.channelId) continue;
       const res = await fetchMessageText(bot, src.channelId, src.messageId);
-      if (!res.ok) { out.push({ name: src.name || 'Market', channelId: src.channelId, error: res.status, spawners: [] }); continue; }
+      if (!res.ok) { out.push({ name: src.name || 'Market', channelId: src.channelId, error: res.status, detail: res.detail || null, spawners: [] }); continue; }
       out.push({ name: src.name || 'Market', channelId: src.channelId, updated: Date.now(), sourceTs: res.ts || null, spawners: parsePrices(res.text) });
     }
     const payload = { updated: Date.now(), sources: out };
