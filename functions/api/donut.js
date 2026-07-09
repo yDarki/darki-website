@@ -18,7 +18,8 @@ export async function onRequest(context) {
     const _acc = request.headers.get('X-Access-Token') || '';
     let _ok = false;
     try { const _kv = env.PRICE_HISTORY; if (_acc && _kv) { const _r = await _kv.get('ac:token:' + _acc); if (_r) { const _t = JSON.parse(_r); _ok = _t && _t.expires > Date.now(); } } } catch (e) {}
-    if (!_ok) return new Response(JSON.stringify({ error: 'locked' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' } });
+    if (!_ok) { try { const _oc = await env.PRICE_HISTORY.get('ac:config'); if (_oc) { const _ocf = JSON.parse(_oc); if (_ocf && _ocf.open === true) _ok = true; } } catch (e) {} }
+      if (!_ok) return new Response(JSON.stringify({ error: 'locked' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' } });
   }
   if (url.searchParams.get('reset')) { const provided = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim(); if (!env.DONUT_TOKEN || provided !== env.DONUT_TOKEN) { return new Response(JSON.stringify({ reset: false, error: 'unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } }); } try { const kv = env.PRICE_HISTORY; if (kv) { await kv.put('series', '[]'); await kv.put('sevents', '{}'); } return new Response(JSON.stringify({ reset: true, cleared: ['series','sevents'] }), { status: 200, headers: { 'Content-Type': 'application/json' } }); } catch (e) { return new Response(JSON.stringify({ reset: false, error: String(e) }), { status: 200, headers: { 'Content-Type': 'application/json' } }); } }
   if (url.searchParams.get('history')) {
