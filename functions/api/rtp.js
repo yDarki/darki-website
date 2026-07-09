@@ -30,6 +30,7 @@ export async function onRequest(context) {
       const _acc = request.headers.get('X-Access-Token') || '';
       let _ok = false;
       try { const _kv = env.PRICE_HISTORY; if (_acc && _kv) { const _r = await _kv.get('ac:token:' + _acc); if (_r) { const _t = JSON.parse(_r); _ok = _t && _t.expires > Date.now(); } } } catch (e) {}
+      if (!_ok) { try { const _oc = await env.PRICE_HISTORY.get('ac:config'); if (_oc) { const _ocf = JSON.parse(_oc); if (_ocf && _ocf.open === true) _ok = true; } } catch (e) {} }
       if (!_ok) return json({ error: 'locked' }, 403);
     }
   }
