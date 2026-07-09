@@ -41,7 +41,18 @@ export async function onRequest(context) {
       await kv.put('ac:config', JSON.stringify(next));
       return json({ ok: true, config: next });
     }
-    return json({ price: cfg.price, durationDays: cfg.durationDays, collector: cfg.collector });
+    return json({ price: cfg.price, durationDays: cfg.durationDays, collector: cfg.collector, open: cfg.open === true });
+  }
+
+  // ---- admin: toggle paywall on/off site-wide ----
+  if (url.searchParams.has('open')) {
+    if (!isAdmin()) return json({ error: 'unauthorized' }, 401);
+    const _ov = norm(url.searchParams.get('open'));
+    const _open = (_ov === '1' || _ov === 'on' || _ov === 'true' || _ov === 'yes');
+    const _cfg = await getConfig(kv);
+    _cfg.open = _open;
+    await kv.put('ac:config', JSON.stringify(_cfg));
+    return json({ ok: true, open: _cfg.open, paywall: _open ? 'OFF (site public)' : 'ON (locked)' });
   }
 
   // ---- admin: revoke access (debug/reset) ----
