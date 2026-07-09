@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Spawner Prices</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="stylesheet" href="/theme.css" />
+<style>
+  :root{ --sp:#b083f0; }
+  .wrap{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:28px 22px 60px}
+  .back{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 16px;color:var(--muted);font-weight:600;font-size:14px;margin-bottom:22px;transition:.2s}
+  .back:hover{color:var(--text);border-color:var(--sp);background:var(--card-2)}
+  h1{font-size:clamp(28px,5vw,40px);font-weight:800;letter-spacing:-1px;display:flex;align-items:center;gap:12px;filter:drop-shadow(0 0 22px rgba(255,255,255,.13))}
+  h1 .grad{background:linear-gradient(105deg,#ffffff 0%,#d7dae6 28%,#9197b0 50%,#d7dae6 72%,#ffffff 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shine 5s ease-in-out infinite alternate}
+  .sub{color:var(--muted);font-size:15px;margin-top:8px}
+  .toolbar{display:flex;align-items:center;gap:12px;margin-top:6px;flex-wrap:wrap}
+  .refresh{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:auto;transition:.14s}
+  .refresh:hover{color:var(--text);border-color:var(--sp)}
+  .msg{color:var(--muted);font-size:14px;padding:34px 0;text-align:center;line-height:1.6}
+  .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--sp);border-radius:50%;margin:0 auto 14px;animation:spin 1s linear infinite}
+  .src{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-top:20px}
+  .src .h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .src .nm{font-size:18px;font-weight:800}
+  .src .up{color:var(--muted);font-size:12.5px}
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:left;padding:10px 12px;font-size:14px}
+  th{color:var(--muted);font-size:11px;letter-spacing:.6px;text-transform:uppercase;font-weight:700;border-bottom:1px solid var(--border)}
+  th:not(:first-child),td:not(:first-child){text-align:right}
+  td{border-bottom:1px solid rgba(255,255,255,.05)}
+  tr:last-child td{border-bottom:none}
+  .sp-name{font-weight:700}
+  .sell{color:#5bd99a;font-weight:800;font-variant-numeric:tabular-nums}
+  .buy{color:#ff9b6b;font-weight:800;font-variant-numeric:tabular-nums}
+  .dash{color:var(--muted)}
+  .legend{color:var(--muted);font-size:12px;margin-top:10px;line-height:1.5}
+</style>
+<script src="/gate.js"></script>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="wrap">
+    <a class="back" href="index.html">&larr; Dashboard</a>
+    <h1>
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#b083f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="3.4"/></svg>
+      <span class="grad">Spawner Prices</span>
+    </h1>
+    <div class="toolbar"><p class="sub" style="margin:0">Live buy/sell spawner prices from trusted Discord markets.</p><button class="refresh" id="refresh">Refresh</button></div>
+    <div id="app"><div class="msg"><div class="spinner"></div>Loading&hellip;</div></div>
+  </div>
+<script>
+  var API='/api/spawners';
+  var app=document.getElementById('app');
+  function abbr(n){ if(n==null) return null; n=+n; var a=Math.abs(n); if(a>=1e9)return (n/1e9).toFixed(2).replace(/\.?0+$/,'')+'B'; if(a>=1e6)return (n/1e6).toFixed(2).replace(/\.?0+$/,'')+'M'; if(a>=1e3)return (n/1e3).toFixed(1).replace(/\.?0+$/,'')+'k'; return String(Math.round(n)); }
+  function full(n){ return n==null?'':Math.round(+n).toLocaleString('en-US')+' $'; }
+  function ago(ms){ if(!ms) return ''; var s=Math.floor((Date.now()-ms)/1000); if(s<60)return 'just now'; var m=Math.floor(s/60); if(m<60)return m+'m ago'; var h=Math.floor(m/60); if(h<24)return h+'h ago'; return Math.floor(h/24)+'d ago'; }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  function render(data){
+    var sources=(data&&data.sources)||[];
+    var withData=sources.filter(function(s){return s.spawners&&s.spawners.length;});
+    if(!withData.length){
+      app.innerHTML='<div class="msg">No spawner prices loaded yet.<br><small>Once a market channel is connected, prices appear here and refresh automatically.</small></div>';
+      return;
+    }
+    var h='';
+    withData.forEach(function(s){
+      h+='<div class="src"><div class="h"><span class="nm">'+esc(s.name||'Market')+'</span><span class="up">updated '+ago(s.updated||data.updated)+'</span></div>';
+      h+='<table><thead><tr><th>Spawner</th><th>Sell (you&rarr;them)</th><th>Buy (them&rarr;you)</th></tr></thead><tbody>';
+      s.spawners.forEach(function(sp){
+        var sell=abbr(sp.sell), buy=abbr(sp.buy);
+        h+='<tr><td class="sp-name">'+esc(sp.name)+'</td>'+
+           '<td>'+(sell?'<span class="sell" title="'+full(sp.sell)+'">'+sell+'</span>':'<span class="dash">&mdash;</span>')+'</td>'+
+           '<td>'+(buy?'<span class="buy" title="'+full(sp.buy)+'">'+buy+'</span>':'<span class="dash">&mdash;</span>')+'</td></tr>';
+      });
+      h+='</tbody></table><div class="legend"><b>Sell</b> = what the market pays you &middot; <b>Buy</b> = what they charge you. Prices are read from the market’s Discord and refresh on reload.</div></div>';
+    });
+    app.innerHTML=h;
+  }
+
+  function load(){
+    app.innerHTML='<div class="msg"><div class="spinner"></div>Loading&hellip;</div>';
+    fetch(API+'?cb='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){ render(j); }).catch(function(e){ app.innerHTML='<div class="msg">Could not load: '+esc(e.message)+'</div>'; });
+  }
+  document.getElementById('refresh').addEventListener('click',load);
+  load();
+</script>
+</body>
+</html>
