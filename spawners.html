@@ -34,6 +34,11 @@
   .buy{color:#ff9b6b;font-weight:800;font-variant-numeric:tabular-nums}
   .dash{color:var(--muted)}
   .legend{color:var(--muted);font-size:12px;margin-top:10px;line-height:1.5}
+  .srclink{display:inline-flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
+  .srclink:hover .nm{color:var(--sp)}
+  .srclink .ext{color:var(--muted);opacity:.65;transition:.14s}
+  .srclink:hover .ext{color:var(--sp);opacity:1}
+  .sicon{width:26px;height:26px;border-radius:7px;flex:none;object-fit:cover;background:var(--card-2)}
 </style>
 <script src="/gate.js"></script>
 </head>
@@ -65,7 +70,7 @@
     }
     var h='';
     withData.forEach(function(s){
-      h+='<div class="src"><div class="h"><span class="nm">'+esc(s.name||'Market')+'</span><span class="up">updated '+ago(s.updated||data.updated)+'</span></div>';
+      var _nm=esc(s.name||'Market'); var _ic=s.icon?'<img class="sicon" src="'+esc(s.icon)+'" alt="">':''; var _ext='<svg class="ext" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"></path><path d="M8 7h9v9"></path></svg>'; var _head=s.link?('<a class="srclink" href="'+esc(s.link)+'" target="_blank" rel="noopener">'+_ic+'<span class="nm">'+_nm+'</span>'+_ext+'</a>'):(_ic+'<span class="nm">'+_nm+'</span>'); h+='<div class="src"><div class="h">'+_head+'<span class="up">updated '+ago(s.updated||data.updated)+'</span></div>';
       h+='<table><thead><tr><th>Spawner</th><th>Sell (you&rarr;them)</th><th>Buy (them&rarr;you)</th></tr></thead><tbody>';
       s.spawners.forEach(function(sp){
         var sell=abbr(sp.sell), buy=abbr(sp.buy);
