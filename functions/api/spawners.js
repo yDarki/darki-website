@@ -9,7 +9,7 @@
 // exact message (best when a single price-list message is edited over time); leave it '' to scan the
 // last messages of the channel and auto-pick the one that looks like a price list.
 const SOURCES = [
-  { name: "Marie's server for DonutSMP", channelId: '1517497598582329464', messageId: '1517499186692755506' }
+  { name: "Marie's server for DonutSMP", guildId: '1517461615484600453', channelId: '1517497598582329464', messageId: '1517499186692755506', invite: '' }
 ];
 
 const CORS = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' };
@@ -92,11 +92,11 @@ export async function onRequest(context) {
       if (!src || !src.channelId) continue;
       const res = await fetchMessageText(bot, src.channelId, src.messageId);
       if (!res.ok) { out.push({ name: src.name || 'Market', channelId: src.channelId, error: res.status, detail: res.detail || null, spawners: [] }); continue; }
-      out.push({ name: src.name || 'Market', channelId: src.channelId, updated: Date.now(), sourceTs: res.ts || null, spawners: parsePrices(res.text) });
+      let _icon = null; if (src.guildId) { try { const _g = await fetch('https://discord.com/api/v10/guilds/' + src.guildId, { headers: { Authorization: 'Bot ' + bot } }); if (_g.ok) { const _gj = await _g.json(); if (_gj && _gj.icon) _icon = 'https://cdn.discordapp.com/icons/' + src.guildId + '/' + _gj.icon + '.png?size=64'; } } catch (e) {} } const _link = src.invite || (src.guildId ? ('https://discord.com/channels/' + src.guildId + '/' + src.channelId) : ''); out.push({ name: src.name || 'Market', channelId: src.channelId, icon: _icon, link: _link, updated: Date.now(), sourceTs: res.ts || null, spawners: parsePrices(res.text) });
     }
     const payload = { updated: Date.now(), sources: out };
     let prevStr = null; try { prevStr = await kv.get('sp:prices'); } catch (e) {}
-    const core = (list) => JSON.stringify((list || []).map(function (s) { return { n: s.name, c: s.channelId, sp: s.spawners, e: s.error || null, d: s.detail || null }; }));
+    const core = (list) => JSON.stringify((list || []).map(function (s) { return { n: s.name, c: s.channelId, sp: s.spawners, e: s.error || null, d: s.detail || null, ic: s.icon || null, lk: s.link || null }; }));
     const nextCore = core(out);
     let prevCore = null; try { const p = prevStr ? JSON.parse(prevStr) : null; prevCore = p ? core(p.sources) : null; } catch (e) {}
     let wrote = false;
