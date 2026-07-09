@@ -94,7 +94,7 @@ export async function onRequest(context) {
     }
     const payload = { updated: Date.now(), sources: out };
     let prevStr = null; try { prevStr = await kv.get('sp:prices'); } catch (e) {}
-    const core = (list) => JSON.stringify((list || []).map(function (s) { return { n: s.name, c: s.channelId, sp: s.spawners }; }));
+    const core = (list) => JSON.stringify((list || []).map(function (s) { return { n: s.name, c: s.channelId, sp: s.spawners, e: s.error || null, d: s.detail || null }; }));
     const nextCore = core(out);
     let prevCore = null; try { const p = prevStr ? JSON.parse(prevStr) : null; prevCore = p ? core(p.sources) : null; } catch (e) {}
     let wrote = false;
