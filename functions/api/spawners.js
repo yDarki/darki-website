@@ -92,13 +92,14 @@ export async function onRequest(context) {
       if (!res.ok) { out.push({ name: src.name || 'Market', channelId: src.channelId, error: res.status, detail: res.detail || null, spawners: [] }); continue; }
       out.push({ name: src.name || 'Market', channelId: src.channelId, updated: Date.now(), sourceTs: res.ts || null, spawners: parsePrices(res.text) });
     }
-    const payload = { updated: Date.now(), sources: out };
+    let botGuilds = null; try { const _gr = await fetch('https://discord.com/api/v10/users/@me/guilds', { headers: { Authorization: 'Bot ' + bot } }); if (_gr.ok) { const _gl = await _gr.json(); botGuilds = (Array.isArray(_gl) ? _gl : []).map(function (g) { return { id: g.id, name: g.name }; }); } else { botGuilds = { httpError: _gr.status }; } } catch (e) { botGuilds = { error: String(e) }; }
+    const payload = { updated: Date.now(), sources: out, botGuilds: botGuilds };
     let prevStr = null; try { prevStr = await kv.get('sp:prices'); } catch (e) {}
     const core = (list) => JSON.stringify((list || []).map(function (s) { return { n: s.name, c: s.channelId, sp: s.spawners, e: s.error || null, d: s.detail || null }; }));
     const nextCore = core(out);
     let prevCore = null; try { const p = prevStr ? JSON.parse(prevStr) : null; prevCore = p ? core(p.sources) : null; } catch (e) {}
     let wrote = false;
-    if (nextCore !== prevCore) { await kv.put('sp:prices', JSON.stringify(payload)); wrote = true; }
+    await kv.put('sp:prices', JSON.stringify(payload)); wrote = (nextCore !== prevCore);
     return json({ ok: true, sources: out.length, wrote: wrote, detail: out.map(function (s) { return { name: s.name, count: (s.spawners || []).length, error: s.error || null }; }) });
   }
 
