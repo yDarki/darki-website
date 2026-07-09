@@ -36,8 +36,10 @@ function parsePrices(text) {
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
     var low = line.toLowerCase();
-    if (low.indexOf('buying') >= 0 || low.indexOf('we sell') >= 0) { section = 'buy'; continue; }
-    if (low.indexOf('selling') >= 0 || low.indexOf('you sell') >= 0) { section = 'sell'; continue; }
+    if (low.indexOf('we buy from you') >= 0 || low.indexOf('you sell to us') >= 0 || low.indexOf('sell to us') >= 0) { section = 'sell'; continue; }
+    if (low.indexOf('we sell to you') >= 0 || low.indexOf('you buy from us') >= 0 || low.indexOf('buy from us') >= 0) { section = 'buy'; continue; }
+    if (low.indexOf('selling') >= 0) { section = 'sell'; continue; }
+    if (low.indexOf('buying') >= 0) { section = 'buy'; continue; }
     var m = line.match(/\$?\s*([0-9][0-9.,]*)\s*([kmb])\b/i);
     if (!m) continue;
     var amount = parseAmount(m[1], m[2]);
