@@ -163,6 +163,7 @@
     goEl.addEventListener('click',()=>search(false));
     document.getElementById('refresh').addEventListener('click',()=>search(true));
     nameEl.addEventListener('keydown',e=>{ if(e.key==='Enter') search(); });
+    (function(){ try{ var _qn=new URLSearchParams(location.search).get('name'); if(_qn){ nameEl.value=_qn; search(); } }catch(e){} })();
     fetch('/api/player?ping=1').then(function(r){return r.json();}).then(function(j){if(j&&(j.up===false||(j.status&&j.status>=400)))document.getElementById('apiDown').classList.add('show');}).catch(function(){});
     (function(){
       var KEY='donutSavedPlayers';
