@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Leaderboard</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="stylesheet" href="/theme.css" />
+<style>
+  :root{ --lb:#e8b34c; }
+  .wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:28px 22px 60px}
+  .back{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 16px;color:var(--muted);font-weight:600;font-size:14px;margin-bottom:22px;transition:.2s}
+  .back:hover{color:var(--text);border-color:var(--lb);background:var(--card-2)}
+  h1{font-size:clamp(28px,5vw,40px);font-weight:800;letter-spacing:-1px;display:flex;align-items:center;gap:12px;filter:drop-shadow(0 0 22px rgba(255,255,255,.13))}
+  h1 .grad{background:linear-gradient(105deg,#ffffff 0%,#d7dae6 28%,#9197b0 50%,#d7dae6 72%,#ffffff 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shine 5s ease-in-out infinite alternate}
+  .sub{color:var(--muted);font-size:15px;margin-top:8px}
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:22px 0 6px}
+  select{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:10px 14px;color:var(--text);font-size:14px;font-family:inherit;outline:none;font-weight:600}
+  select:focus{border-color:var(--lb)}
+  .pg{display:inline-flex;align-items:center;gap:8px;margin-left:auto}
+  .pgbtn{width:34px;height:34px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:16px;cursor:pointer;font-family:inherit;transition:.14s}
+  .pgbtn:hover:not(:disabled){border-color:var(--lb)} .pgbtn:disabled{opacity:.4;cursor:not-allowed}
+  .pgnum{color:var(--muted);font-size:13px;min-width:56px;text-align:center;font-weight:600}
+  .refresh{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.14s}
+  .refresh:hover{color:var(--text);border-color:var(--lb)}
+  .msg{color:var(--muted);font-size:14px;padding:34px 0;text-align:center;line-height:1.6}
+  .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--lb);border-radius:50%;margin:0 auto 14px;animation:spin 1s linear infinite}
+  .list{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:8px;margin-top:16px}
+  .row{display:flex;align-items:center;gap:14px;padding:11px 12px;border-radius:12px;transition:background .14s}
+  .row:hover{background:var(--card-2)}
+  .rank{width:34px;text-align:center;font-weight:800;font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
+  .row.r1 .rank{color:#f4d35e} .row.r2 .rank{color:#cfd6e6} .row.r3 .rank{color:#e0955b}
+  .ava{width:34px;height:34px;border-radius:9px;image-rendering:pixelated;background:var(--card-2);flex:none}
+  .pname{flex:1;font-weight:700;font-size:15px;color:var(--text);text-decoration:none;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pname:hover{color:var(--lb)}
+  .val{font-weight:800;font-variant-numeric:tabular-nums;color:var(--text);font-size:15px}
+  .save{width:32px;height:32px;border-radius:9px;background:transparent;border:1px solid var(--border);color:var(--muted);font-size:15px;cursor:pointer;line-height:1;flex:none;transition:.14s}
+  .save:hover{color:var(--lb);border-color:var(--lb)}
+  .save.on{color:var(--lb);border-color:var(--lb);background:rgba(232,179,76,.12)}
+  .legend{color:var(--muted);font-size:12.5px;margin-top:12px;line-height:1.5}
+</style>
+<script src="/gate.js"></script>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="wrap">
+    <a class="back" href="index.html">&larr; Dashboard</a>
+    <h1>
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#e8b34c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+      <span class="grad">Leaderboard</span>
+    </h1>
+    <p class="sub">Top players on DonutSMP, straight from the server API.</p>
+    <div class="toolbar">
+      <select id="cat">
+        <option value="money">Money</option>
+        <option value="sell">Sold via /sell</option>
+        <option value="kills">Kills</option>
+        <option value="deaths">Deaths</option>
+        <option value="playtime">Playtime</option>
+        <option value="shards">Shards</option>
+      </select>
+      <button class="refresh" id="refresh">Refresh</button>
+      <span class="pg"><button class="pgbtn" id="prev">&lsaquo;</button><span class="pgnum" id="pgnum">Page 1</span><button class="pgbtn" id="next">&rsaquo;</button></span>
+    </div>
+    <div id="app"><div class="msg"><div class="spinner"></div>Loading&hellip;</div></div>
+    <div class="legend">Click a name to open their stats. The <b>&#9733;</b> saves a player to your list (shared with Player Stats).</div>
+  </div>
+<script>
+  var API='/api/leaderboard', PER=45, SKEY='donutSavedPlayers';
+  var app=document.getElementById('app'), catEl=document.getElementById('cat');
+  var prevEl=document.getElementById('prev'), nextEl=document.getElementById('next'), pgnumEl=document.getElementById('pgnum');
+  var page=1, fmtMap={money:'money',sell:'money',kills:'int',deaths:'int',playtime:'time',shards:'int'};
+  var lastCount=0;
+
+  function abbr(n){ n=+n; var a=Math.abs(n); if(a>=1e12)return (n/1e12).toFixed(2).replace(/\.?0+$/,'')+'T'; if(a>=1e9)return (n/1e9).toFixed(2).replace(/\.?0+$/,'')+'B'; if(a>=1e6)return (n/1e6).toFixed(2).replace(/\.?0+$/,'')+'M'; if(a>=1e3)return (n/1e3).toFixed(1).replace(/\.?0+$/,'')+'k'; return String(Math.round(n)); }
+  function fullNum(n){ return Math.round(+n).toLocaleString('en-US'); }
+  function playtime(ms){ var s=Math.floor((+ms)/1000); var d=Math.floor(s/86400); var h=Math.floor((s%86400)/3600); var m=Math.floor((s%3600)/60); if(d>0)return d+'d '+h+'h'; if(h>0)return h+'h '+m+'m'; return m+'m'; }
+  function fmtVal(v,f){ if(f==='time')return playtime(v); if(f==='int')return fullNum(v); return abbr(v); }
+  function fullVal(v,f){ if(f==='time')return playtime(v); if(f==='money')return fullNum(v)+' $'; return fullNum(v); }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function saved(){ try{ return JSON.parse(localStorage.getItem(SKEY)||'[]'); }catch(e){ return []; } }
+  function isSaved(n){ return saved().map(function(x){return x.toLowerCase();}).indexOf(n.toLowerCase())>=0; }
+  function toggleSave(n,btn){ var a=saved(); var i=a.map(function(x){return x.toLowerCase();}).indexOf(n.toLowerCase()); if(i>=0){ a.splice(i,1); btn.classList.remove('on'); } else { a.push(n); btn.classList.add('on'); } try{ localStorage.setItem(SKEY, JSON.stringify(a)); }catch(e){} }
+
+  function render(rows, f){
+    if(!rows || !rows.length){ app.innerHTML='<div class="msg">No leaderboard data.</div>'; return; }
+    var base=(page-1)*PER;
+    var h='<div class="list">';
+    rows.forEach(function(e,i){
+      var rank=base+i+1;
+      var name=esc(e.username||'?');
+      var rc = rank<=3 ? ' r'+rank : '';
+      h+='<div class="row'+rc+'">'+
+        '<span class="rank">'+rank+'</span>'+
+        '<img class="ava" src="https://minotar.net/helm/'+encodeURIComponent(e.username||'')+'/34.png" alt="" onerror="this.style.visibility=\'hidden\'">'+
+        '<a class="pname" href="playerstats.html?name='+encodeURIComponent(e.username||'')+'">'+name+'</a>'+
+        '<span class="val" title="'+esc(fullVal(e.value,f))+'">'+esc(fmtVal(e.value,f))+'</span>'+
+        '<button class="save'+(isSaved(e.username||'')?' on':'')+'" data-n="'+name+'" title="Save to your players">&#9733;</button>'+
+        '</div>';
+    });
+    h+='</div>';
+    app.innerHTML=h;
+    app.querySelectorAll('.save').forEach(function(b){ b.addEventListener('click',function(){ toggleSave(b.getAttribute('data-n'), b); }); });
+  }
+
+  function load(){
+    var stat=catEl.value, f=fmtMap[stat]||'int';
+    app.innerHTML='<div class="msg"><div class="spinner"></div>Loading&hellip;</div>';
+    pgnumEl.textContent='Page '+page;
+    prevEl.disabled=(page<=1);
+    fetch(API+'?stat='+encodeURIComponent(stat)+'&page='+page+'&cb='+Date.now(),{cache:'no-store'})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        if(j.status && j.status>=400){ app.innerHTML='<div class="msg">This leaderboard is not available.</div>'; nextEl.disabled=true; return; }
+        var rows=j.result||[];
+        lastCount=rows.length;
+        nextEl.disabled=(rows.length<PER);
+        render(rows, f);
+      })
+      .catch(function(e){ app.innerHTML='<div class="msg">Could not load: '+esc(e.message)+'</div>'; });
+  }
+
+  catEl.addEventListener('change',function(){ page=1; load(); });
+  document.getElementById('refresh').addEventListener('click',load);
+  prevEl.addEventListener('click',function(){ if(page>1){ page--; load(); } });
+  nextEl.addEventListener('click',function(){ if(!nextEl.disabled){ page++; load(); } });
+  load();
+</script>
+</body>
+</html>
