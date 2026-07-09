@@ -9,7 +9,7 @@
 // exact message (best when a single price-list message is edited over time); leave it '' to scan the
 // last messages of the channel and auto-pick the one that looks like a price list.
 const SOURCES = [
-  // { name: 'DonutSMP Trusted Market', channelId: '000000000000000000', messageId: '' }
+  { name: 'Spawner Kingdom', channelId: '1505938570421076068', messageId: '1524401397557100636' }
 ];
 
 const CORS = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' };
