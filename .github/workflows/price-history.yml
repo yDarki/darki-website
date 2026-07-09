@@ -13,3 +13,5 @@ jobs:
         run: curl -s -m 30 -H "Authorization: Bearer ${{ secrets.DONUT_TOKEN }}" "https://donutsmpstats.com/api/donut?cron=1&t=$(date +%s)" -o /dev/null
       - name: Check Discord price alerts
         run: curl -s -m 30 -H "Authorization: Bearer ${{ secrets.DONUT_TOKEN }}" "https://donutsmpstats.com/api/discord?cron=1&t=$(date +%s)" -o /dev/null
+      - name: Read spawner prices from Discord
+        run: curl -s -m 30 -H "Authorization: Bearer ${{ secrets.DONUT_TOKEN }}" "https://donutsmpstats.com/api/spawners?cron=1&t=$(date +%s)" -o /dev/null
