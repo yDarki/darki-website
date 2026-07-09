@@ -90,7 +90,7 @@ export async function onRequest(context) {
       if (!src || !src.channelId) continue;
       const res = await fetchMessageText(bot, src.channelId, src.messageId);
       if (!res.ok) { out.push({ name: src.name || 'Market', channelId: src.channelId, error: res.status, detail: res.detail || null, spawners: [] }); continue; }
-      out.push({ name: src.name || 'Market', channelId: src.channelId, updated: Date.now(), sourceTs: res.ts || null, spawners: parsePrices(res.text) });
+      out.push({ name: src.name || 'Market', channelId: src.channelId, updated: Date.now(), sourceTs: res.ts || null, raw: (res.text || '').slice(0, 600), spawners: parsePrices(res.text) });
     }
     let botGuilds = null; try { const _gr = await fetch('https://discord.com/api/v10/users/@me/guilds', { headers: { Authorization: 'Bot ' + bot } }); if (_gr.ok) { const _gl = await _gr.json(); botGuilds = (Array.isArray(_gl) ? _gl : []).map(function (g) { return { id: g.id, name: g.name }; }); } else { botGuilds = { httpError: _gr.status }; } } catch (e) { botGuilds = { error: String(e) }; }
     const payload = { updated: Date.now(), sources: out, botGuilds: botGuilds };
