@@ -35,21 +35,8 @@ export async function onRequest(context) {
     { id: 'netherite_ingot', q: 'netherite_ingot', match: exact('netherite_ingot') },
     { id: 'netherite_scrap', q: 'netherite_scrap', match: exact('netherite_scrap') },
     { id: 'netherite_block', q: 'netherite_block', match: exact('netherite_block') },
-    { id: 'diamond', q: 'diamond', match: exact('diamond'), soon: true },
-    { id: 'diamond_block', q: 'diamond_block', match: exact('diamond_block'), soon: true },
-    { id: 'iron_ingot', q: 'iron_ingot', match: exact('iron_ingot'), soon: true },
-    { id: 'iron_block', q: 'iron_block', match: exact('iron_block'), soon: true },
-    { id: 'gold_ingot', q: 'gold_ingot', match: exact('gold_ingot'), soon: true },
-    { id: 'gold_block', q: 'gold_block', match: exact('gold_block'), soon: true },
-    { id: 'obsidian', q: 'obsidian', match: exact('obsidian'), soon: true },
-    { id: 'crying_obsidian', q: 'crying_obsidian', match: exact('crying_obsidian'), soon: true },
-    { id: 'respawn_anchor', q: 'respawn_anchor', match: exact('respawn_anchor'), soon: true },
-    { id: 'end_crystal', q: 'end_crystal', match: exact('end_crystal'), soon: true },
-    { id: 'golden_apple', q: 'golden_apple', match: exact('golden_apple'), soon: true },
     { id: 'enchanted_golden_apple', q: 'enchanted_golden_apple', match: exact('enchanted_golden_apple') },
     { id: 'elytra', q: 'elytra', match: exact('elytra') },
-    { id: 'shulker_shell', q: 'shulker_shell', match: exact('shulker_shell'), soon: true },
-    { id: 'totem_of_undying', q: 'totem_of_undying', match: exact('totem_of_undying'), soon: true },
     { id: 'dragon_head', q: 'dragon_head', match: exact('dragon_head') }
   ];
 
