@@ -151,6 +151,47 @@ function statsEmbed(name, s) {
   };
 }
 
+// ---- auction prices (for the /menu Auction Prices button) ---------------
+function prettyItem(item) { return String(item || '').replace(/_/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); }); }
+async function auctionInfo(token, item) {
+  try {
+    const r = await fetch('https://api.donutsmp.net/v1/auction/list/1', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ search: item.replace(/_/g, ' '), sort: 'lowest_price' })
+    });
+    if (!r.ok) return { status: r.status, info: null };
+    const j = await r.json().catch(function () { return null; });
+    const arr = (j && Array.isArray(j.result)) ? j.result : [];
+    let best = null, listing = null, matches = 0;
+    for (const a of arr) {
+      const id = a && a.item && a.item.id;
+      if (id !== 'minecraft:' + item) continue;
+      matches++;
+      const count = (a.item && a.item.count) ? a.item.count : 1;
+      const unit = a.price / count;
+      if (isFinite(unit) && (best === null || unit < best)) { best = unit; listing = { count: count, total: a.price }; }
+    }
+    return { status: 200, info: best === null ? null : { unit: best, listing: listing, matches: matches } };
+  } catch (e) { return { status: 0, info: null }; }
+}
+function priceEmbed(item, info) {
+  const pretty = prettyItem(item);
+  const table = '```\n'
+    + padCol('Each', abbrNum(Math.round(info.unit)) + ' $', 9) + '\n'
+    + padCol('Listing', info.listing.count + '\u00d7 for ' + abbrNum(info.listing.total) + ' $', 9) + '\n'
+    + padCol('Found', info.matches + ' listing' + (info.matches === 1 ? '' : 's'), 9) + '\n```';
+  return {
+    author: { name: 'DonutSMP Auction Prices' },
+    title: pretty,
+    url: 'https://donutsmpstats.com/donutprices.html',
+    color: 0xf5b942, // Auction Prices tile colour on the website
+    fields: [ { name: '\ud83d\udcb0 Lowest auction price', value: table, inline: false } ],
+    footer: { text: 'donutsmpstats.com \u00b7 live auction house' },
+    timestamp: new Date().toISOString()
+  };
+}
+
 export async function onRequest(context) {
   const request = context.request;
   const env = context.env || {};
@@ -300,7 +341,7 @@ export async function onRequest(context) {
       ((interaction.data && interaction.data.options) || []).forEach(o => { opts[o.name] = o.value; });
 
       if (name === 'menu') {
-        return json({ type: 4, data: { content: '**DonutSMP Stats** — pick a tool:', flags: 64, components: [ { type: 1, components: [ { type: 2, style: 1, label: 'Player Stats', custom_id: 'menu:playerstats' } ] } ] } });
+        return json({ type: 4, data: { content: '**DonutSMP Stats** — pick a tool:', flags: 64, components: [ { type: 1, components: [ { type: 2, style: 1, label: 'Player Stats', custom_id: 'menu:playerstats' }, { type: 2, style: 1, label: 'Auction Prices', custom_id: 'menu:prices' } ] } ] } });
       }
 
       if (!kv) return reply(':warning: Storage not configured. Try again later.');
@@ -339,6 +380,9 @@ export async function onRequest(context) {
       if (cid === 'menu:playerstats') {
         return json({ type: 9, data: { custom_id: 'ps_modal', title: 'Player Stats', components: [ { type: 1, components: [ { type: 4, custom_id: 'ps_name', label: 'Minecraft username', style: 1, min_length: 1, max_length: 16, required: true, placeholder: 'e.g. Ikeacpvp' } ] } ] } });
       }
+      if (cid === 'menu:prices') {
+        return json({ type: 9, data: { custom_id: 'pr_modal', title: 'Auction Prices', components: [ { type: 1, components: [ { type: 4, custom_id: 'pr_item', label: 'Item name', style: 1, min_length: 1, max_length: 40, required: true, placeholder: 'e.g. netherite_ingot, elytra, dragon_head' } ] } ] } });
+      }
       return json({ type: 4, data: { content: ':grey_question: Unknown button.', flags: 64 } });
     }
     if (interaction.type === 5) { // MODAL_SUBMIT
@@ -353,6 +397,16 @@ export async function onRequest(context) {
         const s = res.stats;
         if (!s || s.money === undefined) return reply(':mag: Player **' + nameVal + '** not found, or no data.');
         return json({ type: 4, data: { embeds: [statsEmbed(nameVal, s)], flags: 64 } });
+      }
+      if (cid === 'pr_modal') {
+        let itemVal = '';
+        try { for (const row of (interaction.data.components || [])) for (const comp of (row.components || [])) if (comp.custom_id === 'pr_item') itemVal = comp.value; } catch (e) {}
+        const item = String(itemVal || '').toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        if (!item) return reply(':warning: Please enter an item name.');
+        const res = await auctionInfo(env.DONUT_TOKEN, item);
+        if (res.status === 401 || res.status === 403 || res.status >= 500) return reply(':warning: DonutSMP API is temporarily restricted \u2014 prices can\u2019t load right now.');
+        if (!res.info) return reply(':mag: No auction listings found for **' + prettyItem(item) + '**. Try an exact id like `netherite_ingot` or `elytra`.');
+        return json({ type: 4, data: { embeds: [priceEmbed(item, res.info)], flags: 64 } });
       }
       return reply(':grey_question: Unknown form.');
     }
