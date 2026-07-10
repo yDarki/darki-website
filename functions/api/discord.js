@@ -139,7 +139,7 @@ function statsEmbed(name, s) {
     author: { name: 'DonutSMP Stats' },
     title: name,
     url: 'https://donutsmpstats.com/playerstats.html?name=' + encodeURIComponent(name),
-    color: 0xf5b942,
+    color: 0xa78bfa, // Player Stats tile colour on the website
     thumbnail: { url: 'https://minotar.net/helm/' + encodeURIComponent(name) + '/128.png' },
     fields: [
       { name: '💰 Economy', value: eco, inline: false },
