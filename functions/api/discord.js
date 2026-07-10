@@ -114,6 +114,41 @@ async function unitPrice(token, item) {
 }
 
 // ==========================================================================
+// ---- player stats (for the /menu Player Stats button) -------------------
+function abbrNum(n) { n = Number(n) || 0; const a = Math.abs(n); if (a >= 1e12) return (n / 1e12).toFixed(2) + 'T'; if (a >= 1e9) return (n / 1e9).toFixed(2) + 'B'; if (a >= 1e6) return (n / 1e6).toFixed(2) + 'M'; if (a >= 1e3) return (n / 1e3).toFixed(2) + 'k'; return String(Math.round(n)); }
+function intNum(n) { return (Math.round(Number(n) || 0)).toLocaleString('en-US'); }
+function playtimeStr(ms) { ms = Number(ms) || 0; const s = Math.floor(ms / 1000); const d = Math.floor(s / 86400); const h = Math.floor((s % 86400) / 3600); const m = Math.floor((s % 3600) / 60); if (d > 0) return d + 'd ' + h + 'h'; if (h > 0) return h + 'h ' + m + 'm'; return m + 'm'; }
+async function playerStats(token, name) {
+  try {
+    const r = await fetch('https://api.donutsmp.net/v1/stats/' + encodeURIComponent(name), { headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' } });
+    const j = await r.json().catch(function () { return null; });
+    const s = (j && j.result !== undefined) ? j.result : j;
+    return { status: r.status, stats: s };
+  } catch (e) { return { status: 0, stats: null, error: String(e) }; }
+}
+function statsEmbed(name, s) {
+  const money = Number(s.money) || 0, shards = Number(s.shards) || 0, kills = Number(s.kills) || 0, deaths = Number(s.deaths) || 0;
+  const kd = deaths > 0 ? (kills / deaths).toFixed(2) : String(kills);
+  return {
+    title: name + ' — DonutSMP stats',
+    url: 'https://donutsmpstats.com/playerstats.html?name=' + encodeURIComponent(name),
+    color: 0xa78bfa,
+    thumbnail: { url: 'https://minotar.net/helm/' + encodeURIComponent(name) + '/64.png' },
+    fields: [
+      { name: 'Money', value: abbrNum(money) + ' $', inline: true },
+      { name: 'Shards', value: intNum(shards), inline: true },
+      { name: 'Playtime', value: playtimeStr(s.playtime), inline: true },
+      { name: 'Kills', value: intNum(kills), inline: true },
+      { name: 'Deaths', value: intNum(deaths), inline: true },
+      { name: 'K/D', value: kd, inline: true },
+      { name: 'Blocks mined', value: intNum(s.broken_blocks), inline: true },
+      { name: 'Blocks placed', value: intNum(s.placed_blocks), inline: true },
+      { name: 'Mobs killed', value: intNum(s.mobs_killed), inline: true }
+    ],
+    footer: { text: 'donutsmpstats.com' }
+  };
+}
+
 export async function onRequest(context) {
   const request = context.request;
   const env = context.env || {};
@@ -138,7 +173,8 @@ export async function onRequest(context) {
         options: [{ name: 'code', description: 'The code shown on the website', type: 3, required: true }]
       },
       { name: 'unlink', description: 'Stop price alerts and unlink this Discord' },
-      { name: 'alerts', description: 'Show your current DonutSMP price alerts' }
+      { name: 'alerts', description: 'Show your current DonutSMP price alerts' },
+      { name: 'menu', description: 'Open the DonutSMP Stats menu' }
     ];
     commands.forEach(function (c) { c.integration_types = [0, 1]; c.contexts = [0, 1, 2]; });
     const useGuild = (guild && guild !== 'true' && guild !== '1');
@@ -261,6 +297,10 @@ export async function onRequest(context) {
       const opts = {};
       ((interaction.data && interaction.data.options) || []).forEach(o => { opts[o.name] = o.value; });
 
+      if (name === 'menu') {
+        return json({ type: 4, data: { content: '**DonutSMP Stats** — pick a tool:', flags: 64, components: [ { type: 1, components: [ { type: 2, style: 1, label: 'Player Stats', custom_id: 'menu:playerstats' } ] } ] } });
+      }
+
       if (!kv) return reply(':warning: Storage not configured. Try again later.');
 
       if (name === 'link') {
@@ -292,6 +332,29 @@ export async function onRequest(context) {
       }
       return reply(':grey_question: Unknown command.');
     }
+    if (interaction.type === 3) { // MESSAGE_COMPONENT (button)
+      const cid = (interaction.data && interaction.data.custom_id) || '';
+      if (cid === 'menu:playerstats') {
+        return json({ type: 9, data: { custom_id: 'ps_modal', title: 'Player Stats', components: [ { type: 1, components: [ { type: 4, custom_id: 'ps_name', label: 'Minecraft username', style: 1, min_length: 1, max_length: 16, required: true, placeholder: 'e.g. Ikeacpvp' } ] } ] } });
+      }
+      return json({ type: 4, data: { content: ':grey_question: Unknown button.', flags: 64 } });
+    }
+    if (interaction.type === 5) { // MODAL_SUBMIT
+      const cid = (interaction.data && interaction.data.custom_id) || '';
+      if (cid === 'ps_modal') {
+        let nameVal = '';
+        try { for (const row of (interaction.data.components || [])) for (const comp of (row.components || [])) if (comp.custom_id === 'ps_name') nameVal = comp.value; } catch (e) {}
+        nameVal = String(nameVal || '').trim();
+        if (!nameVal) return reply(':warning: Please enter a username.');
+        const res = await playerStats(env.DONUT_TOKEN, nameVal);
+        if (res.status === 401 || res.status === 403 || res.status >= 500) return reply(':warning: DonutSMP API is temporarily restricted — stats can’t load right now.');
+        const s = res.stats;
+        if (!s || s.money === undefined) return reply(':mag: Player **' + nameVal + '** not found, or no data.');
+        return json({ type: 4, data: { embeds: [statsEmbed(nameVal, s)], flags: 64 } });
+      }
+      return reply(':grey_question: Unknown form.');
+    }
+
     return json({ type: 4, data: { content: 'Unsupported interaction.', flags: 64 } });
   }
 
