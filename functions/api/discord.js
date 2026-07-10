@@ -126,26 +126,28 @@ async function playerStats(token, name) {
     return { status: r.status, stats: s };
   } catch (e) { return { status: 0, stats: null, error: String(e) }; }
 }
+function padCol(label, val, w) { const l = String(label); return l + ' '.repeat(Math.max(1, w - l.length)) + val; }
 function statsEmbed(name, s) {
   const money = Number(s.money) || 0, shards = Number(s.shards) || 0, kills = Number(s.kills) || 0, deaths = Number(s.deaths) || 0;
+  const spent = Number(s.money_spent_on_shop) || 0, earned = Number(s.money_made_from_sell) || 0;
+  const mined = Number(s.broken_blocks) || 0, placed = Number(s.placed_blocks) || 0, mobs = Number(s.mobs_killed) || 0;
   const kd = deaths > 0 ? (kills / deaths).toFixed(2) : String(kills);
+  const eco = '```\n' + padCol('Money', abbrNum(money) + ' $', 9) + '\n' + padCol('Shards', intNum(shards), 9) + '\n' + padCol('Spent', abbrNum(spent) + ' $', 9) + '\n' + padCol('Earned', abbrNum(earned) + ' $', 9) + '\n```';
+  const combat = '```\n' + padCol('Kills', intNum(kills), 9) + '\n' + padCol('Deaths', intNum(deaths), 9) + '\n' + padCol('K/D', kd, 9) + '\n```';
+  const activity = '```\n' + padCol('Playtime', playtimeStr(s.playtime), 15) + '\n' + padCol('Blocks mined', intNum(mined), 15) + '\n' + padCol('Blocks placed', intNum(placed), 15) + '\n' + padCol('Mobs killed', intNum(mobs), 15) + '\n```';
   return {
-    title: name + ' — DonutSMP stats',
+    author: { name: 'DonutSMP Stats' },
+    title: name,
     url: 'https://donutsmpstats.com/playerstats.html?name=' + encodeURIComponent(name),
-    color: 0xa78bfa,
-    thumbnail: { url: 'https://minotar.net/helm/' + encodeURIComponent(name) + '/64.png' },
+    color: 0xf5b942,
+    thumbnail: { url: 'https://minotar.net/helm/' + encodeURIComponent(name) + '/128.png' },
     fields: [
-      { name: 'Money', value: abbrNum(money) + ' $', inline: true },
-      { name: 'Shards', value: intNum(shards), inline: true },
-      { name: 'Playtime', value: playtimeStr(s.playtime), inline: true },
-      { name: 'Kills', value: intNum(kills), inline: true },
-      { name: 'Deaths', value: intNum(deaths), inline: true },
-      { name: 'K/D', value: kd, inline: true },
-      { name: 'Blocks mined', value: intNum(s.broken_blocks), inline: true },
-      { name: 'Blocks placed', value: intNum(s.placed_blocks), inline: true },
-      { name: 'Mobs killed', value: intNum(s.mobs_killed), inline: true }
+      { name: '💰 Economy', value: eco, inline: false },
+      { name: '⚔️ Combat', value: combat, inline: false },
+      { name: '⛏️ Activity', value: activity, inline: false }
     ],
-    footer: { text: 'donutsmpstats.com' }
+    footer: { text: 'donutsmpstats.com' },
+    timestamp: new Date().toISOString()
   };
 }
 
