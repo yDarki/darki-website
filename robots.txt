@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://donutsmpstats.com/sitemap.xml
