@@ -175,21 +175,63 @@ async function auctionInfo(token, item) {
     return { status: 200, info: best === null ? null : { unit: best, listing: listing, matches: matches } };
   } catch (e) { return { status: 0, info: null }; }
 }
-function priceEmbed(item, info) {
+async function priceHistory(origin, token, item) {
+  try {
+    const r = await fetch(origin + '/api/donut?history=' + encodeURIComponent(item), { headers: { Authorization: 'Bearer ' + token } });
+    if (!r.ok) return [];
+    const j = await r.json().catch(function () { return null; });
+    return (j && Array.isArray(j.points)) ? j.points : [];
+  } catch (e) { return []; }
+}
+function histStats(points) {
+  const o = (points || []).map(function (p) { return (p && p.o != null) ? p.o : null; }).filter(function (v) { return v != null; });
+  if (!o.length) return null;
+  let sum = 0, mn = o[0], mx = o[0];
+  for (const v of o) { sum += v; if (v < mn) mn = v; if (v > mx) mx = v; }
+  let ls = null;
+  for (let i = points.length - 1; i >= 0; i--) { if (points[i] && points[i].s != null) { ls = points[i].s; break; } }
+  return { cur: o[o.length - 1], avg: sum / o.length, min: mn, max: mx, n: o.length, lastSale: ls };
+}
+function chartUrl(points) {
+  const vals = (points || []).map(function (p) { return (p && p.o != null) ? p.o : null; }).filter(function (v) { return v != null; });
+  if (vals.length < 2) return null;
+  const step = Math.max(1, Math.ceil(vals.length / 30));
+  const d = [];
+  for (let i = 0; i < vals.length; i += step) d.push(Math.round(vals[i]));
+  const last = Math.round(vals[vals.length - 1]);
+  if (d[d.length - 1] !== last) d.push(last);
+  const cfg = { type: 'line', data: { labels: d.map(function () { return ''; }), datasets: [{ data: d, borderColor: '#f5b942', backgroundColor: 'rgba(245,185,66,0.15)', fill: true, pointRadius: 0, borderWidth: 2, lineTension: 0.35 }] }, options: { legend: { display: false }, scales: { xAxes: [{ display: false }], yAxes: [{ ticks: { fontColor: '#8c8ca3' }, gridLines: { color: 'rgba(255,255,255,0.06)' } }] } } };
+  return 'https://quickchart.io/chart?bkg=' + encodeURIComponent('#15151f') + '&w=520&h=240&c=' + encodeURIComponent(JSON.stringify(cfg));
+}
+function priceEmbed(item, info, points) {
   const pretty = prettyItem(item);
-  const table = '```\n'
-    + padCol('Each', abbrNum(Math.round(info.unit)) + ' $', 9) + '\n'
-    + padCol('Listing', info.listing.count + '\u00d7 for ' + abbrNum(info.listing.total) + ' $', 9) + '\n'
-    + padCol('Found', info.matches + ' listing' + (info.matches === 1 ? '' : 's'), 9) + '\n```';
-  return {
+  const hs = (points && points.length) ? histStats(points) : null;
+  let rows, fieldName, img = null;
+  if (hs) {
+    rows = padCol('Current', abbrNum(Math.round(hs.cur)) + ' $', 10)
+      + '\n' + padCol('Average', abbrNum(Math.round(hs.avg)) + ' $', 10)
+      + '\n' + padCol('Min', abbrNum(Math.round(hs.min)) + ' $', 10)
+      + '\n' + padCol('Max', abbrNum(Math.round(hs.max)) + ' $', 10);
+    if (hs.lastSale != null) rows += '\n' + padCol('Last sale', abbrNum(Math.round(hs.lastSale)) + ' $', 10);
+    fieldName = '💰 Price';
+    img = chartUrl(points);
+  } else {
+    rows = padCol('Lowest', abbrNum(Math.round(info.unit)) + ' $', 10)
+      + '\n' + padCol('Listing', info.listing.count + '× for ' + abbrNum(info.listing.total) + ' $', 10)
+      + '\n' + padCol('Found', info.matches + ' listing' + (info.matches === 1 ? '' : 's'), 10);
+    fieldName = '💰 Lowest auction price';
+  }
+  const embed = {
     author: { name: 'DonutSMP Auction Prices' },
     title: pretty,
     url: 'https://donutsmpstats.com/donutprices.html',
-    color: 0xf5b942, // Auction Prices tile colour on the website
-    fields: [ { name: '\ud83d\udcb0 Lowest auction price', value: table, inline: false } ],
-    footer: { text: 'donutsmpstats.com \u00b7 live auction house' },
+    color: 0xf5b942,
+    fields: [ { name: fieldName, value: '```\n' + rows + '\n```', inline: false } ],
+    footer: { text: 'donutsmpstats.com · live auction house' },
     timestamp: new Date().toISOString()
   };
+  if (img) embed.image = { url: img };
+  return embed;
 }
 
 export async function onRequest(context) {
@@ -403,10 +445,15 @@ export async function onRequest(context) {
         try { for (const row of (interaction.data.components || [])) for (const comp of (row.components || [])) if (comp.custom_id === 'pr_item') itemVal = comp.value; } catch (e) {}
         const item = String(itemVal || '').toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
         if (!item) return reply(':warning: Please enter an item name.');
+        const origin = new URL(request.url).origin;
+        const points = await priceHistory(origin, env.DONUT_TOKEN, item);
+        if (points && points.length >= 2) {
+          return json({ type: 4, data: { embeds: [priceEmbed(item, null, points)], flags: 64 } });
+        }
         const res = await auctionInfo(env.DONUT_TOKEN, item);
-        if (res.status === 401 || res.status === 403 || res.status >= 500) return reply(':warning: DonutSMP API is temporarily restricted \u2014 prices can\u2019t load right now.');
-        if (!res.info) return reply(':mag: No auction listings found for **' + prettyItem(item) + '**. Try an exact id like `netherite_ingot` or `elytra`.');
-        return json({ type: 4, data: { embeds: [priceEmbed(item, res.info)], flags: 64 } });
+        if (res.status === 401 || res.status === 403 || res.status >= 500) return reply(':warning: DonutSMP API is temporarily restricted — prices can’t load right now.');
+        if (!res.info) return reply(':mag: No price data for **' + prettyItem(item) + '**. Tracked items with charts: netherite ingot/scrap/block, enchanted golden apple, elytra, dragon head.');
+        return json({ type: 4, data: { embeds: [priceEmbed(item, res.info, null)], flags: 64 } });
       }
       return reply(':grey_question: Unknown form.');
     }
