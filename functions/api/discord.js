@@ -175,12 +175,19 @@ async function auctionInfo(token, item) {
     return { status: 200, info: best === null ? null : { unit: best, listing: listing, matches: matches } };
   } catch (e) { return { status: 0, info: null }; }
 }
-async function priceHistory(origin, token, item) {
+async function priceHistory(kv, item) {
+  if (!kv) return [];
   try {
-    const r = await fetch(origin + '/api/donut?history=' + encodeURIComponent(item), { headers: { Authorization: 'Bearer ' + token } });
-    if (!r.ok) return [];
-    const j = await r.json().catch(function () { return null; });
-    return (j && Array.isArray(j.points)) ? j.points : [];
+    let hh = null;
+    try { const raw = await kv.get('phist'); hh = raw ? JSON.parse(raw) : null; } catch (e) {}
+    let series = (hh && Array.isArray(hh.series)) ? hh.series : [];
+    if (!series.length) { try { const raw2 = await kv.get('series'); if (raw2) series = JSON.parse(raw2) || []; } catch (e) {} }
+    return series.map(function (s) {
+      var v = (s.p && s.p[item] != null) ? s.p[item] : null;
+      if (v == null) return null;
+      if (typeof v === 'number') return { t: s.t, o: v, s: null };
+      return { t: s.t, o: (v.o != null ? v.o : null), s: (v.s != null ? v.s : null) };
+    }).filter(function (x) { return x && (x.o != null || x.s != null); });
   } catch (e) { return []; }
 }
 function histStats(points) {
@@ -463,13 +470,13 @@ export async function onRequest(context) {
       }
       if (cid.indexOf('pr:') === 0) {
         const it = cid.slice(3);
-        const pts = await priceHistory(new URL(request.url).origin, env.DONUT_TOKEN, it);
+        const pts = await priceHistory(kv, it);
         return json({ type: 7, data: { content: '', embeds: [priceEmbed(it, pts, '1d')], components: itemViewComponents(it, '1d') } });
       }
       if (cid.indexOf('prg:') === 0) {
         const parts = cid.split(':');
         const it = parts[1], rg = parts[2] || '1d';
-        const pts = await priceHistory(new URL(request.url).origin, env.DONUT_TOKEN, it);
+        const pts = await priceHistory(kv, it);
         return json({ type: 7, data: { content: '', embeds: [priceEmbed(it, pts, rg)], components: itemViewComponents(it, rg) } });
       }
       
