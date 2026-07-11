@@ -221,7 +221,7 @@ function itemViewComponents(item, range) {
   const r1 = { type: 1, components: ranges.map(function (rg) { return { type: 2, style: rg === range ? 1 : 2, label: rg, custom_id: 'prg:' + item + ':' + rg }; }) };
   const r2 = { type: 1, components: [
     { type: 2, style: 2, label: 'Items', emoji: { name: '🔙' }, custom_id: 'menu:prices' },
-    { type: 5, label: 'Website', emoji: { name: '🌐' }, url: 'https://donutsmpstats.com/donutprices.html' }
+    { type: 2, style: 5, label: 'Website', emoji: { name: '🌐' }, url: 'https://donutsmpstats.com/donutprices.html' }
   ] };
   return [r1, r2];
 }
