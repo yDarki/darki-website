@@ -192,45 +192,81 @@ function histStats(points) {
   for (let i = points.length - 1; i >= 0; i--) { if (points[i] && points[i].s != null) { ls = points[i].s; break; } }
   return { cur: o[o.length - 1], avg: sum / o.length, min: mn, max: mx, n: o.length, lastSale: ls };
 }
-function chartUrl(points) {
-  const vals = (points || []).map(function (p) { return (p && p.o != null) ? p.o : null; }).filter(function (v) { return v != null; });
-  if (vals.length < 2) return null;
-  const step = Math.max(1, Math.ceil(vals.length / 30));
-  const d = [];
-  for (let i = 0; i < vals.length; i += step) d.push(Math.round(vals[i]));
-  const last = Math.round(vals[vals.length - 1]);
-  if (d[d.length - 1] !== last) d.push(last);
-  const cfg = { type: 'line', data: { labels: d.map(function () { return ''; }), datasets: [{ data: d, borderColor: '#f5b942', backgroundColor: 'rgba(245,185,66,0.15)', fill: true, pointRadius: 0, borderWidth: 2, lineTension: 0.35 }] }, options: { legend: { display: false }, scales: { xAxes: [{ display: false }], yAxes: [{ ticks: { fontColor: '#8c8ca3' }, gridLines: { color: 'rgba(255,255,255,0.06)' } }] } } };
-  return 'https://quickchart.io/chart?bkg=' + encodeURIComponent('#15151f') + '&w=520&h=240&c=' + encodeURIComponent(JSON.stringify(cfg));
+const PR_ITEMS = [
+  { id: 'netherite_ingot', label: 'Netherite Ingot', emoji: '🔶' },
+  { id: 'netherite_scrap', label: 'Netherite Scrap', emoji: '🟠' },
+  { id: 'netherite_block', label: 'Netherite Block', emoji: '⬛' },
+  { id: 'enchanted_golden_apple', label: 'God Apple', emoji: '🍏' },
+  { id: 'elytra', label: 'Elytra', emoji: '🪶' },
+  { id: 'dragon_head', label: 'Dragon Head', emoji: '🐉' }
+];
+function itemMenuComponents() {
+  const rows = []; let row = [];
+  PR_ITEMS.forEach(function (it) {
+    row.push({ type: 2, style: 2, label: it.label, emoji: { name: it.emoji }, custom_id: 'pr:' + it.id });
+    if (row.length === 3) { rows.push({ type: 1, components: row }); row = []; }
+  });
+  if (row.length) rows.push({ type: 1, components: row });
+  return rows;
 }
-function priceEmbed(item, info, points) {
+function itemViewComponents(item, range) {
+  const ranges = ['1h', '1d', '1w'];
+  const r1 = { type: 1, components: ranges.map(function (rg) { return { type: 2, style: rg === range ? 1 : 2, label: rg, custom_id: 'prg:' + item + ':' + rg }; }) };
+  const r2 = { type: 1, components: [
+    { type: 2, style: 2, label: 'Items', emoji: { name: '🔙' }, custom_id: 'menu:prices' },
+    { type: 5, label: 'Website', emoji: { name: '🌐' }, url: 'https://donutsmpstats.com/donutprices.html' }
+  ] };
+  return [r1, r2];
+}
+function filterRange(points, range) {
+  if (!points || !points.length) return [];
+  const span = range === '1h' ? 3600e3 : range === '1w' ? 7 * 864e5 : 864e5;
+  const cut = Date.now() - span;
+  const f = points.filter(function (p) { return p && p.t >= cut; });
+  return f.length >= 2 ? f : points;
+}
+function chartUrl(points, range) {
+  const vals = (points || []).map(function (p) { return (p && p.o != null) ? Math.round(p.o) : null; }).filter(function (v) { return v != null; });
+  if (vals.length < 2) return null;
+  const step = Math.max(1, Math.ceil(vals.length / 40));
+  const d = [];
+  for (let i = 0; i < vals.length; i += step) d.push(vals[i]);
+  const last = vals[vals.length - 1];
+  if (d[d.length - 1] !== last) d.push(last);
+  const dataStr = '[' + d.join(',') + ']';
+  const labels = '[' + d.map(function () { return '""'; }).join(',') + ']';
+  const yCb = 'function(v){v=+v;var a=Math.abs(v);if(a>=1e9)return (v/1e9).toFixed(a>=1e10?0:1)+"b";if(a>=1e6)return (v/1e6).toFixed(a>=1e8?0:1)+"m";if(a>=1e3)return (v/1e3).toFixed(0)+"k";return ""+v;}';
+  const cfg = '{type:"line",data:{labels:' + labels + ',datasets:[{data:' + dataStr + ',borderColor:"#f5b942",backgroundColor:"rgba(245,185,66,0.15)",fill:true,pointRadius:2,pointBackgroundColor:"#f5b942",borderWidth:2,lineTension:0.35}]},options:{legend:{display:false},scales:{xAxes:[{display:false}],yAxes:[{ticks:{fontColor:"#8c8ca3",callback:' + yCb + '},gridLines:{color:"rgba(255,255,255,0.06)"}}]}}}';
+  return 'https://quickchart.io/chart?bkg=' + encodeURIComponent('#15151f') + '&w=520&h=240&c=' + encodeURIComponent(cfg);
+}
+function priceEmbed(item, points, range) {
   const pretty = prettyItem(item);
-  const hs = (points && points.length) ? histStats(points) : null;
-  let rows, fieldName, img = null;
+  const fp = filterRange(points, range);
+  const use = fp.length ? fp : (points || []);
+  const hs = histStats(use);
+  const rangeLabel = range === '1h' ? 'last hour' : (range === '1w' ? 'last week' : 'last day');
+  let rows;
   if (hs) {
     rows = padCol('Current', abbrNum(Math.round(hs.cur)) + ' $', 10)
       + '\n' + padCol('Average', abbrNum(Math.round(hs.avg)) + ' $', 10)
       + '\n' + padCol('Min', abbrNum(Math.round(hs.min)) + ' $', 10)
       + '\n' + padCol('Max', abbrNum(Math.round(hs.max)) + ' $', 10);
     if (hs.lastSale != null) rows += '\n' + padCol('Last sale', abbrNum(Math.round(hs.lastSale)) + ' $', 10);
-    fieldName = '💰 Price';
-    img = chartUrl(points);
   } else {
-    rows = padCol('Lowest', abbrNum(Math.round(info.unit)) + ' $', 10)
-      + '\n' + padCol('Listing', info.listing.count + '× for ' + abbrNum(info.listing.total) + ' $', 10)
-      + '\n' + padCol('Found', info.matches + ' listing' + (info.matches === 1 ? '' : 's'), 10);
-    fieldName = '💰 Lowest auction price';
+    rows = 'No price history yet.';
   }
   const embed = {
     author: { name: 'DonutSMP Auction Prices' },
     title: pretty,
     url: 'https://donutsmpstats.com/donutprices.html',
     color: 0xf5b942,
-    fields: [ { name: fieldName, value: '```\n' + rows + '\n```', inline: false } ],
+    description: 'Price · ' + rangeLabel,
+    fields: [ { name: '💰 Price', value: '```\n' + rows + '\n```', inline: false } ],
     footer: { text: 'donutsmpstats.com · live auction house' },
     timestamp: new Date().toISOString()
   };
-  if (img) embed.image = { url: img };
+  const cu = chartUrl(use, range);
+  if (cu) embed.image = { url: cu };
   return embed;
 }
 
@@ -423,8 +459,20 @@ export async function onRequest(context) {
         return json({ type: 9, data: { custom_id: 'ps_modal', title: 'Player Stats', components: [ { type: 1, components: [ { type: 4, custom_id: 'ps_name', label: 'Minecraft username', style: 1, min_length: 1, max_length: 16, required: true, placeholder: 'e.g. Ikeacpvp' } ] } ] } });
       }
       if (cid === 'menu:prices') {
-        return json({ type: 9, data: { custom_id: 'pr_modal', title: 'Auction Prices', components: [ { type: 1, components: [ { type: 4, custom_id: 'pr_item', label: 'Item name', style: 1, min_length: 1, max_length: 40, required: true, placeholder: 'e.g. netherite_ingot, elytra, dragon_head' } ] } ] } });
+        return json({ type: 7, data: { content: '**Auction Prices** — pick an item:', embeds: [], components: itemMenuComponents() } });
       }
+      if (cid.indexOf('pr:') === 0) {
+        const it = cid.slice(3);
+        const pts = await priceHistory(new URL(request.url).origin, env.DONUT_TOKEN, it);
+        return json({ type: 7, data: { content: '', embeds: [priceEmbed(it, pts, '1d')], components: itemViewComponents(it, '1d') } });
+      }
+      if (cid.indexOf('prg:') === 0) {
+        const parts = cid.split(':');
+        const it = parts[1], rg = parts[2] || '1d';
+        const pts = await priceHistory(new URL(request.url).origin, env.DONUT_TOKEN, it);
+        return json({ type: 7, data: { content: '', embeds: [priceEmbed(it, pts, rg)], components: itemViewComponents(it, rg) } });
+      }
+      
       return json({ type: 4, data: { content: ':grey_question: Unknown button.', flags: 64 } });
     }
     if (interaction.type === 5) { // MODAL_SUBMIT
@@ -439,21 +487,6 @@ export async function onRequest(context) {
         const s = res.stats;
         if (!s || s.money === undefined) return reply(':mag: Player **' + nameVal + '** not found, or no data.');
         return json({ type: 4, data: { embeds: [statsEmbed(nameVal, s)], flags: 64 } });
-      }
-      if (cid === 'pr_modal') {
-        let itemVal = '';
-        try { for (const row of (interaction.data.components || [])) for (const comp of (row.components || [])) if (comp.custom_id === 'pr_item') itemVal = comp.value; } catch (e) {}
-        const item = String(itemVal || '').toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-        if (!item) return reply(':warning: Please enter an item name.');
-        const origin = new URL(request.url).origin;
-        const points = await priceHistory(origin, env.DONUT_TOKEN, item);
-        if (points && points.length >= 2) {
-          return json({ type: 4, data: { embeds: [priceEmbed(item, null, points)], flags: 64 } });
-        }
-        const res = await auctionInfo(env.DONUT_TOKEN, item);
-        if (res.status === 401 || res.status === 403 || res.status >= 500) return reply(':warning: DonutSMP API is temporarily restricted — prices can’t load right now.');
-        if (!res.info) return reply(':mag: No price data for **' + prettyItem(item) + '**. Tracked items with charts: netherite ingot/scrap/block, enchanted golden apple, elytra, dragon head.');
-        return json({ type: 4, data: { embeds: [priceEmbed(item, res.info, null)], flags: 64 } });
       }
       return reply(':grey_question: Unknown form.');
     }
