@@ -341,7 +341,7 @@ export async function onRequest(context) {
       ((interaction.data && interaction.data.options) || []).forEach(o => { opts[o.name] = o.value; });
 
       if (name === 'menu') {
-        return json({ type: 4, data: { content: '**DonutSMP Stats** — pick a tool:', flags: 64, components: [ { type: 1, components: [ { type: 2, style: 1, label: 'Player Stats', custom_id: 'menu:playerstats' }, { type: 2, style: 1, label: 'Auction Prices', custom_id: 'menu:prices' } ] } ] } });
+        return json({ type: 4, data: { flags: 64, embeds: [ { title: '🍩 DonutSMP Stats', description: 'Pick a tool below to get started.', color: 0xe8a44c, footer: { text: 'donutsmpstats.com' } } ], components: [ { type: 1, components: [ { type: 2, style: 1, label: 'Player Stats', emoji: { name: '📊' }, custom_id: 'menu:playerstats' }, { type: 2, style: 3, label: 'Auction Prices', emoji: { name: '💰' }, custom_id: 'menu:prices' } ] } ] } });
       }
 
       if (!kv) return reply(':warning: Storage not configured. Try again later.');
