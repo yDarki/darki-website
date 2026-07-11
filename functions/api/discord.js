@@ -233,18 +233,26 @@ function filterRange(points, range) {
   return f.length >= 2 ? f : points;
 }
 function chartUrl(points, range) {
-  const vals = (points || []).map(function (p) { return (p && p.o != null) ? Math.round(p.o) : null; }).filter(function (v) { return v != null; });
-  if (vals.length < 2) return null;
-  const step = Math.max(1, Math.ceil(vals.length / 40));
-  const d = [];
-  for (let i = 0; i < vals.length; i += step) d.push(vals[i]);
-  const last = vals[vals.length - 1];
-  if (d[d.length - 1] !== last) d.push(last);
-  const dataStr = '[' + d.join(',') + ']';
-  const labels = '[' + d.map(function () { return '""'; }).join(',') + ']';
+  const pts = (points || []).filter(function (p) { return p && p.o != null; });
+  if (pts.length < 2) return null;
+  const target = range === '1h' ? 40 : 34;
+  const step = Math.max(1, Math.ceil(pts.length / target));
+  const sel = [];
+  for (let i = 0; i < pts.length; i += step) sel.push(pts[i]);
+  if (sel[sel.length - 1] !== pts[pts.length - 1]) sel.push(pts[pts.length - 1]);
+  const wk = range === '1w';
+  function pad(n) { return ('0' + n).slice(-2); }
+  function lab(p) { const dt = new Date(p.t); return wk ? (pad(dt.getUTCDate()) + '.' + pad(dt.getUTCMonth() + 1)) : (pad(dt.getUTCHours()) + ':' + pad(dt.getUTCMinutes())); }
+  const dataStr = '[' + sel.map(function (p) { return Math.round(p.o); }).join(',') + ']';
   const yCb = 'function(v){v=+v;var a=Math.abs(v);if(a>=1e9)return (v/1e9).toFixed(a>=1e10?0:1)+"b";if(a>=1e6)return (v/1e6).toFixed(a>=1e8?0:1)+"m";if(a>=1e3)return (v/1e3).toFixed(0)+"k";return ""+v;}';
-  const cfg = '{type:"line",data:{labels:' + labels + ',datasets:[{data:' + dataStr + ',borderColor:"#f5b942",backgroundColor:"rgba(245,185,66,0.15)",fill:true,pointRadius:2,pointBackgroundColor:"#f5b942",borderWidth:2,lineTension:0.35}]},options:{legend:{display:false},scales:{xAxes:[{display:false}],yAxes:[{ticks:{fontColor:"#8c8ca3",callback:' + yCb + '},gridLines:{color:"rgba(255,255,255,0.06)"}}]}}}';
-  return 'https://quickchart.io/chart?bkg=' + encodeURIComponent('#15151f') + '&w=520&h=240&c=' + encodeURIComponent(cfg);
+  const pr = sel.length > 55 ? 0 : 2;
+  function make(labels) {
+    const cfg = '{type:"line",data:{labels:' + labels + ',datasets:[{data:' + dataStr + ',borderColor:"#f5b942",backgroundColor:"rgba(245,185,66,0.15)",fill:true,pointRadius:' + pr + ',pointBackgroundColor:"#f5b942",borderWidth:2,lineTension:0.35}]},options:{legend:{display:false},scales:{xAxes:[{ticks:{fontColor:"#8c8ca3",maxTicksLimit:5,maxRotation:0,autoSkip:true},gridLines:{display:false}}],yAxes:[{ticks:{fontColor:"#8c8ca3",callback:' + yCb + '},gridLines:{color:"rgba(255,255,255,0.06)"}}]}}}';
+    return 'https://quickchart.io/chart?bkg=' + encodeURIComponent('#15151f') + '&w=560&h=260&c=' + encodeURIComponent(cfg);
+  }
+  const withLabels = make('[' + sel.map(function (p) { return '"' + lab(p) + '"'; }).join(',') + ']');
+  if (withLabels.length <= 1900) return withLabels;
+  return make('[' + sel.map(function () { return '""'; }).join(',') + ']');
 }
 function priceEmbed(item, points, range) {
   const pretty = prettyItem(item);
@@ -252,6 +260,8 @@ function priceEmbed(item, points, range) {
   const use = fp.length ? fp : (points || []);
   const hs = histStats(use);
   const rangeLabel = range === '1h' ? 'last hour' : (range === '1w' ? 'last week' : 'last day');
+  const ovals = use.map(function (p) { return (p && p.o != null) ? p.o : null; }).filter(function (v) { return v != null; });
+  const chg = (ovals.length >= 2 && ovals[0] > 0) ? ((ovals[ovals.length - 1] - ovals[0]) / ovals[0] * 100) : null;
   let rows;
   if (hs) {
     rows = padCol('Current', abbrNum(Math.round(hs.cur)) + ' $', 10)
@@ -262,12 +272,14 @@ function priceEmbed(item, points, range) {
   } else {
     rows = 'No price history yet.';
   }
+  let desc = 'Price · ' + rangeLabel;
+  if (chg != null) desc += '  ·  ' + (chg >= 0 ? '▲ +' : '▼ ') + Math.abs(chg).toFixed(1) + '%';
   const embed = {
     author: { name: 'DonutSMP Auction Prices' },
     title: pretty,
     url: 'https://donutsmpstats.com/donutprices.html',
     color: 0xf5b942,
-    description: 'Price · ' + rangeLabel,
+    description: desc,
     fields: [ { name: '💰 Price', value: '```\n' + rows + '\n```', inline: false } ],
     footer: { text: 'donutsmpstats.com · live auction house' },
     timestamp: new Date().toISOString()
