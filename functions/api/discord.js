@@ -216,14 +216,19 @@ function itemMenuComponents() {
   if (row.length) rows.push({ type: 1, components: row });
   return rows;
 }
-function itemViewComponents(item, range) {
+function itemViewComponents(item, range, metric) {
+  const mt = metric === 's' ? 's' : 'o';
   const ranges = ['1h', '1d', '1w'];
-  const r1 = { type: 1, components: ranges.map(function (rg) { return { type: 2, style: rg === range ? 1 : 2, label: rg, custom_id: 'prg:' + item + ':' + rg }; }) };
+  const r1 = { type: 1, components: ranges.map(function (rg) { return { type: 2, style: rg === range ? 1 : 2, label: rg, custom_id: 'prg:' + item + ':' + rg + ':' + mt }; }) };
   const r2 = { type: 1, components: [
+    { type: 2, style: mt === 'o' ? 1 : 2, label: 'Offers', emoji: { name: '💰' }, custom_id: 'prg:' + item + ':' + range + ':o' },
+    { type: 2, style: mt === 's' ? 1 : 2, label: 'Sales', emoji: { name: '🧾' }, custom_id: 'prg:' + item + ':' + range + ':s' }
+  ] };
+  const r3 = { type: 1, components: [
     { type: 2, style: 2, label: 'Items', emoji: { name: '🔙' }, custom_id: 'menu:prices' },
     { type: 2, style: 5, label: 'Website', emoji: { name: '🌐' }, url: 'https://donutsmpstats.com/donutprices.html' }
   ] };
-  return [r1, r2];
+  return [r1, r2, r3];
 }
 function filterRange(points, range) {
   if (!points || !points.length) return [];
@@ -254,25 +259,32 @@ function chartUrl(points, range) {
   if (withLabels.length <= 1900) return withLabels;
   return make('[' + sel.map(function () { return '""'; }).join(',') + ']');
 }
-function priceEmbed(item, points, range) {
+function priceEmbed(item, points, range, metric) {
+  const mt = metric === 's' ? 's' : 'o';
   const pretty = prettyItem(item);
-  const fp = filterRange(points, range);
-  const use = fp.length ? fp : (points || []);
+  const fpAll = filterRange(points, range);
+  const baseAll = fpAll.length ? fpAll : (points || []);
+  const use = baseAll.map(function (p) {
+    const v = mt === 's' ? ((p && p.s != null) ? p.s : null) : ((p && p.o != null) ? p.o : null);
+    if (v == null) return null;
+    return { t: p.t, o: v, s: (p && p.s != null ? p.s : null) };
+  }).filter(function (x) { return x; });
   const hs = histStats(use);
   const rangeLabel = range === '1h' ? 'last hour' : (range === '1w' ? 'last week' : 'last day');
-  const ovals = use.map(function (p) { return (p && p.o != null) ? p.o : null; }).filter(function (v) { return v != null; });
+  const isSales = mt === 's';
+  const ovals = use.map(function (p) { return p.o; });
   const chg = (ovals.length >= 2 && ovals[0] > 0) ? ((ovals[ovals.length - 1] - ovals[0]) / ovals[0] * 100) : null;
   let rows;
   if (hs) {
-    rows = padCol('Current', abbrNum(Math.round(hs.cur)) + ' $', 10)
+    rows = padCol(isSales ? 'Latest' : 'Current', abbrNum(Math.round(hs.cur)) + ' $', 10)
       + '\n' + padCol('Average', abbrNum(Math.round(hs.avg)) + ' $', 10)
       + '\n' + padCol('Min', abbrNum(Math.round(hs.min)) + ' $', 10)
       + '\n' + padCol('Max', abbrNum(Math.round(hs.max)) + ' $', 10);
-    if (hs.lastSale != null) rows += '\n' + padCol('Last sale', abbrNum(Math.round(hs.lastSale)) + ' $', 10);
+    if (!isSales && hs.lastSale != null) rows += '\n' + padCol('Last sale', abbrNum(Math.round(hs.lastSale)) + ' $', 10);
   } else {
-    rows = 'No price history yet.';
+    rows = isSales ? 'No sales recorded in this range.' : 'No price history yet.';
   }
-  let desc = 'Price · ' + rangeLabel;
+  let desc = (isSales ? 'Sales' : 'Price') + ' · ' + rangeLabel;
   if (chg != null) desc += '  ·  ' + (chg >= 0 ? '▲ +' : '▼ ') + Math.abs(chg).toFixed(1) + '%';
   const embed = {
     author: { name: 'DonutSMP Auction Prices' },
@@ -280,7 +292,7 @@ function priceEmbed(item, points, range) {
     url: 'https://donutsmpstats.com/donutprices.html',
     color: 0xf5b942,
     description: desc,
-    fields: [ { name: '💰 Price', value: '```\n' + rows + '\n```', inline: false } ],
+    fields: [ { name: (isSales ? '🧾 Sales' : '💰 Price'), value: '```\n' + rows + '\n```', inline: false } ],
     footer: { text: 'donutsmpstats.com · live auction house' },
     timestamp: new Date().toISOString()
   };
@@ -483,13 +495,13 @@ export async function onRequest(context) {
       if (cid.indexOf('pr:') === 0) {
         const it = cid.slice(3);
         const pts = await priceHistory(kv, it);
-        return json({ type: 7, data: { content: '', embeds: [priceEmbed(it, pts, '1d')], components: itemViewComponents(it, '1d') } });
+        return json({ type: 7, data: { content: '', embeds: [priceEmbed(it, pts, '1d', 'o')], components: itemViewComponents(it, '1d', 'o') } });
       }
       if (cid.indexOf('prg:') === 0) {
         const parts = cid.split(':');
-        const it = parts[1], rg = parts[2] || '1d';
+        const it = parts[1], rg = parts[2] || '1d', mt = parts[3] || 'o';
         const pts = await priceHistory(kv, it);
-        return json({ type: 7, data: { content: '', embeds: [priceEmbed(it, pts, rg)], components: itemViewComponents(it, rg) } });
+        return json({ type: 7, data: { content: '', embeds: [priceEmbed(it, pts, rg, mt)], components: itemViewComponents(it, rg, mt) } });
       }
       
       return json({ type: 4, data: { content: ':grey_question: Unknown button.', flags: 64 } });
