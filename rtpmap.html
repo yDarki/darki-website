@@ -434,9 +434,10 @@
     function updateCoordFind(){
       if(!cfOut) return;
       var xv=cfX.value.trim(), zv=cfZ.value.trim();
-      if(xv===''||zv===''){ cfOut.textContent=''; return; }
+      if(xv===''||zv===''){ cfOut.textContent=''; pickedLoc=null; drawPickMarker(); return; }
       var x=Number(xv), z=Number(zv);
-      if(!isFinite(x)||!isFinite(z)){ cfOut.textContent=''; return; }
+      if(!isFinite(x)||!isFinite(z)){ cfOut.textContent=''; pickedLoc=null; drawPickMarker(); return; }
+      pickedLoc={x:Math.round(x),z:Math.round(z)}; drawPickMarker();
       if(!screenPts.length){ cfOut.innerHTML='<span class="cf-muted">No RTP points in the '+DIMLABEL[curDim]+' yet.</span>'; return; }
       var n=nearestToXZ(x,z);
       cfOut.innerHTML='Nearest '+DIMLABEL[curDim]+' point: <b>'+fmt(n.dist)+'</b> blocks — '+(n.q.n?n.q.n+' ':'')+'at '+n.q.x+', '+n.q.z;
