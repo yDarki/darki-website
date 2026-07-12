@@ -60,6 +60,10 @@
   .mg-delta.up{color:var(--green)} .mg-delta.down{color:#ff6b6b}
   .mg-body{position:relative}
   .mg-hint{color:var(--muted);font-size:13px;padding:22px 6px;text-align:center}
+    .mg-ranges{display:flex;gap:4px}
+    .mg-rbtn{background:var(--card-2);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;padding:3px 10px;border-radius:8px;cursor:pointer;transition:.15s}
+    .mg-rbtn:hover{color:var(--text)}
+    .mg-rbtn.active{background:var(--green);border-color:var(--green);color:#0a0a0f}
   .mgsvg{width:100%;height:auto;display:block}
   .mgsvg .axis{stroke:rgba(255,255,255,.08)}
   .mgsvg .axlbl{fill:var(--muted);font-size:11px}
@@ -105,27 +109,51 @@
       var Y=function(v){return pt+(1-(v-sc.min)/(sc.max-sc.min))*yh;};
       var g='';
       for(var gv=sc.min; gv<=sc.max+1e-6; gv+=sc.step){ var y=Y(gv); g+='<line class="axis" x1="'+pl+'" y1="'+y.toFixed(1)+'" x2="'+(W-pr)+'" y2="'+y.toFixed(1)+'"/>'; g+='<text class="axlbl" x="'+(pl-8)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end">'+abbr(gv)+'</text>'; }
-      function dl(t){ var d=new Date(t); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); }
+      function dl(t){ var d=new Date(t); if(t1-t0<=21600000){ return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); } return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); }
       [t0,(t0+t1)/2,t1].forEach(function(t,i){ var x=X(t); var anc=i===0?'start':(i===2?'end':'middle'); g+='<text class="axlbl" x="'+x.toFixed(1)+'" y="'+(H-8)+'" text-anchor="'+anc+'">'+dl(t)+'</text>'; });
       var line=pts.map(function(p,i){return (i?'L':'M')+X(p.t).toFixed(1)+' '+Y(p.m).toFixed(1);}).join(' ');
       var area=line+' L'+X(t1).toFixed(1)+' '+Y(sc.min).toFixed(1)+' L'+X(t0).toFixed(1)+' '+Y(sc.min).toFixed(1)+' Z';
       var dots=pts.map(function(p){ return '<circle class="dot" cx="'+X(p.t).toFixed(1)+'" cy="'+Y(p.m).toFixed(1)+'" r="2.4"><title>'+new Date(p.t).toLocaleString('en-GB')+' \u2014 '+de(p.m)+' $</title></circle>'; }).join('');
       return '<svg class="mgsvg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet"><path class="area" d="'+area+'"/><path class="line" d="'+line+'"/>'+g+dots+'</svg>';
     }
+    var _mgData=null, _mgRange='1d';
+    function mgDownsample(pts, range){
+      var now=Date.now();
+      var span=range==='1h'?3600000:(range==='1w'?604800000:86400000);
+      var win=pts.filter(function(p){return p.t>=now-span;});
+      if(win.length<2){ win=pts.slice(-Math.min(pts.length,12)); }
+      if(range==='1h') return win;
+      var byHour={};
+      win.forEach(function(p){ byHour[Math.floor(p.t/3600000)]=p; });
+      return Object.keys(byHour).sort(function(a,b){return a-b;}).map(function(h){return byHour[h];});
+    }
+    function mgRangeBtns(active){
+      return ['1h','1d','1w'].map(function(r){ return '<button type="button" class="mg-rbtn'+(r===active?' active':'')+'" data-r="'+r+'">'+r+'</button>'; }).join('');
+    }
+    function mgDraw(range){
+      _mgRange=range;
+      var wrap=document.getElementById('mgwrap'); if(!wrap||!_mgData) return;
+      var pts=mgDownsample(_mgData, range);
+      var now=wrap.querySelector('.mg-now'), body=wrap.querySelector('.mg-body');
+      wrap.querySelectorAll('.mg-rbtn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-r')===range); });
+      if(pts.length<2){ if(body) body.innerHTML='<div class="mg-hint">Not enough data in this range yet.</div>'; if(now) now.innerHTML=''; return; }
+      var first=pts[0].m, last=pts[pts.length-1].m; var pct=first?((last-first)/Math.abs(first)*100):0;
+      var cls=pct>=0?'up':'down', sign=pct>=0?'+':'';
+      if(now) now.innerHTML='Now <b>'+de(last)+' $</b> &middot; <span class="mg-delta '+cls+'">'+sign+pct.toFixed(1)+'%</span>';
+      if(body) body.innerHTML=moneyChartSVG(pts);
+    }
     async function renderMoney(nm){
       var wrap=document.getElementById('mgwrap'); if(!wrap) return;
-      var saved=trackIndex(nm)>=0;
-      
-      wrap.innerHTML='<div class="mg-head"><span class="mg-title">Money history</span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
+      wrap.innerHTML='<div class="mg-head"><span class="mg-title">Money history</span><span class="mg-now"></span><span class="mg-ranges"></span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
       try{
         var r=await fetch(API+'?money='+encodeURIComponent(nm)); var j=await r.json();
         var pts=(j.points||[]).filter(function(p){return p&&isFinite(p.m);});
+        _mgData=pts;
         var body=wrap.querySelector('.mg-body');
-        if(pts.length<2){ body.innerHTML='<div class="mg-hint">Not enough data yet &mdash; the graph appears once a few hourly snapshots have been collected.</div>'; return; }
-        var first=pts[0].m, last=pts[pts.length-1].m; var pct=first?((last-first)/Math.abs(first)*100):0;
-        var cls=pct>=0?'up':'down'; var sign=pct>=0?'+':'';
-        wrap.querySelector('.mg-head').innerHTML='<span class="mg-title">Money history</span><span class="mg-now">Now <b>'+de(last)+' $</b> &middot; <span class="mg-delta '+cls+'">'+sign+pct.toFixed(1)+'%</span></span>';
-        body.innerHTML=moneyChartSVG(pts);
+        if(pts.length<2){ body.innerHTML='<div class="mg-hint">Not enough data yet &mdash; the graph fills in as this player gets searched over time.</div>'; return; }
+        wrap.querySelector('.mg-ranges').innerHTML=mgRangeBtns(_mgRange);
+        wrap.querySelectorAll('.mg-rbtn').forEach(function(b){ b.addEventListener('click', function(){ mgDraw(b.getAttribute('data-r')); }); });
+        mgDraw(_mgRange);
       }catch(e){ var b2=wrap.querySelector('.mg-body'); if(b2) b2.innerHTML='<div class="mg-hint">Could not load money history.</div>'; }
     }
     function card(lbl,val,sub,cls){ return '<div class="stat"><div class="lbl">'+lbl+'</div><div class="val '+(cls||'')+'">'+val+'</div>'+(sub?'<div class="sub2">'+sub+'</div>':'')+'</div>'; }
