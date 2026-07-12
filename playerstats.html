@@ -128,7 +128,7 @@
       return Object.keys(byHour).sort(function(a,b){return a-b;}).map(function(h){return byHour[h];});
     }
     function mgRangeBtns(active){
-      return ['1h','1d','1w'].map(function(r){ return '<button type="button" class="mg-rbtn'+(r===active?' active':'')+'" data-r="'+r+'">'+r+'</button>'; }).join('');
+      return ['1d','1w'].map(function(r){ return '<button type="button" class="mg-rbtn'+(r===active?' active':'')+'" data-r="'+r+'">'+r+'</button>'; }).join('');
     }
     function mgDraw(range){
       _mgRange=range;
