@@ -69,6 +69,8 @@
     .mg-trackbtn:disabled{opacity:.6;cursor:default}
     .mg-untrack{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;padding:3px 10px;border-radius:8px;cursor:pointer;margin-left:8px}
     .mg-untrack:hover{color:#ff6b6b;border-color:#ff6b6b}
+    .mg-titlewrap{display:inline-flex;align-items:baseline;gap:8px}
+    .mg-count{font-size:11px;font-weight:700;color:var(--muted);background:var(--card-2);border:1px solid var(--border);padding:2px 8px;border-radius:999px;white-space:nowrap}
   .mgsvg{width:100%;height:auto;display:block}
   .mgsvg .axis{stroke:rgba(255,255,255,.08)}
   .mgsvg .axlbl{fill:var(--muted);font-size:11px}
@@ -155,15 +157,17 @@
       var wrap=document.getElementById('mgwrap'); if(!wrap) return;
       var lc=nm.toLowerCase();
       var isT=trackedList().indexOf(lc)>=0;
+      var n=trackedList().length;
+      var cnt='<span class="mg-count" title="Players you track (max 3)">'+n+'/3 tracked</span>';
       if(!isT){
-        var full=trackedList().length>=3;
-        wrap.innerHTML='<div class="mg-head"><span class="mg-title">Money history</span></div><div class="mg-body"><div class="mg-hint">'+(full?'You already track 3 players &mdash; untrack one on their page to free a slot.':'<button type="button" class="mg-trackbtn" id="mgTrack">&plus; Track this player</button><div style="margin-top:8px;font-size:12px">Track to record this player\'s money over time (up to 3 players).</div>')+'</div></div>';
+        var full=n>=3;
+        wrap.innerHTML='<div class="mg-head"><span class="mg-titlewrap"><span class="mg-title">Money history</span>'+cnt+'</span></div><div class="mg-body"><div class="mg-hint">'+(full?'You already track 3 players &mdash; untrack one on their page to free a slot.':'<button type="button" class="mg-trackbtn" id="mgTrack">&plus; Track this player</button><div style="margin-top:8px;font-size:12px">Track to record this player\'s money over time (up to 3 players).</div>')+'</div></div>';
         var tb=document.getElementById('mgTrack');
         if(tb){ tb.addEventListener('click', async function(){ tb.disabled=true; tb.textContent='Tracking…'; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)); var j=await r.json(); if(j&&j.ok){ addTracked(lc); renderMoney(nm); } else { tb.disabled=false; tb.innerHTML='&plus; Track this player'; if(j&&j.error==='not-found'){ var h=wrap.querySelector('.mg-hint'); if(h) h.insertAdjacentHTML('beforeend','<div style="margin-top:6px;color:#ff6b6b">Player not found.</div>'); } } }catch(e){ tb.disabled=false; tb.innerHTML='&plus; Track this player'; } }); }
         return;
       }
       fetch(API+'?track='+encodeURIComponent(nm)).catch(function(){});
-      wrap.innerHTML='<div class="mg-head"><span class="mg-title">Money history</span><span class="mg-now"></span><span class="mg-ranges"></span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
+      wrap.innerHTML='<div class="mg-head"><span class="mg-titlewrap"><span class="mg-title">Money history</span>'+cnt+'</span><span class="mg-now"></span><span class="mg-ranges"></span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
       try{
         var r=await fetch(API+'?money='+encodeURIComponent(nm)); var j=await r.json();
         var pts=(j.points||[]).filter(function(p){return p&&isFinite(p.m);});
