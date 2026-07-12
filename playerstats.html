@@ -156,30 +156,31 @@
     async function renderMoney(nm){
       var wrap=document.getElementById('mgwrap'); if(!wrap) return;
       var lc=nm.toLowerCase();
+      wrap.innerHTML='<div class="mg-head"><span class="mg-title">Money history</span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
       var isT=trackedList().indexOf(lc)>=0;
+      var pts=[];
+      try{ var r=await fetch(API+'?money='+encodeURIComponent(nm)); var j=await r.json(); pts=(j.points||[]).filter(function(p){return p&&isFinite(p.m);}); }catch(e){}
+      _mgData=pts;
+      if(isT){ fetch(API+'?track='+encodeURIComponent(nm)).catch(function(){}); }
       var n=trackedList().length;
       var cnt='<span class="mg-count" title="Players you track (max 3)">'+n+'/3 tracked</span>';
-      if(!isT){
+      function wireTrack(){ var tb=document.getElementById('mgTrack'); if(!tb) return; tb.addEventListener('click', async function(){ if(trackedList().length>=3){ return; } tb.disabled=true; tb.textContent='Tracking…'; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)); var j=await r.json(); if(j&&j.ok){ addTracked(lc); renderMoney(nm); } else { tb.disabled=false; tb.innerHTML='&plus; Track this player'; if(j&&j.error==='not-found'){ var h=wrap.querySelector('.mg-hint'); if(h) h.insertAdjacentHTML('beforeend','<div style="margin-top:6px;color:#ff6b6b">Player not found.</div>'); } } }catch(e){ tb.disabled=false; tb.innerHTML='&plus; Track this player'; } }); }
+      if(!isT && pts.length<1){
         var full=n>=3;
-        wrap.innerHTML='<div class="mg-head"><span class="mg-titlewrap"><span class="mg-title">Money history</span>'+cnt+'</span></div><div class="mg-body"><div class="mg-hint">'+(full?'You already track 3 players &mdash; untrack one on their page to free a slot.':'<button type="button" class="mg-trackbtn" id="mgTrack">&plus; Track this player</button><div style="margin-top:8px;font-size:12px">Track to record this player\'s money over time (up to 3 players).</div>')+'</div></div>';
-        var tb=document.getElementById('mgTrack');
-        if(tb){ tb.addEventListener('click', async function(){ tb.disabled=true; tb.textContent='Tracking…'; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)); var j=await r.json(); if(j&&j.ok){ addTracked(lc); renderMoney(nm); } else { tb.disabled=false; tb.innerHTML='&plus; Track this player'; if(j&&j.error==='not-found'){ var h=wrap.querySelector('.mg-hint'); if(h) h.insertAdjacentHTML('beforeend','<div style="margin-top:6px;color:#ff6b6b">Player not found.</div>'); } } }catch(e){ tb.disabled=false; tb.innerHTML='&plus; Track this player'; } }); }
+        wrap.innerHTML='<div class="mg-head"><span class="mg-titlewrap"><span class="mg-title">Money history</span>'+cnt+'</span></div><div class="mg-body"><div class="mg-hint">'+(full?'You already track 3 players &mdash; untrack one to free a slot.':'<button type="button" class="mg-trackbtn" id="mgTrack">&plus; Track this player</button><div style="margin-top:8px;font-size:12px">Track to record this player\'s money over time (up to 3 players).</div>')+'</div></div>';
+        wireTrack();
         return;
       }
-      fetch(API+'?track='+encodeURIComponent(nm)).catch(function(){});
+      var actionBtn = isT ? '<button type="button" class="mg-untrack" id="mgUntrack" title="Stop tracking this player">Untrack</button>' : (n<3 ? '<button type="button" class="mg-untrack" id="mgTrackAdd" title="Track this player (keep it updating)">&plus; Track</button>' : '');
       wrap.innerHTML='<div class="mg-head"><span class="mg-titlewrap"><span class="mg-title">Money history</span>'+cnt+'</span><span class="mg-now"></span><span class="mg-ranges"></span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
-      try{
-        var r=await fetch(API+'?money='+encodeURIComponent(nm)); var j=await r.json();
-        var pts=(j.points||[]).filter(function(p){return p&&isFinite(p.m);});
-        _mgData=pts;
-        var rng=wrap.querySelector('.mg-ranges');
-        rng.innerHTML=mgRangeBtns(_mgRange)+'<button type="button" class="mg-untrack" id="mgUntrack" title="Stop tracking this player">Untrack</button>';
-        wrap.querySelectorAll('.mg-rbtn').forEach(function(b){ b.addEventListener('click', function(){ mgDraw(b.getAttribute('data-r')); }); });
-        var ub=document.getElementById('mgUntrack'); if(ub) ub.addEventListener('click', function(){ removeTracked(lc); renderMoney(nm); });
-        var body=wrap.querySelector('.mg-body');
-        if(pts.length<2){ body.innerHTML='<div class="mg-hint">Tracking started &mdash; the graph fills in hourly, check back soon.</div>'; return; }
-        mgDraw(_mgRange);
-      }catch(e){ var b2=wrap.querySelector('.mg-body'); if(b2) b2.innerHTML='<div class="mg-hint">Could not load money history.</div>'; }
+      var rng=wrap.querySelector('.mg-ranges');
+      rng.innerHTML=mgRangeBtns(_mgRange)+actionBtn;
+      wrap.querySelectorAll('.mg-rbtn').forEach(function(b){ b.addEventListener('click', function(){ mgDraw(b.getAttribute('data-r')); }); });
+      var ub=document.getElementById('mgUntrack'); if(ub) ub.addEventListener('click', function(){ removeTracked(lc); renderMoney(nm); });
+      var ta=document.getElementById('mgTrackAdd'); if(ta) ta.addEventListener('click', async function(){ if(trackedList().length>=3) return; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)); var j=await r.json(); if(j&&j.ok){ addTracked(lc); renderMoney(nm); } }catch(e){} });
+      var body=wrap.querySelector('.mg-body');
+      if(pts.length<2){ body.innerHTML='<div class="mg-hint">'+(isT?'Tracking started &mdash; the graph fills in hourly, check back soon.':'Not enough data yet.')+'</div>'; return; }
+      mgDraw(_mgRange);
     }
     function card(lbl,val,sub,cls){ return '<div class="stat"><div class="lbl">'+lbl+'</div><div class="val '+(cls||'')+'">'+val+'</div>'+(sub?'<div class="sub2">'+sub+'</div>':'')+'</div>'; }
     async function search(force){
