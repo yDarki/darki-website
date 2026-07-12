@@ -301,6 +301,14 @@ function priceEmbed(item, points, range, metric) {
   return embed;
 }
 
+async function editItemView(token, kv, item, range, metric) {
+  try {
+    const pts = await priceHistory(kv, item);
+    const payload = JSON.stringify({ content: '', embeds: [priceEmbed(item, pts, range, metric)], components: itemViewComponents(item, range, metric) });
+    await fetch('https://discord.com/api/v10/webhooks/' + APP_ID + '/' + token + '/messages/@original', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: payload });
+  } catch (e) {}
+}
+
 export async function onRequest(context) {
   const request = context.request;
   const env = context.env || {};
@@ -494,14 +502,14 @@ export async function onRequest(context) {
       }
       if (cid.indexOf('pr:') === 0) {
         const it = cid.slice(3);
-        const pts = await priceHistory(kv, it);
-        return json({ type: 7, data: { content: '', embeds: [priceEmbed(it, pts, '1d', 'o')], components: itemViewComponents(it, '1d', 'o') } });
+        context.waitUntil(editItemView(interaction.token, kv, it, '1d', 'o'));
+        return json({ type: 6 });
       }
       if (cid.indexOf('prg:') === 0) {
         const parts = cid.split(':');
         const it = parts[1], rg = parts[2] || '1d', mt = parts[3] || 'o';
-        const pts = await priceHistory(kv, it);
-        return json({ type: 7, data: { content: '', embeds: [priceEmbed(it, pts, rg, mt)], components: itemViewComponents(it, rg, mt) } });
+        context.waitUntil(editItemView(interaction.token, kv, it, rg, mt));
+        return json({ type: 6 });
       }
       
       return json({ type: 4, data: { content: ':grey_question: Unknown button.', flags: 64 } });
