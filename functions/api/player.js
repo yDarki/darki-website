@@ -57,11 +57,11 @@ export async function onRequest(context) {
         if (!db[nl]) { try { const legacy = await kv.get('pmh:' + nl); if (legacy) db[nl] = JSON.parse(legacy) || []; } catch (e) {} }
         let pts = Array.isArray(db[nl]) ? db[nl] : [];
         const now = Date.now();
-        const hb = Math.floor(now / 3600000);
-        const lastHb = pts.length ? Math.floor(pts[pts.length - 1].t / 3600000) : -1;
+        const hb = Math.floor(now / 600000);
+        const lastHb = pts.length ? Math.floor(pts[pts.length - 1].t / 600000) : -1;
         if (hb !== lastHb) {
           pts.push({ t: now, m: Math.round(Number(out.stats.money)) });
-          if (pts.length > 600) pts = pts.slice(pts.length - 600);
+          if (pts.length > 1080) pts = pts.slice(pts.length - 1080);
           db[nl] = pts;
           const names = Object.keys(db);
           if (names.length > 40) {
