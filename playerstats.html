@@ -26,6 +26,7 @@
   .phead img{width:64px;height:64px;border-radius:12px;image-rendering:pixelated;background:var(--card-2)}
   .phead .nm{font-size:24px;font-weight:800}
   .phead .meta{color:var(--muted);font-size:13px;margin-top:3px}
+  .phead .meta .on{color:var(--green);font-weight:700}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
   .stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
   .stat .lbl{color:var(--muted);font-size:12px;letter-spacing:1px;text-transform:uppercase;font-weight:600}
@@ -233,7 +234,7 @@
         const money=+s.money, shards=+s.shards, kills=+s.kills, deaths=+s.deaths;
         const kd= deaths>0 ? (kills/deaths).toFixed(2) : String(kills);
         const lk=j.lookup||{};
-        const online = (lk.location) ? ('Online · '+lk.location) : ((lk.username||lk.rank) ? 'Online' : 'Offline');
+        const _isOn=!!(lk.location||lk.username||lk.rank); const online = _isOn ? ('<span class="on">Online</span>'+(lk.location?(' · '+lk.location):'')) : 'Offline';
         let h='<div class="phead"><img src="https://minotar.net/helm/'+encodeURIComponent(name)+'/64.png" alt=""><div><div class="nm">'+name+'</div><div class="meta">'+online+' · updated '+new Date().toLocaleTimeString('de-DE')+'</div></div></div>';
         h+='<div class="grid">';
         h+=card('Money', abbr(money), de(money)+' $', 'money');
