@@ -115,7 +115,7 @@
     async function renderMoney(nm){
       var wrap=document.getElementById('mgwrap'); if(!wrap) return;
       var saved=trackIndex(nm)>=0;
-      if(!saved){ wrap.innerHTML='<div class="mg-head"><span class="mg-title">Money history</span></div><div class="mg-body"><div class="mg-hint">Save this player to start tracking their money over time.</div></div>'; return; }
+      
       wrap.innerHTML='<div class="mg-head"><span class="mg-title">Money history</span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
       try{
         var r=await fetch(API+'?money='+encodeURIComponent(nm)); var j=await r.json();
