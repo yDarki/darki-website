@@ -18,3 +18,8 @@ jobs:
       - name: Read spawner prices from Discord
         run: |
           curl -s -m 30 -H "Authorization: Bearer ${{ secrets.DONUT_TOKEN }}" "https://donutsmpstats.com/api/spawners?cron=1&t=$(date +%s)" -o /dev/null
+      - name: Sample tracked player money (hourly)
+        run: |
+          if [ "$(date +%M)" -lt 10 ]; then
+            curl -s -m 60 -H "Authorization: Bearer ${{ secrets.DONUT_TOKEN }}" "https://donutsmpstats.com/api/player?sample=1&_=$(date +%s)" -o /dev/null
+          fi
