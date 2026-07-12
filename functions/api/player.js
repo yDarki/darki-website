@@ -58,8 +58,16 @@ export async function onRequest(context) {
       db[nl] = entry; active.push(nl);
     }
     active.sort(function (a, b) { return ((db[b].last) || 0) - ((db[a].last) || 0); });
-    const toSample = active.slice(0, 45);
-    const results = await Promise.all(toSample.map(function (nl) {
+    const due = active.filter(function (nl) {
+      const pts = db[nl].pts || [];
+      const lastHb = pts.length ? Math.floor(pts[pts.length - 1].t / 3600000) : -1;
+      return hb !== lastHb;
+    }).slice(0, 45);
+    if (due.length === 0) {
+      if (evicted > 0) await kv.put('mtrack', JSON.stringify(db));
+      return new Response(JSON.stringify({ ok: true, tracked: Object.keys(db).length, sampled: 0, evicted: evicted, skipped: true }), { status: 200, headers: scors });
+    }
+    const results = await Promise.all(due.map(function (nl) {
       return fetch(base + 'stats/' + encodeURIComponent(nl), { headers: auth })
         .then(function (r) { return r.json().catch(function () { return null; }); })
         .then(function (j) { const s = (j && j.result !== undefined) ? j.result : j; return { nl: nl, s: s }; })
