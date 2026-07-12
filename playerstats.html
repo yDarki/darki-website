@@ -64,6 +64,11 @@
     .mg-rbtn{background:var(--card-2);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;padding:3px 10px;border-radius:8px;cursor:pointer;transition:.15s}
     .mg-rbtn:hover{color:var(--text)}
     .mg-rbtn.active{background:var(--green);border-color:var(--green);color:#0a0a0f}
+    .mg-trackbtn{background:var(--green);border:none;color:#0a0a0f;font-size:13px;font-weight:800;padding:8px 16px;border-radius:9px;cursor:pointer;transition:.15s}
+    .mg-trackbtn:hover{filter:brightness(1.08)}
+    .mg-trackbtn:disabled{opacity:.6;cursor:default}
+    .mg-untrack{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:700;padding:3px 10px;border-radius:8px;cursor:pointer;margin-left:8px}
+    .mg-untrack:hover{color:#ff6b6b;border-color:#ff6b6b}
   .mgsvg{width:100%;height:auto;display:block}
   .mgsvg .axis{stroke:rgba(255,255,255,.08)}
   .mgsvg .axlbl{fill:var(--muted);font-size:11px}
@@ -142,17 +147,33 @@
       if(now) now.innerHTML='Now <b>'+de(last)+' $</b> &middot; <span class="mg-delta '+cls+'">'+sign+pct.toFixed(1)+'%</span>';
       if(body) body.innerHTML=moneyChartSVG(pts);
     }
+    function trackedList(){ try{ return JSON.parse(localStorage.getItem('donutTracked')||'[]'); }catch(e){ return []; } }
+    function saveTracked(a){ try{ localStorage.setItem('donutTracked', JSON.stringify(a.slice(0,3))); }catch(e){} }
+    function addTracked(lc){ var a=trackedList(); if(a.indexOf(lc)<0 && a.length<3){ a.push(lc); saveTracked(a); } }
+    function removeTracked(lc){ saveTracked(trackedList().filter(function(x){return x!==lc;})); }
     async function renderMoney(nm){
       var wrap=document.getElementById('mgwrap'); if(!wrap) return;
+      var lc=nm.toLowerCase();
+      var isT=trackedList().indexOf(lc)>=0;
+      if(!isT){
+        var full=trackedList().length>=3;
+        wrap.innerHTML='<div class="mg-head"><span class="mg-title">Money history</span></div><div class="mg-body"><div class="mg-hint">'+(full?'You already track 3 players &mdash; untrack one on their page to free a slot.':'<button type="button" class="mg-trackbtn" id="mgTrack">&plus; Track this player</button><div style="margin-top:8px;font-size:12px">Track to record this player\'s money over time (up to 3 players).</div>')+'</div></div>';
+        var tb=document.getElementById('mgTrack');
+        if(tb){ tb.addEventListener('click', async function(){ tb.disabled=true; tb.textContent='Tracking…'; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)); var j=await r.json(); if(j&&j.ok){ addTracked(lc); renderMoney(nm); } else { tb.disabled=false; tb.innerHTML='&plus; Track this player'; if(j&&j.error==='not-found'){ var h=wrap.querySelector('.mg-hint'); if(h) h.insertAdjacentHTML('beforeend','<div style="margin-top:6px;color:#ff6b6b">Player not found.</div>'); } } }catch(e){ tb.disabled=false; tb.innerHTML='&plus; Track this player'; } }); }
+        return;
+      }
+      fetch(API+'?track='+encodeURIComponent(nm)).catch(function(){});
       wrap.innerHTML='<div class="mg-head"><span class="mg-title">Money history</span><span class="mg-now"></span><span class="mg-ranges"></span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
       try{
         var r=await fetch(API+'?money='+encodeURIComponent(nm)); var j=await r.json();
         var pts=(j.points||[]).filter(function(p){return p&&isFinite(p.m);});
         _mgData=pts;
-        var body=wrap.querySelector('.mg-body');
-        if(pts.length<2){ body.innerHTML='<div class="mg-hint">Not enough data yet &mdash; the graph fills in as this player gets searched over time.</div>'; return; }
-        wrap.querySelector('.mg-ranges').innerHTML=mgRangeBtns(_mgRange);
+        var rng=wrap.querySelector('.mg-ranges');
+        rng.innerHTML=mgRangeBtns(_mgRange)+'<button type="button" class="mg-untrack" id="mgUntrack" title="Stop tracking this player">Untrack</button>';
         wrap.querySelectorAll('.mg-rbtn').forEach(function(b){ b.addEventListener('click', function(){ mgDraw(b.getAttribute('data-r')); }); });
+        var ub=document.getElementById('mgUntrack'); if(ub) ub.addEventListener('click', function(){ removeTracked(lc); renderMoney(nm); });
+        var body=wrap.querySelector('.mg-body');
+        if(pts.length<2){ body.innerHTML='<div class="mg-hint">Tracking started &mdash; the graph fills in hourly, check back soon.</div>'; return; }
         mgDraw(_mgRange);
       }catch(e){ var b2=wrap.querySelector('.mg-body'); if(b2) b2.innerHTML='<div class="mg-hint">Could not load money history.</div>'; }
     }
@@ -162,7 +183,7 @@
       const busyBtn=force?refreshEl:goEl;
       out.innerHTML='<div class="msg"><div class="spinner"></div>Loading stats…</div>'; busyBtn.disabled=true;
       try{
-        const _ti=trackIndex(name); const _tr=(_ti>=0&&_ti<3)?'&track=1':''; const r=await fetch(API+'?name='+encodeURIComponent(name)+_tr+(force?'&_='+Date.now():'')); const j=await r.json();
+        const _ti=trackIndex(name); const _tr=(_ti>=0&&_ti<3)?'':''; const r=await fetch(API+'?name='+encodeURIComponent(name)+_tr+(force?'&_='+Date.now():'')); const j=await r.json();
         const s=j.stats;
         if(j.statsStatus&&(j.statsStatus>=500||j.statsStatus===401||j.statsStatus===403)){ document.getElementById('apiDown').classList.add('show'); out.innerHTML='<div class="msg err"><b>DonutSMP API access restricted</b><br><small>DonutSMP has temporarily restricted API access, so stats can&rsquo;t load right now. This is on their side, not the site.</small></div>'; return; }
         if(!s || s.money===undefined){ out.innerHTML='<div class="msg err">Player "'+name+'" not found, or no data.</div>'; return; }
