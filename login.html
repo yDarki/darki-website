@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Login · DonutSMP Stats</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="stylesheet" href="/theme.css" />
+<style>
+  .wrap{position:relative;z-index:1;max-width:440px;margin:0 auto;padding:70px 22px 60px;text-align:center}
+  h1{font-size:clamp(28px,6vw,42px);font-weight:800;letter-spacing:-1px;filter:drop-shadow(0 0 22px rgba(255,255,255,.13))}
+  h1 img{width:40px;height:40px;vertical-align:-8px;margin-right:8px}
+  h1 .grad{background:linear-gradient(105deg,#ffffff 0%,#d7dae6 28%,#9197b0 50%,#d7dae6 72%,#ffffff 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shine 5s ease-in-out infinite alternate}
+  .sub{color:var(--muted);font-size:14.5px;margin-top:10px;line-height:1.5}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:24px 20px;margin-top:28px}
+  .btn{display:block;width:100%;border:none;border-radius:12px;padding:14px 18px;font-size:15px;font-weight:800;cursor:pointer;transition:.14s;line-height:1.15}
+  .btn.primary{background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#0a0a0c}
+  .btn.primary:hover{transform:translateY(-2px)}
+  .btn.primary .via{display:block;font-size:11px;font-weight:700;letter-spacing:.4px;opacity:.78;margin-top:3px}
+  .btn.ghost{background:#1a1a28;color:#f3f3f7;border:1px solid rgba(255,255,255,.14);margin-top:12px}
+  .btn.ghost:hover{background:#22222e}
+  .step{display:none}
+  .step.show{display:block}
+  .lead{color:var(--muted);font-size:14px;margin-bottom:2px}
+  .cmd{font-family:ui-monospace,Consolas,monospace;font-size:15px;background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);word-break:break-all;margin-top:10px}
+  .cmd b{color:var(--accent)}
+  .code{font-size:32px;font-weight:800;letter-spacing:8px;color:var(--green);font-variant-numeric:tabular-nums;background:var(--card-2);border:1px dashed var(--border);border-radius:12px;padding:14px 8px;margin:14px 0 6px;user-select:all}
+  .waiting{display:flex;align-items:center;gap:10px;justify-content:center;color:var(--muted);font-size:13.5px;margin-top:12px}
+  .spin{width:18px;height:18px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin 1s linear infinite;flex-shrink:0}
+  .err{color:#ff6b6b;font-size:13px;margin-top:10px;display:none}
+  .cancel{display:inline-block;margin-top:16px;color:var(--muted);font-size:13px;cursor:pointer;text-decoration:underline}
+  .foot{color:var(--muted);font-size:12px;margin-top:20px}
+</style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="wrap">
+    <h1><img src="/favicon.svg" alt=""><span class="grad">DonutSMP Stats</span></h1>
+    <p class="sub">Melde dich mit deinem Minecraft-Account an, um Spieler zu tracken — oder stöbere als Gast.</p>
+    <div class="card">
+      <div id="choose">
+        <button class="btn primary" id="loginBtn">Login<span class="via">via Minecraft</span></button>
+        <button class="btn ghost" id="guestBtn">Enter as guest</button>
+      </div>
+      <div class="step" id="step">
+        <div class="lead">Schick in Minecraft diese Nachricht:</div>
+        <div class="cmd">/msg <b id="collector">Vortex_xy</b> <b id="codeInline">…</b></div>
+        <div class="code" id="code">••••••</div>
+        <div class="waiting" id="waiting"><span class="spin"></span><span>Warte auf deinen Whisper in Minecraft…</span></div>
+        <div class="err" id="err"></div>
+        <span class="cancel" id="cancel">Abbrechen</span>
+      </div>
+    </div>
+    <div class="foot">Der Login beweist nur, dass dir der Account gehört. Kein Passwort, keine Kosten.</div>
+  </div>
+  <script>
+    var API='/api/access';
+    function el(id){ return document.getElementById(id); }
+    function rndTok(){ var a=new Uint8Array(24); if(window.crypto&&crypto.getRandomValues){ crypto.getRandomValues(a); } else { for(var i=0;i<a.length;i++) a[i]=Math.floor(Math.random()*256); } return Array.prototype.map.call(a,function(b){return b.toString(16).padStart(2,'0');}).join(''); }
+    function toDash(){ location.href='index.html'; }
+    var token=null, poll=null;
+    el('guestBtn').addEventListener('click', function(){ try{ localStorage.setItem('donutGuest','1'); }catch(e){} toDash(); });
+    el('loginBtn').addEventListener('click', startLogin);
+    el('cancel').addEventListener('click', function(){ if(poll) clearInterval(poll); el('step').classList.remove('show'); el('choose').style.display=''; el('waiting').style.display='flex'; el('err').style.display='none'; });
+    async function startLogin(){
+      el('choose').style.display='none'; el('step').classList.add('show'); el('err').style.display='none'; el('waiting').style.display='flex';
+      token=rndTok();
+      try{
+        var r=await fetch(API+'?login=start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token})});
+        var j=await r.json();
+        if(!j||!j.code){ showErr('Konnte keinen Code erstellen. Bitte erneut versuchen.'); return; }
+        el('code').textContent=j.code; el('codeInline').textContent=j.code;
+        if(j.collector) el('collector').textContent=j.collector;
+        poll=setInterval(check, 2500); check();
+      }catch(e){ showErr('Netzwerkfehler. Bitte erneut versuchen.'); }
+    }
+    async function check(){
+      if(!token) return;
+      try{
+        var r=await fetch(API+'?check&token='+encodeURIComponent(token)+'&_='+Date.now(),{cache:'no-store'});
+        var j=await r.json();
+        if(j&&j.access){
+          clearInterval(poll);
+          try{ localStorage.setItem('acToken', token); if(j.ign) localStorage.setItem('donutIgn', j.ign); localStorage.removeItem('donutGuest'); }catch(e){}
+          toDash();
+        }
+      }catch(e){}
+    }
+    function showErr(m){ el('err').textContent=m; el('err').style.display='block'; el('waiting').style.display='none'; }
+  </script>
+</body>
+</html>
