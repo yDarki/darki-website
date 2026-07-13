@@ -146,7 +146,7 @@ export async function onRequest(context) {
     if (!dup) { points.push({ n: name, x: x, z: z, t: t, d: dim }); added++; }
   }
 
-  { var PER_DIM = 5000; var byd = {}; for (var _i = 0; _i < points.length; _i++) { var _p = points[_i]; var _d = _p.d || 'overworld'; (byd[_d] = byd[_d] || []).push(_p); } var merged = []; for (var _k in byd) { var _a = byd[_k]; if (_a.length > PER_DIM) _a = _a.slice(_a.length - PER_DIM); for (var _j = 0; _j < _a.length; _j++) merged.push(_a[_j]); } merged.sort(function (a, b) { return (a.t || 0) - (b.t || 0); }); points = merged; }
+  { var CAPS = { overworld: 15000, nether: 5000, end: 5000 }; var byd = {}; for (var _i = 0; _i < points.length; _i++) { var _p = points[_i]; var _d = _p.d || 'overworld'; (byd[_d] = byd[_d] || []).push(_p); } var merged = []; for (var _k in byd) { var PER_DIM = CAPS[_k] || 5000; var _a = byd[_k]; if (_a.length > PER_DIM) _a = _a.slice(_a.length - PER_DIM); for (var _j = 0; _j < _a.length; _j++) merged.push(_a[_j]); } merged.sort(function (a, b) { return (a.t || 0) - (b.t || 0); }); points = merged; }
 
   // Daily write budget: cap RTP KV writes so they can't exhaust the shared account write limit (prices + money history).
   const RTP_DAILY_WRITE_CAP = 500;
