@@ -60,8 +60,9 @@ export async function onRequest(context) {
     active.sort(function (a, b) { return ((db[b].last) || 0) - ((db[a].last) || 0); });
     const due = active.filter(function (nl) {
       const pts = db[nl].pts || [];
-      const lastHb = pts.length ? Math.floor(pts[pts.length - 1].t / 3600000) : -1;
-      return hb !== lastHb;
+      const bs = db[nl].fav ? 900000 : 3600000;
+      const lastB = pts.length ? Math.floor(pts[pts.length - 1].t / bs) : -1;
+      return Math.floor(now / bs) !== lastB;
     }).slice(0, 45);
     if (due.length === 0) {
       if (evicted > 0) await kv.put('mtrack', JSON.stringify(db));
@@ -78,8 +79,9 @@ export async function onRequest(context) {
       const s = it.s;
       if (!s || !isFinite(Number(s.money))) continue;
       const entry = db[it.nl]; let pts = entry.pts || [];
-      const lastHb = pts.length ? Math.floor(pts[pts.length - 1].t / 3600000) : -1;
-      if (hb !== lastHb) { pts.push({ t: now, m: Math.round(Number(s.money)) }); if (pts.length > 400) pts = pts.slice(pts.length - 400); entry.pts = pts; db[it.nl] = entry; sampled++; }
+      const bs = db[it.nl].fav ? 900000 : 3600000;
+      const lastB = pts.length ? Math.floor(pts[pts.length - 1].t / bs) : -1;
+      if (Math.floor(now / bs) !== lastB) { pts.push({ t: now, m: Math.round(Number(s.money)) }); if (pts.length > 400) pts = pts.slice(pts.length - 400); entry.pts = pts; db[it.nl] = entry; sampled++; }
     }
     await kv.put('mtrack', JSON.stringify(db));
     return new Response(JSON.stringify({ ok: true, tracked: Object.keys(db).length, sampled: sampled, evicted: evicted }), { status: 200, headers: scors });
@@ -90,6 +92,11 @@ export async function onRequest(context) {
     const tn = String(url.searchParams.get('track')).trim().toLowerCase();
     const kv = env.PRICE_HISTORY;
     if (!kv || !tn) { return new Response(JSON.stringify({ ok: false }), { status: 200, headers: tcors }); }
+    const _acc = request.headers.get('X-Access-Token') || '';
+    let _ign = null;
+    try { if (_acc) { const _r = await kv.get('ac:token:' + _acc); if (_r) { const _t = JSON.parse(_r); if (_t && _t.expires > Date.now() && _t.ign) _ign = _t.ign; } } } catch (e) {}
+    if (!_ign) { return new Response(JSON.stringify({ ok: false, error: 'login-required' }), { status: 401, headers: tcors }); }
+    const favParam = url.searchParams.get('fav');
     let db = {}; try { db = JSON.parse((await kv.get('mtrack')) || '{}') || {}; } catch (e) { db = {}; }
     let entry = db[tn];
     if (Array.isArray(entry)) entry = { last: 0, pts: entry };
@@ -107,6 +114,7 @@ export async function onRequest(context) {
       } catch (e) { return new Response(JSON.stringify({ ok: false, error: 'fetch' }), { status: 200, headers: tcors }); }
       db[tn] = entry;
     }
+    if (favParam !== null && db[tn]) { db[tn].fav = (favParam === '1' || favParam === 'on' || favParam === 'true'); }
     const names = Object.keys(db);
     if (names.length > 40) {
       names.sort(function (a, b) { return ((db[b] && db[b].last) || 0) - ((db[a] && db[a].last) || 0); });
@@ -114,7 +122,7 @@ export async function onRequest(context) {
       db = keep;
     }
     await kv.put('mtrack', JSON.stringify(db));
-    return new Response(JSON.stringify({ ok: true, tracked: Object.keys(db).length }), { status: 200, headers: tcors });
+    return new Response(JSON.stringify({ ok: true, tracked: Object.keys(db).length, fav: !!(db[tn] && db[tn].fav) }), { status: 200, headers: tcors });
   }
 
   const name = (url.searchParams.get('name') || '').trim();
