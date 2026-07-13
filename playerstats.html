@@ -171,7 +171,7 @@
       if(range==='1h') return win;
       var byHour={};
       win.forEach(function(p){ byHour[Math.floor(p.t/3600000)]=p; });
-      return Object.keys(byHour).sort(function(a,b){return a-b;}).map(function(h){return byHour[h];});
+      return Object.keys(byHour).sort(function(a,b){return a-b;}).map(function(h){ return { t: (+h)*3600000, m: byHour[h].m }; });
     }
     function mgRangeBtns(active){
       return ['1d','1w'].map(function(r){ return '<button type="button" class="mg-rbtn'+(r===active?' active':'')+'" data-r="'+r+'">'+r+'</button>'; }).join('');
