@@ -79,12 +79,10 @@
   <div class="wrap">
     <a class="back" href="/index.html">← Dashboard</a>
     <h1><span class="grad">RTP Map</span></h1>
-    <p class="sub">Where players land when they /rtp on DonutSMP — one point per teleport. Pick a dimension; Overworld points are coloured by region (Miep's map).</p>
+    <p class="sub">Where players land when they /rtp on DonutSMP — one point per teleport. Points are coloured by region (Miep's map).</p>
     <div class="panel">
       <div class="dims" id="dims">
         <button type="button" data-d="overworld" class="seg on">Overworld</button>
-        <button type="button" data-d="nether" class="seg">Nether</button>
-        <button type="button" data-d="end" class="seg">End</button>
       </div>
       <div class="bar">
         <div class="stat"><b id="count">–</b> points</div>
@@ -156,7 +154,7 @@
     function svgFromWorld(x,z){ if(curDim==='overworld'){ return { sx:(z-ORIGIN)/EXTENT*S, sy:((ORIGIN+EXTENT)-x)/EXTENT*S }; } return { sx:(z-plainZ0)/(plainZ1-plainZ0)*S, sy:(plainX1-x)/(plainX1-plainX0)*S }; }
     function drawPickMarker(){ if(typeof smallMap!=='undefined' && smallMap) smallMap.applyVB(); }
 
-    function loadDim(){ try{ var d=localStorage.getItem('rtpDim'); return (d==='nether'||d==='end')?d:'overworld'; }catch(e){ return 'overworld'; } }
+    function loadDim(){ try{ var d=localStorage.getItem('rtpDim'); return 'overworld'; }catch(e){ return 'overworld'; } }
     function saveDim(d){ try{ localStorage.setItem('rtpDim', d); }catch(e){} }
     var curDim=loadDim();
     var DIMCOLOR={ nether:'#ff6b4a', end:'#c084fc' };
