@@ -113,6 +113,35 @@ export async function onRequest(context) {
     return json({ ok: true, ign: ign, expires: rec.expires });
   }
 
+  // ---- login via Minecraft whisper: browser starts and gets a short code ----
+  // POST ?login=start { token } -> { code }. Browser keeps `token` secret, shows the user
+  // `code` to whisper (/msg <collector> <code>), then polls ?check&token= until logged in.
+  if (url.searchParams.get('login') === 'start') {
+    let body = {}; try { body = await request.json(); } catch (e) {}
+    const token = String(body.token || '').trim();
+    if (!token || token.length < 8) return json({ error: 'bad-token' }, 400);
+    const ALPH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) code += ALPH.charAt(Math.floor(Math.random() * ALPH.length));
+    await kv.put('ac:login:' + code, JSON.stringify({ token: token, exp: Date.now() + 10 * 60000 }), { expirationTtl: 900 });
+    const _lcfg = await getConfig(kv);
+    return json({ ok: true, code: code, collector: _lcfg.collector });
+  }
+
+  // ---- collector reports a login whisper: POST ?login=report { ign, code } (admin) ----
+  if (url.searchParams.get('login') === 'report') {
+    if (!isAdmin()) return json({ error: 'unauthorized' }, 401);
+    let body = {}; try { body = await request.json(); } catch (e) {}
+    const ign = String(body.ign || '').trim();
+    const code = String(body.code || '').trim().toUpperCase();
+    if (!ign || !code) return json({ error: 'missing' }, 400);
+    const rec = await getJSON(kv, 'ac:login:' + code, null);
+    if (!rec || !(rec.exp > Date.now())) return json({ ok: false, reason: 'no-pending' });
+    await kv.put('ac:token:' + rec.token, JSON.stringify({ expires: Date.now() + 30 * DAY, ign: ign, login: true }));
+    await kv.delete('ac:login:' + code);
+    return json({ ok: true, ign: ign });
+  }
+
   // ---- browser checks its access: GET ?check&token= ----
   if (url.searchParams.has('check')) {
     const token = url.searchParams.get('token') || '';
