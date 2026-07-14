@@ -180,5 +180,43 @@
   fetch(A+'?check&token='+encodeURIComponent(tok)+'&_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){ if(j&&j.access&&j.ign){ try{localStorage.setItem('donutIgn',j.ign);}catch(e){} logged(j.ign); } else { try{localStorage.removeItem('acToken');}catch(e){} guest(); } }).catch(function(){ if(ign) logged(ign); else guest(); });
 })();
 </script>
+
+<!--dash-center-fix-->
+<style id="dashCenterFix">
+.metarow{display:grid !important;grid-template-columns:1fr auto 1fr;align-items:center;}
+#authChip{grid-column:1;justify-self:start;position:relative;cursor:pointer;}
+.metarow > .chip.pc-center{grid-column:2;}
+#acChip{display:none !important;}
+.ac-pop{position:absolute;top:calc(100% + 9px);left:50%;transform:translateX(-50%) translateY(4px);background:#12141a;border:1px solid #2a2f3a;border-radius:10px;padding:7px 12px;white-space:nowrap;font-size:12.5px;color:#c9cdd6;box-shadow:0 10px 28px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .14s ease,transform .14s ease;z-index:60;}
+.ac-pop b{color:#fff;}
+.ac-pop::before{content:"";position:absolute;bottom:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-bottom-color:#2a2f3a;}
+#authChip:hover .ac-pop,#authChip.pop-open .ac-pop{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+</style>
+<script>
+(function(){
+  function pcChip(){var pn=document.getElementById('pcNum');return pn?pn.closest('.chip'):null;}
+  function center(){var c=pcChip();if(c)c.classList.add('pc-center');}
+  function buildPop(){
+    var a=document.getElementById('authChip');
+    if(!a||getComputedStyle(a).display==='none')return false;
+    if(a.querySelector('.ac-pop'))return true;
+    var t=document.getElementById('acTxt');
+    if(!t||!t.textContent.trim())return false;
+    var pop=document.createElement('span');pop.className='ac-pop';pop.innerHTML=t.innerHTML;
+    a.appendChild(pop);return true;
+  }
+  function init(){
+    center();
+    var a=document.getElementById('authChip');
+    if(a){
+      a.addEventListener('click',function(e){if(e.target.closest('.ac-lo'))return;e.stopPropagation();buildPop();a.classList.toggle('pop-open');});
+      a.addEventListener('mouseenter',buildPop);
+      document.addEventListener('click',function(e){if(!e.target.closest('#authChip'))a.classList.remove('pop-open');});
+    }
+    var n=0,iv=setInterval(function(){center();if(buildPop()||++n>40)clearInterval(iv);},250);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
 </body>
 </html>
