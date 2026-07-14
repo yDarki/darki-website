@@ -174,10 +174,11 @@
   var chip=document.getElementById('authChip'); if(!chip) return;
   var A='/api/access';
   function guest(){ chip.innerHTML='<span style="opacity:.65">Gast</span> &middot; <a href="login.html" style="color:var(--accent);font-weight:700;text-decoration:none">Einloggen</a>'; chip.style.display=''; }
+  function friendChip(){ chip.innerHTML='<span style="opacity:.65">Freundes-Zugang</span>'; chip.style.display=''; }
   function logged(ign){ chip.innerHTML='<img src="https://minotar.net/helm/'+encodeURIComponent(ign)+'/18.png" alt="" style="width:18px;height:18px;border-radius:4px;image-rendering:pixelated;vertical-align:-4px"> angemeldet als <b style="color:var(--text)">'+ign+'</b> <span class="ac-lo" title="Abmelden" style="margin-left:5px;cursor:pointer;opacity:.55">&#9211;</span>'; chip.style.display=''; var lo=chip.querySelector('.ac-lo'); if(lo) lo.addEventListener('click',function(){ try{localStorage.removeItem('acToken');localStorage.removeItem('donutIgn');localStorage.setItem('donutGuest','1');}catch(e){} location.reload(); }); }
   var tok=null,ign=null; try{tok=localStorage.getItem('acToken');ign=localStorage.getItem('donutIgn');}catch(e){}
   if(!tok){ guest(); return; }
-  fetch(A+'?check&token='+encodeURIComponent(tok)+'&_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){ if(j&&j.access&&j.ign){ try{localStorage.setItem('donutIgn',j.ign);}catch(e){} logged(j.ign); } else { try{localStorage.removeItem('acToken');}catch(e){} guest(); } }).catch(function(){ if(ign) logged(ign); else guest(); });
+  fetch(A+'?check&token='+encodeURIComponent(tok)+'&_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){ if(j&&j.access){ if(j.ign){ try{localStorage.setItem('donutIgn',j.ign);}catch(e){} logged(j.ign); } else { friendChip(); } } else { try{localStorage.removeItem('acToken');}catch(e){} guest(); } }).catch(function(){ if(ign) logged(ign); else guest(); });
 })();
 </script>
 
