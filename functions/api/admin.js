@@ -135,6 +135,11 @@ export async function onRequest(context) {
             } else {
               o.durationDays = Math.max(1, Math.floor(Number(o.durationDays) || 1));
             }
+            if (o.max === undefined || o.max === null || o.max === '') {
+              delete o.max;
+            } else {
+              o.max = Math.max(1, Math.floor(Number(o.max) || 1));
+            }
             return o;
           }
           return null;
