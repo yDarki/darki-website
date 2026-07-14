@@ -66,16 +66,18 @@
   function renderUnlock(cfg){
     app.innerHTML=
       '<div id="offbanner"></div>'+
-      '<div class="step" id="paystep"><label>1 &middot; Pay in Minecraft</label>'+
+      '<div class="step"><label>Your Minecraft name</label>'+
+        '<div class="row"><input id="ign" placeholder="Minecraft name" autocomplete="off"></div></div>'+
+      '<div class="step" id="paystep"><label>Option 1 &middot; Pay in Minecraft</label>'+
         '<div class="note">Pay <span class="price">'+abbr(cfg.price)+'</span> ('+num(cfg.price)+' $) to <span class="pill">'+cfg.collector+'</span> for <b>'+cfg.durationDays+' days</b> of access:</div>'+
         '<div class="row"><span class="pill" style="font-size:15px">/pay '+cfg.collector+' '+cfg.price+'</span></div></div>'+
-      '<div class="step"><label>2 &middot; Unlock</label>'+
-        '<div class="note">Enter your Minecraft name (the one you paid with):</div>'+
-        '<div class="row"><input id="ign" placeholder="Minecraft name" autocomplete="off"><button class="btn" id="claim">Unlock</button></div>'+
+      '<div class="step">'+
+        '<div class="note">Once you have paid with the name above, click:</div>'+
+        '<div class="row"><button class="btn" id="claim">I paid &mdash; unlock</button></div>'+
         '<div class="err" id="err1"></div></div>'+
       '<div class="divider">or</div>'+
-      '<div class="step" style="margin-bottom:0"><label>Friend code</label>'+
-        '<div class="row"><input id="code" placeholder="Code" autocomplete="off"><button class="btn ghost" id="redeem">Redeem</button></div>'+
+      '<div class="step" style="margin-bottom:0"><label>Option 2 &middot; Friend code</label>'+
+        '<div class="row"><input id="code" placeholder="Code" autocomplete="off"><button class="btn ghost" id="redeem">Use code</button></div>'+
         '<div class="err" id="err2"></div></div>';
 
     var offb=document.getElementById('offbanner');
@@ -113,11 +115,12 @@
     var redeemBtn=document.getElementById('redeem'), codeEl=document.getElementById('code'), err2=document.getElementById('err2');
     async function tryRedeem(){
       var code=codeEl.value.trim(); if(!code){ err2.textContent='Please enter a code.'; return; }
+      var _ign=(document.getElementById('ign')&&document.getElementById('ign').value.trim())||''; if(!_ign){ err2.textContent='Please enter your Minecraft name above first.'; return; }
       redeemBtn.disabled=true; err2.textContent='';
       try{
-        var r=await fetch(API+'?redeem=1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code,token:TK})});
+        var r=await fetch(API+'?redeem=1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code,token:TK,ign:_ign})});
         var j=await r.json();
-        if(j.access) renderGranted(j); else err2.textContent = (j.error==='code-full') ? 'This code has already been used.' : 'Invalid code.';
+        if(j.access){ try{ if(_ign) localStorage.setItem('donutIgn',_ign); }catch(e){} renderGranted(j); } else err2.textContent = (j.error==='code-full') ? 'This code has already been used.' : 'Invalid code.';
       }catch(e){ err2.textContent='Error: '+e.message; }
       finally{ redeemBtn.disabled=false; }
     }
