@@ -188,8 +188,8 @@ export async function onRequest(context) {
     const cDays = Number(rec.durationDays) > 0 ? Math.floor(Number(rec.durationDays))
                 : (Number(cfg.durationDays) > 0 ? Math.floor(Number(cfg.durationDays)) : 14);
     const expires = Date.now() + cDays * DAY;
-    await kv.put('ac:token:' + token, JSON.stringify({ expires: expires, friend: true }));
-    return json({ access: true, already: !!alreadyRedeemed, expires: expires, friend: true });
+    await kv.put('ac:token:' + token, JSON.stringify({ expires: expires, friend: true, ign: (String(body.ign || '').trim() || null) }));
+    return json({ access: true, already: !!alreadyRedeemed, expires: expires, friend: true, ign: (String(body.ign || '').trim() || null) });
   }
 
   return json({ ok: true, service: 'access' });
