@@ -174,22 +174,22 @@ export async function onRequest(context) {
     const rec = cfg.friendCodes.find(c => codeOf(c).toLowerCase() === code.toLowerCase());
     if (!rec) return json({ access: false, error: 'bad-code' });
     const codeLower = code.toLowerCase();
+    const guardKey = 'ac:cused:' + codeLower + ':' + token;
+    const alreadyRedeemed = await kv.get(guardKey);
     const max = Number(rec.max) > 0 ? Math.floor(Number(rec.max)) : 0; // 0 = unlimited users
-    if (max) {
-      const guardKey = 'ac:cused:' + codeLower + ':' + token;
-      const already = await kv.get(guardKey);
-      if (!already) {
+    if (!alreadyRedeemed) {
+      if (max) {
         const used = Number(await kv.get('ac:cuses:' + codeLower)) || 0;
         if (used >= max) return json({ access: false, error: 'code-full' });
         await kv.put('ac:cuses:' + codeLower, String(used + 1));
-        await kv.put(guardKey, '1');
       }
+      await kv.put(guardKey, '1');
     }
     const cDays = Number(rec.durationDays) > 0 ? Math.floor(Number(rec.durationDays))
                 : (Number(cfg.durationDays) > 0 ? Math.floor(Number(cfg.durationDays)) : 14);
     const expires = Date.now() + cDays * DAY;
     await kv.put('ac:token:' + token, JSON.stringify({ expires: expires, friend: true }));
-    return json({ access: true, expires: expires, friend: true });
+    return json({ access: true, already: !!alreadyRedeemed, expires: expires, friend: true });
   }
 
   return json({ ok: true, service: 'access' });
