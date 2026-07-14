@@ -72,6 +72,10 @@
     .mg-untrack:hover{color:#ff6b6b;border-color:#ff6b6b}
     .mg-titlewrap{display:inline-flex;align-items:baseline;gap:8px}
     .mg-count{font-size:11px;font-weight:700;color:var(--muted);background:var(--card-2);border:1px solid var(--border);padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .mg-fav{background:var(--card-2);border:1px solid var(--border);color:var(--muted);font-size:14px;line-height:1;padding:3px 8px;border-radius:8px;cursor:pointer;transition:.15s}
+  .mg-fav:hover{color:var(--text)}
+  .mg-fav.on{color:#ffd23f;border-color:#ffd23f}
+  .mg-cad{font-size:11px;color:var(--muted);align-self:center;margin-left:2px;white-space:nowrap}
   .mgsvg{width:100%;height:auto;display:block}
   .mgsvg .axis{stroke:rgba(255,255,255,.08)}
   .mgsvg .axlbl{fill:var(--muted);font-size:11px}
@@ -188,6 +192,7 @@
       if(now) now.innerHTML='Now <b>'+de(last)+' $</b> &middot; <span class="mg-delta '+cls+'">'+sign+pct.toFixed(1)+'%</span>';
       if(body){ body.innerHTML=moneyChartSVG(pts); wireMgHover(body); }
     }
+    function isLoggedIn(){ try{ return !!localStorage.getItem('acToken'); }catch(e){ return false; } }
     function trackedList(){ try{ return JSON.parse(localStorage.getItem('donutTracked')||'[]'); }catch(e){ return []; } }
     function saveTracked(a){ try{ localStorage.setItem('donutTracked', JSON.stringify(a.slice(0,3))); }catch(e){} }
     function addTracked(lc){ var a=trackedList(); if(a.indexOf(lc)<0 && a.length<3){ a.push(lc); saveTracked(a); } }
@@ -200,7 +205,8 @@
       var pts=[];
       try{ var r=await fetch(API+'?money='+encodeURIComponent(nm)); var j=await r.json(); pts=(j.points||[]).filter(function(p){return p&&isFinite(p.m);}); }catch(e){}
       _mgData=pts;
-      if(isT){ fetch(API+'?track='+encodeURIComponent(nm)).catch(function(){}); }
+      var _fav=false;
+      if(isT){ try{ var _tr=await fetch(API+'?track='+encodeURIComponent(nm)); var _tj=await _tr.json(); _fav=!!(_tj&&_tj.fav); }catch(e){} }
       var n=trackedList().length;
       var cnt='<span class="mg-count" title="Players you track (max 3)">'+n+'/3 tracked</span>';
       function wireTrack(){ var tb=document.getElementById('mgTrack'); if(!tb) return; tb.addEventListener('click', async function(){ if(trackedList().length>=3){ return; } tb.disabled=true; tb.textContent='Tracking…'; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)); var j=await r.json(); if(j&&j.ok){ addTracked(lc); renderMoney(nm); } else { tb.disabled=false; tb.innerHTML='&plus; Track this player'; if(j&&j.error==='not-found'){ var h=wrap.querySelector('.mg-hint'); if(h) h.insertAdjacentHTML('beforeend','<div style="margin-top:6px;color:#ff6b6b">Player not found.</div>'); } } }catch(e){ tb.disabled=false; tb.innerHTML='&plus; Track this player'; } }); }
@@ -208,12 +214,16 @@
         var full=n>=3;
         wrap.innerHTML='<div class="mg-head"><span class="mg-titlewrap"><span class="mg-title">Money history</span>'+cnt+'</span></div><div class="mg-body"><div class="mg-hint">'+(full?'You already track 3 players &mdash; untrack one to free a slot.':'<button type="button" class="mg-trackbtn" id="mgTrack">&plus; Track this player</button><div style="margin-top:8px;font-size:12px">Track to record this player\'s money over time (up to 3 players).</div>')+'</div></div>';
         wireTrack();
+        if(!isLoggedIn()){ var _t=document.getElementById('mgTrack'); if(_t){ var _a=document.createElement('a'); _a.href='login.html'; _a.className='mg-trackbtn'; _a.style.textDecoration='none'; _a.style.display='inline-block'; _a.textContent='Zum Tracken einloggen'; _t.parentNode.replaceChild(_a,_t); } }
         return;
       }
       var actionBtn = isT ? '<button type="button" class="mg-untrack" id="mgUntrack" title="Stop tracking this player">Untrack</button>' : (n<3 ? '<button type="button" class="mg-untrack" id="mgTrackAdd" title="Track this player (keep it updating)">&plus; Track</button>' : '');
       wrap.innerHTML='<div class="mg-head"><span class="mg-titlewrap"><span class="mg-title">Money history</span>'+cnt+'</span><span class="mg-now"></span><span class="mg-ranges"></span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
       var rng=wrap.querySelector('.mg-ranges');
-      rng.innerHTML=mgRangeBtns(_mgRange)+actionBtn;
+      var favBtn = isT ? '<button type="button" class="mg-fav'+(_fav?' on':'')+'" id="mgFav" title="Favorit: alle 15 Min tracken (statt 60)">'+(_fav?'\u2605':'\u2606')+'</button>' : '';
+      var cad = isT ? '<span class="mg-cad">getrackt '+(_fav?'alle 15 Min':'alle 60 Min')+'</span>' : '';
+      rng.innerHTML=mgRangeBtns(_mgRange)+favBtn+actionBtn+cad;
+      var fb=document.getElementById('mgFav'); if(fb) fb.addEventListener('click', async function(){ fb.disabled=true; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)+'&fav='+(_fav?'0':'1')); var j=await r.json(); if(j&&j.ok){ renderMoney(nm); return; } }catch(e){} fb.disabled=false; });
       wrap.querySelectorAll('.mg-rbtn').forEach(function(b){ b.addEventListener('click', function(){ mgDraw(b.getAttribute('data-r')); }); });
       var ub=document.getElementById('mgUntrack'); if(ub) ub.addEventListener('click', function(){ removeTracked(lc); renderMoney(nm); });
       var ta=document.getElementById('mgTrackAdd'); if(ta) ta.addEventListener('click', async function(){ if(trackedList().length>=3) return; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)); var j=await r.json(); if(j&&j.ok){ addTracked(lc); renderMoney(nm); } }catch(e){} });
