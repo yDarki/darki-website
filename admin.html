@@ -166,6 +166,7 @@
         <input type="text" id="newCode" class="code" placeholder="New code"
           onkeydown="if(event.key==='Enter'){event.preventDefault();addCode();}" />
         <input type="number" id="newDays" class="days" min="1" placeholder="Days" />
+        <input type="number" id="newMax" class="days" min="1" placeholder="Uses" />
         <button class="btn sm" type="button" onclick="addCode()">Add</button>
         <button class="ghost" type="button" onclick="genCode()">Random</button>
       </div>
@@ -293,9 +294,15 @@ function renderCodes(){
     di.oninput = ()=>{ const v=di.value.trim(); if(v==='') delete CODES[i].durationDays; else CODES[i].durationDays = Math.max(1, Math.floor(Number(v)||1)); };
     const dl = document.createElement('span'); dl.textContent='days';
     dur.append(di, dl);
+    const usg = document.createElement('span'); usg.className='dur';
+    const ui = document.createElement('input'); ui.type='number'; ui.min='1'; ui.placeholder='∞';
+    ui.value = c.max || '';
+    ui.oninput = ()=>{ const v=ui.value.trim(); if(v==='') delete CODES[i].max; else CODES[i].max = Math.max(1, Math.floor(Number(v)||1)); };
+    const ul = document.createElement('span'); ul.textContent='uses';
+    usg.append(ui, ul);
     const rm = document.createElement('button'); rm.className='rm'; rm.title='Remove'; rm.textContent='×';
     rm.onclick = ()=>{ CODES.splice(i,1); renderCodes(); };
-    row.append(cc, sp, dur, rm);
+    row.append(cc, sp, dur, usg, rm);
     el.appendChild(row);
   });
 }
@@ -307,9 +314,11 @@ function addCode(){
     const o = { code: v };
     const d = di.value.trim();
     if (d !== '') o.durationDays = Math.max(1, Math.floor(Number(d)||1));
+    const mi = document.getElementById('newMax'), m = mi ? mi.value.trim() : '';
+    if (m !== '') o.max = Math.max(1, Math.floor(Number(m)||1));
     CODES.push(o);
   }
-  inp.value=''; renderCodes(); inp.focus();
+  inp.value=''; { const _m=document.getElementById('newMax'); if(_m) _m.value=''; } renderCodes(); inp.focus();
 }
 function genCode(){
   const A='ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s='';
@@ -317,6 +326,7 @@ function genCode(){
   if(!CODES.some(c=>c.code===s)){
     const di=document.getElementById('newDays'); const d=di.value.trim();
     const o={ code:s }; if(d!=='') o.durationDays=Math.max(1,Math.floor(Number(d)||1));
+    const mi=document.getElementById('newMax'), m=mi?mi.value.trim():''; if(m!=='') o.max=Math.max(1,Math.floor(Number(m)||1));
     CODES.push(o);
   }
   renderCodes();
