@@ -1,0 +1,14 @@
+{
+  "name": "DonutSMP Stats — Admin",
+  "short_name": "Donut Admin",
+  "description": "Admin-Panel für donutsmpstats.com — Essentials verwalten.",
+  "start_url": "/admin.html",
+  "scope": "/admin.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#08080a",
+  "theme_color": "#08080a",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
