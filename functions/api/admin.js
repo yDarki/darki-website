@@ -118,9 +118,29 @@ export async function onRequest(context) {
     if (p.collector !== undefined) next.collector = String(p.collector).trim().slice(0, 16);
     if (p.open !== undefined) next.open = !!p.open;
     if (p.friendCodes !== undefined && Array.isArray(p.friendCodes)) {
-      next.friendCodes = Array.from(
-        new Set(p.friendCodes.map((c) => String(c).trim()).filter(Boolean))
-      ).slice(0, 200);
+      // Preserve the existing per-code object schema (code, durationDays, max,
+      // expires, friend, ...). Only sanitize code + durationDays; keep the rest.
+      next.friendCodes = p.friendCodes
+        .map((it) => {
+          if (typeof it === 'string') {
+            const c = it.trim();
+            return c ? { code: c } : null;
+          }
+          if (it && typeof it === 'object') {
+            const o = { ...it };
+            o.code = String(o.code || '').trim();
+            if (!o.code) return null;
+            if (o.durationDays === undefined || o.durationDays === null || o.durationDays === '') {
+              delete o.durationDays;
+            } else {
+              o.durationDays = Math.max(1, Math.floor(Number(o.durationDays) || 1));
+            }
+            return o;
+          }
+          return null;
+        })
+        .filter(Boolean)
+        .slice(0, 200);
     }
     await kv.put(CONFIG_KEY, JSON.stringify(next));
     return json({ ok: true, config: next });
