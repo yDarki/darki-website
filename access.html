@@ -59,7 +59,7 @@
     app.innerHTML='<div class="granted">'+
       '<div class="check"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5bd99a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>'+
       '<p class="ok" style="margin-top:14px;font-size:16px">You have access'+friend+'.</p>'+
-      '<p class="note" style="margin-top:4px">'+(j.friend?'Unlocked permanently.':'Valid until <b>'+fmtDate(j.expires)+'</b>.')+'</p>'+
+      '<p class="note" style="margin-top:4px">'+(j.already?'Code already redeemed \u2014 you already have access.':(j.friend?'Unlocked permanently.':'Valid until <b>'+fmtDate(j.expires)+'</b>.'))+'</p>'+
       '<div class="row" style="justify-content:center;margin-top:18px"><a class="btn" href="index.html">Go to the site &rarr;</a></div></div>';
   }
 
@@ -117,7 +117,7 @@
       try{
         var r=await fetch(API+'?redeem=1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code,token:TK})});
         var j=await r.json();
-        if(j.access) renderGranted(j); else err2.textContent='Invalid code.';
+        if(j.access) renderGranted(j); else err2.textContent = (j.error==='code-full') ? 'This code has already been used.' : 'Invalid code.';
       }catch(e){ err2.textContent='Error: '+e.message; }
       finally{ redeemBtn.disabled=false; }
     }
