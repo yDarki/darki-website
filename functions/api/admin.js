@@ -190,6 +190,19 @@ export async function onRequest(context) {
     return json({ ok: true, log: _log });
   }
 
+  if (op === 'resetUses') {
+    const c = String(body.code || '').trim().toLowerCase();
+    if (c) {
+      await kv.put('ac:cuses:' + c, '0');
+      let _log = [];
+      try { _log = JSON.parse(await kv.get(LOG_KEY)) || []; } catch (e) {}
+      _log.unshift({ t: Date.now(), items: ['Uses reset: ' + c] });
+      _log = _log.slice(0, 50);
+      await kv.put(LOG_KEY, JSON.stringify(_log));
+    }
+    return json({ ok: true });
+  }
+
   if (op === 'listAccess') {
     const out = [];
     let cursor;
