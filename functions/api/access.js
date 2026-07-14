@@ -37,7 +37,7 @@ export async function onRequest(context) {
       if (body.price != null) next.price = Math.max(0, Math.round(Number(body.price) || 0));
       if (body.durationDays != null) next.durationDays = Math.max(1, Math.round(Number(body.durationDays) || 1));
       if (typeof body.collector === 'string' && body.collector.trim()) next.collector = body.collector.trim();
-      if (Array.isArray(body.friendCodes)) next.friendCodes = body.friendCodes.map(c => String(c).trim()).filter(Boolean);
+      if (Array.isArray(body.friendCodes)) next.friendCodes = body.friendCodes.map(function(c){ if (typeof c === 'string'){ const s=c.trim(); return s?{code:s}:null; } if (c && typeof c === 'object'){ const o=Object.assign({},c); o.code=String(o.code||'').trim(); if(!o.code) return null; if(o.durationDays==null||o.durationDays==='') delete o.durationDays; else o.durationDays=Math.max(1,Math.floor(Number(o.durationDays)||1)); if(o.max==null||o.max==='') delete o.max; else o.max=Math.max(1,Math.floor(Number(o.max)||1)); return o; } return null; }).filter(Boolean);
       await kv.put('ac:config', JSON.stringify(next));
       return json({ ok: true, config: next });
     }
@@ -170,9 +170,24 @@ export async function onRequest(context) {
     const code = String(body.code || '').trim(), token = String(body.token || '').trim();
     if (!code || !token) return json({ error: 'missing' }, 400);
     const cfg = await getConfig(kv);
-    const ok = cfg.friendCodes.some(c => c.toLowerCase() === code.toLowerCase());
-    if (!ok) return json({ access: false, error: 'bad-code' });
-    const expires = Date.now() + 3650 * DAY; // friends: effectively permanent
+    const codeOf = (c) => (typeof c === 'string' ? c : ((c && c.code) || ''));
+    const rec = cfg.friendCodes.find(c => codeOf(c).toLowerCase() === code.toLowerCase());
+    if (!rec) return json({ access: false, error: 'bad-code' });
+    const codeLower = code.toLowerCase();
+    const max = Number(rec.max) > 0 ? Math.floor(Number(rec.max)) : 0; // 0 = unlimited users
+    if (max) {
+      const guardKey = 'ac:cused:' + codeLower + ':' + token;
+      const already = await kv.get(guardKey);
+      if (!already) {
+        const used = Number(await kv.get('ac:cuses:' + codeLower)) || 0;
+        if (used >= max) return json({ access: false, error: 'code-full' });
+        await kv.put('ac:cuses:' + codeLower, String(used + 1));
+        await kv.put(guardKey, '1');
+      }
+    }
+    const cDays = Number(rec.durationDays) > 0 ? Math.floor(Number(rec.durationDays))
+                : (Number(cfg.durationDays) > 0 ? Math.floor(Number(cfg.durationDays)) : 14);
+    const expires = Date.now() + cDays * DAY;
     await kv.put('ac:token:' + token, JSON.stringify({ expires: expires, friend: true }));
     return json({ access: true, expires: expires, friend: true });
   }
