@@ -321,9 +321,11 @@ function renderCodes(){
     ui.oninput = ()=>{ const v=ui.value.trim(); if(v==='') delete CODES[i].max; else CODES[i].max = Math.max(1, Math.floor(Number(v)||1)); };
     const ul = document.createElement('span'); ul.textContent='uses';
     usg.append(ui, ul);
+    const rs = document.createElement('button'); rs.className='rm'; rs.title='Reset usage counter'; rs.textContent='\u21ba';
+    rs.onclick = async ()=>{ if(!c.code || !confirm('Reset usage counter for code "'+c.code+'"?')) return; rs.disabled=true; await api('resetUses',{code:c.code}); rs.disabled=false; if(typeof loadLog==='function') loadLog(); };
     const rm = document.createElement('button'); rm.className='rm'; rm.title='Remove'; rm.textContent='×';
     rm.onclick = ()=>{ CODES.splice(i,1); renderCodes(); };
-    row.append(cc, sp, dur, usg, rm);
+    row.append(cc, sp, dur, usg, rs, rm);
     el.appendChild(row);
   });
 }
