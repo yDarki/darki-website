@@ -32,6 +32,12 @@
   .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border)}
   .granted{text-align:center;padding:6px 0}
   .check{width:52px;height:52px;border-radius:50%;background:rgba(91,217,154,.12);border:1px solid rgba(91,217,154,.35);display:flex;align-items:center;justify-content:center;margin:0 auto}
+  .sep{ border:none; border-top:1px solid var(--border); margin:16px 0 4px; }
+  .frow{ display:flex; align-items:center; gap:12px; margin-top:12px; }
+  .frow .flabel{ width:48px; color:var(--muted); font-weight:700; font-size:14px; }
+  .frow .pill{ flex:1; }
+  .frow input{ flex:1; }
+  .fhint{ color:var(--muted); font-size:12.5px; margin:8px 0 2px 60px; line-height:1.5; }
 </style>
 </head>
 <body>
@@ -68,17 +74,12 @@
       '<div id="offbanner"></div>'+
       '<div class="step"><label>Your Minecraft name</label>'+
         '<div class="row"><input id="ign" placeholder="Minecraft name" autocomplete="off"></div></div>'+
-      '<div class="step" id="paystep"><label>Option 1 &middot; Pay in Minecraft</label>'+
-        '<div class="note">Pay <span class="price">'+abbr(cfg.price)+'</span> ('+num(cfg.price)+' $) to <span class="pill">'+cfg.collector+'</span> for <b>'+cfg.durationDays+' days</b> of access:</div>'+
-        '<div class="row"><span class="pill" style="font-size:15px">/pay '+cfg.collector+' '+cfg.price+'</span></div></div>'+
-      '<div class="step">'+
-        '<div class="note">Once you have paid with the name above, click:</div>'+
-        '<div class="row"><button class="btn" id="claim">I paid &mdash; unlock</button></div>'+
-        '<div class="err" id="err1"></div></div>'+
-      '<div class="divider">or</div>'+
-      '<div class="step" style="margin-bottom:0"><label>Option 2 &middot; Friend code</label>'+
-        '<div class="row"><input id="code" placeholder="Code" autocomplete="off"><button class="btn ghost" id="redeem">Use code</button></div>'+
-        '<div class="err" id="err2"></div></div>';
+      '<hr class="sep">'+
+      '<div class="frow"><span class="flabel">Pay</span><span class="pill mono">/pay '+cfg.collector+' '+cfg.price+'</span></div>'+
+      '<div class="fhint">Pay <b>'+abbr(cfg.price)+'</b> ('+num(cfg.price)+' $) in-game for '+cfg.durationDays+' days &mdash; or use a friend code.</div>'+
+      '<div class="frow"><span class="flabel">Code</span><input id="code" placeholder="Friend code (optional)" autocomplete="off"></div>'+
+      '<div class="row" style="justify-content:center;margin-top:16px"><button class="btn" id="submit">Submit</button></div>'+
+      '<div class="err" id="err1"></div><div class="err" id="err2"></div>';
 
     var offb=document.getElementById('offbanner');
     async function checkOnline(){
@@ -95,7 +96,7 @@
     }
     checkOnline();
 
-    var claimBtn=document.getElementById('claim'), ignEl=document.getElementById('ign'), err1=document.getElementById('err1');
+    var claimBtn=document.getElementById('submit'), ignEl=document.getElementById('ign'), err1=document.getElementById('err1');
     var tries=0, polling=null;
     async function tryClaim(auto){
       var ign=ignEl.value.trim(); if(!ign){ err1.textContent='Please enter a name.'; return; }
@@ -109,10 +110,11 @@
       }catch(e){ err1.textContent='Error: '+e.message; }
       finally{ claimBtn.disabled=false; }
     }
-    claimBtn.addEventListener('click',function(){ tries=0; checkOnline(); tryClaim(false); });
-    ignEl.addEventListener('keydown',function(e){ if(e.key==='Enter'){ tries=0; tryClaim(false); } });
+    function doSubmit(){ var _c=document.getElementById('code'); if(_c && _c.value.trim()){ tryRedeem(); } else { tries=0; checkOnline(); tryClaim(false); } }
+    claimBtn.addEventListener('click',doSubmit);
+    ignEl.addEventListener('keydown',function(e){ if(e.key==='Enter'){ doSubmit(); } });
 
-    var redeemBtn=document.getElementById('redeem'), codeEl=document.getElementById('code'), err2=document.getElementById('err2');
+    var redeemBtn=document.getElementById('submit'), codeEl=document.getElementById('code'), err2=document.getElementById('err2');
     async function tryRedeem(){
       var code=codeEl.value.trim(); if(!code){ err2.textContent='Please enter a code.'; return; }
       var _ign=(document.getElementById('ign')&&document.getElementById('ign').value.trim())||''; if(!_ign){ err2.textContent='Please enter your Minecraft name above first.'; return; }
@@ -124,8 +126,7 @@
       }catch(e){ err2.textContent='Error: '+e.message; }
       finally{ redeemBtn.disabled=false; }
     }
-    redeemBtn.addEventListener('click',tryRedeem);
-    codeEl.addEventListener('keydown',function(e){ if(e.key==='Enter') tryRedeem(); });
+    codeEl.addEventListener('keydown',function(e){ if(e.key==='Enter') doSubmit(); });
   }
 
   (async function(){
