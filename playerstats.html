@@ -198,6 +198,7 @@
     function addTracked(lc){ var a=trackedList(); if(a.indexOf(lc)<0 && a.length<3){ a.push(lc); saveTracked(a); } }
     function removeTracked(lc){ saveTracked(trackedList().filter(function(x){return x!==lc;})); }
     async function renderMoney(nm){
+      window.__mn = nm;
       var wrap=document.getElementById('mgwrap'); if(!wrap) return;
       var lc=nm.toLowerCase();
       wrap.innerHTML='<div class="mg-head"><span class="mg-title">Money history</span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
@@ -264,6 +265,13 @@
       finally{ busyBtn.disabled=false; }
     }
     goEl.addEventListener('click',()=>search(false));
+    // Money-Tracker: sample beim Laden + alle 5 Min (solange Seite sichtbar); danach Graph neu rendern
+    (function(){
+      function tick(){ try{ fetch('/api/player?sample=1',{cache:'no-store'}).then(function(){ if(document.getElementById('mgwrap') && window.__mn){ try{ renderMoney(window.__mn); }catch(e){} } }).catch(function(){}); }catch(e){} }
+      tick();
+      setInterval(function(){ if(document.visibilityState==='visible') tick(); }, 300000);
+      document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') tick(); });
+    })();
     document.getElementById('refresh').addEventListener('click',()=>search(true));
     nameEl.addEventListener('keydown',e=>{ if(e.key==='Enter') search(); });
     (function(){ try{ var _qn=new URLSearchParams(location.search).get('name'); if(_qn){ nameEl.value=_qn; search(); } }catch(e){} })();
