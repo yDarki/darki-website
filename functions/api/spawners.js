@@ -59,9 +59,11 @@ async function fetchMessageText(botToken, channelId, messageId) {
   try {
     if (messageId) {
       var r = await fetch('https://discord.com/api/v10/channels/' + channelId + '/messages/' + messageId, { headers: headers });
-      if (!r.ok) { var eb = ''; try { eb = await r.text(); } catch (e) {} return { ok: false, status: r.status, detail: eb.slice(0, 200) }; }
-      var msg = await r.json();
-      return { ok: true, text: (msg && msg.content) || '', ts: msg && (msg.edited_timestamp || msg.timestamp) };
+      if (r.ok) {
+        var msg = await r.json();
+        return { ok: true, text: (msg && msg.content) || '', ts: msg && (msg.edited_timestamp || msg.timestamp) };
+      }
+      // fixed message deleted/404 -> fall through to latest-message scan below
     }
     var r2 = await fetch('https://discord.com/api/v10/channels/' + channelId + '/messages?limit=25', { headers: headers });
     if (!r2.ok) return { ok: false, status: r2.status };
