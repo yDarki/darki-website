@@ -42,7 +42,7 @@ export async function onRequest(context) {
 
   if (url.searchParams.get('sample')) {
     const scors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' };
-    if (!_admin) { return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: scors }); }
+    // sampling is idempotent (time-bucket gated) -> safe to trigger publicly via page traffic / external pinger; admin token still works. (_admin available if needed)
     const kv = env.PRICE_HISTORY;
     if (!kv) { return new Response(JSON.stringify({ error: 'no-kv' }), { status: 500, headers: scors }); }
     let db = {}; try { db = JSON.parse((await kv.get('mtrack')) || '{}') || {}; } catch (e) { db = {}; }
