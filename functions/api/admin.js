@@ -16,7 +16,6 @@
 const SESSION_TTL_S = 7 * 86400; // admin session lives 7 days
 const ADMIN_PREFIX = 'ac:admin:';
 const CONFIG_KEY = 'ac:config';
-const LOG_KEY = 'ac:log';
 const PAID_PREFIX = 'ac:paid:';
 const TOKEN_PREFIX = 'ac:token:';
 
@@ -51,30 +50,6 @@ function randToken() {
   const b = new Uint8Array(24);
   crypto.getRandomValues(b);
   return Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
-}
-
-function fmtNum2(n){ return Number(n||0).toLocaleString('en-US'); }
-function codeStr(c){ return typeof c === 'string' ? c : ((c && c.code) || ''); }
-function codeKey(c){ return codeStr(c).toLowerCase(); }
-function diffConfig(a, b){
-  a = a || {}; b = b || {};
-  const out = [];
-  if (a.open !== b.open) out.push('Paywall -> ' + (b.open ? 'OFF (public)' : 'ON (locked)'));
-  if (Number(a.price) !== Number(b.price)) out.push('Price: ' + fmtNum2(a.price) + ' -> ' + fmtNum2(b.price));
-  if (Number(a.durationDays) !== Number(b.durationDays)) out.push('Access days: ' + (a.durationDays == null ? '-' : a.durationDays) + ' -> ' + (b.durationDays == null ? '-' : b.durationDays));
-  if ((a.collector || '') !== (b.collector || '')) out.push('Collector: ' + (a.collector || '-') + ' -> ' + (b.collector || '-'));
-  const ca = (a.friendCodes || []).map(codeStr);
-  const cb = (b.friendCodes || []).map(codeStr);
-  cb.filter(function(x){return ca.indexOf(x) < 0;}).forEach(function(x){ out.push('Code added: ' + x); });
-  ca.filter(function(x){return cb.indexOf(x) < 0;}).forEach(function(x){ out.push('Code removed: ' + x); });
-  const mapA = {}; (a.friendCodes || []).forEach(function(c){ mapA[codeKey(c)] = c; });
-  (b.friendCodes || []).forEach(function(c){
-    const pa = mapA[codeKey(c)];
-    if (pa && (Number(pa.durationDays || 0) !== Number(c.durationDays || 0) || Number(pa.max || 0) !== Number(c.max || 0))) {
-      out.push('Code changed: ' + codeStr(c) + ' (' + (c.durationDays || 'global') + 'd, ' + (c.max ? c.max + ' uses' : 'unlimited') + ')');
-    }
-  });
-  return out;
 }
 
 async function readConfig(kv) {
@@ -172,33 +147,14 @@ export async function onRequest(context) {
         .filter(Boolean)
         .slice(0, 200);
     }
-    const _chg = diffConfig(cur, next);
-    if (_chg.length) {
-      let _log = [];
-      try { _log = JSON.parse(await kv.get(LOG_KEY)) || []; } catch (e) {}
-      _log.unshift({ t: Date.now(), items: _chg });
-      _log = _log.slice(0, 50);
-      await kv.put(LOG_KEY, JSON.stringify(_log));
-    }
     await kv.put(CONFIG_KEY, JSON.stringify(next));
     return json({ ok: true, config: next });
-  }
-
-  if (op === 'log') {
-    let _log = [];
-    try { _log = JSON.parse(await kv.get(LOG_KEY)) || []; } catch (e) {}
-    return json({ ok: true, log: _log });
   }
 
   if (op === 'resetUses') {
     const c = String(body.code || '').trim().toLowerCase();
     if (c) {
       await kv.put('ac:cuses:' + c, '0');
-      let _log = [];
-      try { _log = JSON.parse(await kv.get(LOG_KEY)) || []; } catch (e) {}
-      _log.unshift({ t: Date.now(), items: ['Uses reset: ' + c] });
-      _log = _log.slice(0, 50);
-      await kv.put(LOG_KEY, JSON.stringify(_log));
     }
     return json({ ok: true });
   }
