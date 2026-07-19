@@ -114,7 +114,12 @@ export async function onRequest(context) {
       } catch (e) { return new Response(JSON.stringify({ ok: false, error: 'fetch' }), { status: 200, headers: tcors }); }
       db[tn] = entry;
     }
-    if (favParam !== null && db[tn]) { db[tn].fav = (favParam === '1' || favParam === 'on' || favParam === 'true'); }
+    if (favParam !== null && db[tn]) {
+      const favOn = (favParam === '1' || favParam === 'on' || favParam === 'true');
+      db[tn].fav = favOn;
+      // only ONE favourite at a time -> clear the flag on every other tracked player
+      if (favOn) { Object.keys(db).forEach(function (k) { if (k !== tn && db[k] && db[k].fav) db[k].fav = false; }); }
+    }
     const names = Object.keys(db);
     if (names.length > 40) {
       names.sort(function (a, b) { return ((db[b] && db[b].last) || 0) - ((db[a] && db[a].last) || 0); });
