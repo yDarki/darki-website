@@ -200,6 +200,8 @@
     async function renderMoney(nm){
       window.__mn = nm;
       var wrap=document.getElementById('mgwrap'); if(!wrap) return;
+      // Graph nur für eingeloggte Nutzer sichtbar. Tracking + gespeicherte Historie bleiben unberuehrt.
+      if(!isLoggedIn()){ wrap.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0">Sign in to see money history.</div>'; return; }
       var lc=nm.toLowerCase();
       wrap.innerHTML='<div class="mg-head"><span class="mg-title">Money history</span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
       var isT=trackedList().indexOf(lc)>=0;
