@@ -173,9 +173,11 @@
       var win=pts.filter(function(p){return p.t>=now-span;});
       if(win.length<2){ win=pts.slice(-Math.min(pts.length,12)); }
       if(range==='1h') return win;
-      var byHour={};
-      win.forEach(function(p){ byHour[Math.floor(p.t/3600000)]=p; });
-      return Object.keys(byHour).sort(function(a,b){return a-b;}).map(function(h){ return { t: (+h)*3600000, m: byHour[h].m }; });
+      // feste Slot-Groesse je Bereich: 1w -> 2h, 1d -> 1h (verhindert gemischte 1h/2h-Abstaende)
+      var bs=(range==='1w')?7200000:3600000;
+      var byBucket={};
+      win.forEach(function(p){ byBucket[Math.floor(p.t/bs)]=p; });
+      return Object.keys(byBucket).sort(function(a,b){return a-b;}).map(function(k){ return { t: (+k)*bs, m: byBucket[k].m }; });
     }
     function mgRangeBtns(active){
       return ['1d','1w'].map(function(r){ return '<button type="button" class="mg-rbtn'+(r===active?' active':'')+'" data-r="'+r+'">'+r+'</button>'; }).join('');
