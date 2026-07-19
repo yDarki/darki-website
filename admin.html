@@ -264,6 +264,7 @@ function fillConfig(){
   CODES = (Array.isArray(CONFIG.friendCodes) ? CONFIG.friendCodes : []).map(normCode);
   renderCodes();
   updatePriceHint();
+  window.__cfgLoaded = true; // guard: only send 'open' once the real config is loaded
 }
 function normCode(it){
   if (typeof it === 'string') return { code: it };
@@ -372,7 +373,7 @@ function collectAllConfig(){
     price: Number(document.getElementById('price').value||0),
     durationDays: Number(document.getElementById('days').value||1),
     collector: document.getElementById('collector').value.trim(),
-    open: openState,
+    open: (window.__cfgLoaded && typeof openState === 'boolean') ? openState : undefined,
     friendCodes: CODES
   };
 }
