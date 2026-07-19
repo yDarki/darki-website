@@ -95,11 +95,9 @@
   .savebar .btn { min-width:190px; }
   #saveAccess,#saveCollector,#saveCodes{ display:none; }
   .card .actions:has(#saveAccess),.card .actions:has(#saveCollector),.card .actions:has(#saveCodes){ display:none; }
-  .loglist{ display:flex; flex-direction:column; gap:10px; }
-  .logrow{ background:#0f0f18; border:1px solid var(--border); border-radius:12px; padding:10px 12px; }
-  .logt{ font-size:12px; color:var(--muted); margin-bottom:4px; }
-  .logch{ margin:0; padding-left:18px; }
-  .logch li{ font-size:13px; margin:2px 0; }
+  .prop{ font-size:12.5px; color:var(--muted); }
+  .prop.ok{ color:var(--green); }
+  .prop.warn{ color:var(--amber); }
 </style>
 </head>
 <body>
@@ -193,16 +191,10 @@
       </div>
       <div class="alist" id="alist"><div class="amuted">Not loaded yet.</div></div>
     </div>
-    <div class="card">
-      <h2>Change log</h2>
-      <div class="actions" style="margin:0 0 12px">
-        <button class="btn sm" id="reloadLog">Refresh</button>
-      </div>
-      <div class="loglist" id="logList"><div class="amuted">Not loaded yet.</div></div>
-    </div>
     <div class="savebar">
       <button class="btn" id="saveAll">Save all changes</button>
       <span class="saved" id="savedAll">Saved ✓</span>
+      <span class="prop" id="propState"></span>
     </div>
   </div>
 
@@ -272,7 +264,6 @@ function fillConfig(){
   CODES = (Array.isArray(CONFIG.friendCodes) ? CONFIG.friendCodes : []).map(normCode);
   renderCodes();
   updatePriceHint();
-  if (typeof loadLog === 'function') loadLog();
 }
 function normCode(it){
   if (typeof it === 'string') return { code: it };
@@ -322,7 +313,7 @@ function renderCodes(){
     const ul = document.createElement('span'); ul.textContent='uses';
     usg.append(ui, ul);
     const rs = document.createElement('button'); rs.className='rm'; rs.title='Reset usage counter'; rs.textContent='\u21ba';
-    rs.onclick = async ()=>{ if(!c.code || !confirm('Reset usage counter for code "'+c.code+'"?')) return; rs.disabled=true; await api('resetUses',{code:c.code}); rs.disabled=false; if(typeof loadLog==='function') loadLog(); };
+    rs.onclick = async ()=>{ if(!c.code || !confirm('Reset usage counter for code "'+c.code+'"?')) return; rs.disabled=true; await api('resetUses',{code:c.code}); rs.disabled=false; };
     const rm = document.createElement('button'); rm.className='rm'; rm.title='Remove'; rm.textContent='×';
     rm.onclick = ()=>{ CODES.splice(i,1); renderCodes(); };
     row.append(cc, sp, dur, usg, rs, rm);
@@ -375,7 +366,7 @@ document.getElementById('saveCollector').onclick = function(){
 document.getElementById('saveCodes').onclick = function(){
   saveConfig({ friendCodes: CODES }, 'savedCodes', this);
 };
-// ---- single Save-all + change log ----
+// ---- single Save-all + propagation timer ----
 function collectAllConfig(){
   return {
     price: Number(document.getElementById('price').value||0),
@@ -385,30 +376,43 @@ function collectAllConfig(){
     friendCodes: CODES
   };
 }
+// Measures how long a saved change needs until the PUBLIC site actually serves it (KV propagation).
+function trackPropagation(want, t0){
+  var el=document.getElementById('propState'); if(!el) return;
+  var done=false, timer=null, poll=null;
+  function put(txt,cls){ el.textContent=txt; el.className='prop'+(cls?(' '+cls):''); }
+  function secs(){ return (Date.now()-t0)/1000; }
+  function stop(txt,cls){ done=true; clearInterval(timer); clearInterval(poll); put(txt,cls); }
+  function matches(pub){
+    if(!pub) return false;
+    if(Number(pub.price)!==Number(want.price)) return false;
+    if(Number(pub.durationDays)!==Number(want.durationDays)) return false;
+    if(String(pub.collector||'')!==String(want.collector||'')) return false;
+    if(Boolean(pub.open)!==Boolean(want.open)) return false;
+    return true;
+  }
+  put('Applying\u2026 0.0s');
+  timer=setInterval(function(){ if(!done) put('Applying\u2026 '+secs().toFixed(1)+'s'); },100);
+  poll=setInterval(function(){
+    fetch('/api/access?config&_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(pub){
+      if(done) return;
+      if(matches(pub)) stop('Live on site after '+secs().toFixed(1)+'s','ok');
+      else if(secs()>120) stop('Still propagating after 120s','warn');
+    }).catch(function(){});
+  },1000);
+}
 (function(){
   var sb=document.getElementById('saveAll');
   if(sb) sb.onclick=async function(){
     sb.disabled=true;
-    var r=await api('setConfig',{ config: collectAllConfig() });
+    var want=collectAllConfig();
+    var t0=Date.now();
+    var r=await api('setConfig',{ config: want });
     sb.disabled=false;
-    if(r && r.ok){ CONFIG=r.config||CONFIG; flash('savedAll'); loadLog(); }
+    if(r && r.ok){ CONFIG=r.config||CONFIG; flash('savedAll'); trackPropagation(want,t0); }
     else banner('Save failed.','err');
   };
-  var rl=document.getElementById('reloadLog');
-  if(rl) rl.onclick=loadLog;
 })();
-function escLog(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-async function loadLog(){
-  var box=document.getElementById('logList'); if(!box) return;
-  var r=await api('log',{});
-  var items=(r&&r.log)||[];
-  if(!items.length){ box.innerHTML='<div class="amuted">No changes yet.</div>'; return; }
-  box.innerHTML=items.map(function(e){
-    var t=new Date(e.t).toLocaleString();
-    var ch=(e.items||[]).map(function(s){return '<li>'+escLog(s)+'</li>';}).join('');
-    return '<div class="logrow"><div class="logt">'+escLog(t)+'</div><ul class="logch">'+ch+'</ul></div>';
-  }).join('');
-}
 
 function fmtExp(ts){
   if(!ts) return 'no expiry stored';
