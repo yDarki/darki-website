@@ -1,0 +1,32 @@
+/* Leaderboard - Seiten-CSS (ausgelagert aus leaderboard.html) */
+:root{ --lb:#e8b34c; }
+  .wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:28px 22px 60px}
+  .back{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 16px;color:var(--muted);font-weight:600;font-size:14px;margin-bottom:22px;transition:.2s}
+  .back:hover{color:var(--text);border-color:var(--lb);background:var(--card-2)}
+  h1{font-size:clamp(28px,5vw,40px);font-weight:800;letter-spacing:-1px;display:flex;align-items:center;gap:12px;filter:drop-shadow(0 0 22px rgba(255,255,255,.13))}
+  h1 .grad{background:linear-gradient(105deg,#ffffff 0%,#d7dae6 28%,#9197b0 50%,#d7dae6 72%,#ffffff 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shine 5s ease-in-out infinite alternate}
+  .sub{color:var(--muted);font-size:15px;margin-top:8px}
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:22px 0 6px}
+  select{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:10px 14px;color:var(--text);font-size:14px;font-family:inherit;outline:none;font-weight:600}
+  select:focus{border-color:var(--lb)}
+  .pg{display:inline-flex;align-items:center;gap:8px;margin-left:auto}
+  .pgbtn{width:34px;height:34px;border-radius:10px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:16px;cursor:pointer;font-family:inherit;transition:.14s}
+  .pgbtn:hover:not(:disabled){border-color:var(--lb)} .pgbtn:disabled{opacity:.4;cursor:not-allowed}
+  .pgnum{color:var(--muted);font-size:13px;min-width:56px;text-align:center;font-weight:600}
+  .refresh{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.14s}
+  .refresh:hover{color:var(--text);border-color:var(--lb)}
+  .msg{color:var(--muted);font-size:14px;padding:34px 0;text-align:center;line-height:1.6}
+  .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--lb);border-radius:50%;margin:0 auto 14px;animation:spin 1s linear infinite}
+  .list{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:8px;margin-top:16px}
+  .row{display:flex;align-items:center;gap:14px;padding:11px 12px;border-radius:12px;transition:background .14s}
+  .row:hover{background:var(--card-2)}
+  .rank{width:34px;text-align:center;font-weight:800;font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
+  .row.r1 .rank{color:#f4d35e} .row.r2 .rank{color:#cfd6e6} .row.r3 .rank{color:#e0955b}
+  .ava{width:34px;height:34px;border-radius:9px;image-rendering:pixelated;background:var(--card-2);flex:none}
+  .pname{flex:1;font-weight:700;font-size:15px;color:var(--text);text-decoration:none;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pname:hover{color:var(--lb)}
+  .val{font-weight:800;font-variant-numeric:tabular-nums;color:var(--text);font-size:15px}
+  .save{width:32px;height:32px;border-radius:9px;background:transparent;border:1px solid var(--border);color:var(--muted);font-size:15px;cursor:pointer;line-height:1;flex:none;transition:.14s}
+  .save:hover{color:var(--lb);border-color:var(--lb)}
+  .save.on{color:var(--lb);border-color:var(--lb);background:rgba(232,179,76,.12)}
+  .legend{color:var(--muted);font-size:12.5px;margin-top:12px;line-height:1.5}
