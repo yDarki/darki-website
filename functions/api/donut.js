@@ -96,8 +96,7 @@ export async function onRequest(context) {
       // Letzte bekannte Verkaeufe aus KV laden, damit 'Last sale' nicht verschwindet,
     // wenn im aktuellen Scan-Fenster zufaellig kein Verkauf liegt.
     let _lsMap = {}; let _lsDirty = false;
-    let _lsDiag = { bound:false, raw:null, err:null };
-    try { const _lskv = env.PRICE_HISTORY; _lsDiag.bound = !!_lskv; if (_lskv) { const _r = await _lskv.get('lastsold'); _lsDiag.raw = _r ? _r.length : 0; if (_r) _lsMap = JSON.parse(_r) || {}; } } catch (e) { _lsMap = {}; _lsDiag.err = String(e); }
+    try { const _lskv = env.PRICE_HISTORY; if (_lskv) { const _r = await _lskv.get('lastsold'); if (_r) _lsMap = JSON.parse(_r) || {}; } } catch (e) { _lsMap = {}; }
     const results = await Promise.all(slice.map(cfg => collect(cfg, maxSearchPages)));
       for (let k = 0; k < slice.length; k++) {
         const cfg = slice[k];
@@ -140,8 +139,8 @@ export async function onRequest(context) {
     }
     for (const cfg of WATCH) { if (cfg.soon) items.push({ id: 'minecraft:' + cfg.id, soon: true, listings: 0, unit: null, soldUnit: null, price: null, lastSold: null, cheapest1: null, cheapestAny: null, ah: [], sales: [] }); }
     try { const skv = env.PRICE_HISTORY; if (skv) { let _hpRaw = await skv.get('phist'); let _hp = null; try { _hp = _hpRaw ? JSON.parse(_hpRaw) : null; } catch (_e0) {} let series = (_hp && Array.isArray(_hp.series)) ? _hp.series : []; if (!series.length) { try { const _lgs = await skv.get('series'); if (_lgs) series = JSON.parse(_lgs) || []; } catch (_e1) {} } let _sevPre = (_hp && _hp.sevents && typeof _hp.sevents === 'object') ? _hp.sevents : null; const last = series.length ? series[series.length - 1].t : 0; var t10 = Math.round(Date.now() / 600000) * 600000; if (last !== t10) { const pm = {}; for (const it of items) { const sid = it.id.replace('minecraft:', ''); var _o=(it.unit!=null?it.unit:null); var _s=(it.lastSold?it.lastSold.unit:null); if (_o!=null || _s!=null) pm[sid] = {o:_o,s:_s}; } series.push({ t: t10, p: pm }); if (series.length > 2100) series = series.slice(series.length - 2100); let sev = _sevPre || {}; if (!_sevPre) { try { const sraw = await skv.get('sevents'); sev = sraw ? JSON.parse(sraw) : {}; } catch (_e4) {} } try { for (const it of items) { if (!it.sales || !it.sales.length) continue; const sid2 = it.id.replace('minecraft:',''); let arr = sev[sid2] || []; const seen = {}; for (const ev of arr) seen[ev.t + ':' + ev.p] = 1; for (const s of it.sales) { if (!s.time) continue; const per = Math.round(s.price / (s.count || 1)); const k = s.time + ':' + per; if (!seen[k]) { arr.push({ t: s.time, p: per }); seen[k] = 1; } } arr.sort(function(a,b){return a.t-b.t;}); if (arr.length > 400) arr = arr.slice(arr.length - 400); sev[sid2] = arr; } } catch (e9) {} try { await skv.put('phist', JSON.stringify({ series: series, sevents: sev })); } catch (e10) {} } } } catch (e) {}
-    try { if (_lsDirty) { const _lskv2 = env.PRICE_HISTORY; if (_lskv2) { await _lskv2.put('lastsold', JSON.stringify(_lsMap)); _lsDiag.wrote = true; } } } catch (e) { _lsDiag.putErr = String(e); }
-    const body = JSON.stringify({ lsDiag: _lsDiag, lsKeys: Object.keys(_lsMap), lastUpdated: Date.now(), ver: 'listing-v2', watchlist: WATCH.length, salesScanned: tx.length, items: items });
+    try { if (_lsDirty) { const _lskv2 = env.PRICE_HISTORY; if (_lskv2) await _lskv2.put('lastsold', JSON.stringify(_lsMap)); } } catch (e) {}
+    const body = JSON.stringify({ lastUpdated: Date.now(), ver: 'listing-v2', watchlist: WATCH.length, salesScanned: tx.length, items: items });
     return new Response(body, { status: 200, headers: cors });
   } catch (e) { return new Response(JSON.stringify({ error: String(e) }), { status: 502, headers: cors }); }
 }
