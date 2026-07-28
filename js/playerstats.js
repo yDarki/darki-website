@@ -1,0 +1,202 @@
+// Player Stats - Seitenlogik (ausgelagert aus playerstats.html)
+const API='/api/player';
+    const nameEl=document.getElementById('name'), goEl=document.getElementById('go'), out=document.getElementById('out'), refreshEl=document.getElementById('refresh');
+    const de=n=>Math.round(n).toLocaleString('de-DE');
+    function abbr(n){ const a=Math.abs(n); if(a>=1e12)return (n/1e12).toFixed(2)+'T'; if(a>=1e9)return (n/1e9).toFixed(2)+'B'; if(a>=1e6)return (n/1e6).toFixed(2)+'M'; if(a>=1e3)return (n/1e3).toFixed(2)+'k'; return Math.round(n).toString(); }
+    function playtime(ms){ const s=Math.floor(ms/1000); const d=Math.floor(s/86400); const h=Math.floor((s%86400)/3600); const m=Math.floor((s%3600)/60); if(d>0)return d+'d '+h+'h'; if(h>0)return h+'h '+m+'m'; return m+'m'; }
+    function savedList(){ try{ return JSON.parse(localStorage.getItem('donutSavedPlayers')||'[]'); }catch(e){ return []; } }
+    function trackIndex(nm){ return savedList().map(function(x){return x.toLowerCase();}).indexOf((nm||'').toLowerCase()); }
+    function niceNum(x,round){ if(x<=0) return 1; var exp=Math.floor(Math.log10(x)); var f=x/Math.pow(10,exp); var nf; if(round){ nf=f<1.5?1:f<3?2:f<7?5:10; } else { nf=f<=1?1:f<=2?2:f<=5?5:10; } return nf*Math.pow(10,exp); }
+    function niceScale(mn,mx){ if(mn===mx){ mn-=1; mx+=1; } var step=niceNum((mx-mn)/4,true); var nmn=Math.floor(mn/step)*step; var nmx=Math.ceil(mx/step)*step; return {min:nmn,max:nmx,step:step}; }
+    function moneyChartSVG(pts){
+      var W=620,H=230,pl=64,pr=14,pt=14,pb=26;
+      var t0=pts[0].t, t1=pts[pts.length-1].t; if(t1===t0) t1=t0+1;
+      var vals=pts.map(function(p){return p.m;});
+      var sc=niceScale(Math.min.apply(null,vals),Math.max.apply(null,vals));
+      var xw=W-pl-pr, yh=H-pt-pb;
+      var X=function(t){return pl+(t-t0)/(t1-t0)*xw;};
+      var Y=function(v){return pt+(1-(v-sc.min)/(sc.max-sc.min))*yh;};
+      var g='';
+      for(var gv=sc.min; gv<=sc.max+1e-6; gv+=sc.step){ var y=Y(gv); g+='<line class="axis" x1="'+pl+'" y1="'+y.toFixed(1)+'" x2="'+(W-pr)+'" y2="'+y.toFixed(1)+'"/>'; g+='<text class="axlbl" x="'+(pl-8)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end">'+abbr(gv)+'</text>'; }
+      var span=t1-t0, ticks=[];
+      if(span<=2*86400000){ var stepH=Math.max(1,Math.ceil((span/3600000)/12)); for(var h=Math.ceil(t0/3600000)*3600000; h<=t1; h+=stepH*3600000) ticks.push(h); }
+      else { for(var h3=Math.ceil(t0/86400000)*86400000; h3<=t1; h3+=86400000) ticks.push(h3); }
+      if(ticks.length<2) ticks=[t0,(t0+t1)/2,t1];
+      if(ticks.length>14){ var stp=Math.ceil(ticks.length/14); ticks=ticks.filter(function(_,i){return i%stp===0;}); }
+      function fmtTick(t){ var d=new Date(t); return span>2*86400000 ? d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}) : d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}); }
+      ticks.forEach(function(t){ var x=X(t); var anc=x<pl+16?'start':(x>W-pr-16?'end':'middle'); g+='<line class="axis" x1="'+x.toFixed(1)+'" y1="'+pt+'" x2="'+x.toFixed(1)+'" y2="'+(H-pb)+'"/>'; g+='<text class="axlbl" x="'+x.toFixed(1)+'" y="'+(H-8)+'" text-anchor="'+anc+'">'+fmtTick(t)+'</text>'; });
+      var line=pts.map(function(p,i){return (i?'L':'M')+X(p.t).toFixed(1)+' '+Y(p.m).toFixed(1);}).join(' ');
+      var area=line+' L'+X(t1).toFixed(1)+' '+Y(sc.min).toFixed(1)+' L'+X(t0).toFixed(1)+' '+Y(sc.min).toFixed(1)+' Z';
+      var dots=pts.map(function(p){ var cx=X(p.t).toFixed(1), cy=Y(p.m).toFixed(1); return '<circle class="dot" cx="'+cx+'" cy="'+cy+'" r="2.4" data-t="'+p.t+'" data-x="'+(p.x||p.t)+'" data-m="'+p.m+'" data-cx="'+cx+'" data-cy="'+cy+'"/>'; }).join('');
+      var guide='<line class="mg-guide" x1="0" y1="'+pt+'" x2="0" y2="'+(H-pb)+'" style="display:none"/>';
+      var hl='<circle class="mg-hl" r="4.5" cx="0" cy="0" style="display:none"/>';
+      return '<svg class="mgsvg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet"><path class="area" d="'+area+'"/><path class="line" d="'+line+'"/>'+g+guide+dots+hl+'</svg>';
+    }
+    function wireMgHover(body){
+      var svg=body.querySelector('svg.mgsvg'); if(!svg) return;
+      var dots=[].slice.call(svg.querySelectorAll('circle.dot')); if(!dots.length) return;
+      var guide=svg.querySelector('.mg-guide'), hl=svg.querySelector('.mg-hl');
+      var tip=body.querySelector('.mg-tip'); if(!tip){ tip=document.createElement('div'); tip.className='mg-tip'; body.appendChild(tip); }
+      function fmtDT(t){ return new Date(t).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+      function show(dot){
+        var t=+dot.getAttribute('data-t'), m=+dot.getAttribute('data-m'); var xt=+(dot.getAttribute('data-x')||t);
+        var cx=+dot.getAttribute('data-cx'), cy=+dot.getAttribute('data-cy');
+        if(guide){ guide.setAttribute('x1',cx); guide.setAttribute('x2',cx); guide.style.display=''; }
+        if(hl){ hl.setAttribute('cx',cx); hl.setAttribute('cy',cy); hl.style.display=''; }
+        var brect=body.getBoundingClientRect(), dr=dot.getBoundingClientRect();
+        tip.innerHTML='<div class="mg-tip-t">'+fmtDT(xt)+' Uhr</div><div class="mg-tip-m">'+de(m)+' $</div>';
+        tip.style.display='block';
+        var left=dr.left+dr.width/2-brect.left, top=dr.top-brect.top;
+        tip.style.left=left+'px'; tip.style.top=(top-10)+'px';
+        var tw=tip.offsetWidth||0, min=tw/2+4, max=brect.width-tw/2-4;
+        if(left<min) tip.style.left=min+'px'; if(left>max) tip.style.left=max+'px';
+      }
+      function hide(){ tip.style.display='none'; if(guide) guide.style.display='none'; if(hl) hl.style.display='none'; }
+      function nearest(clientX){ var best=null,bd=1e9; dots.forEach(function(c){ var r=c.getBoundingClientRect(); var d=Math.abs(r.left+r.width/2-clientX); if(d<bd){bd=d;best=c;} }); return best; }
+      svg.addEventListener('mousemove',function(e){ var d=nearest(e.clientX); if(d) show(d); });
+      svg.addEventListener('mouseleave',hide);
+      svg.addEventListener('touchstart',function(e){ if(e.touches[0]){ var d=nearest(e.touches[0].clientX); if(d) show(d); } },{passive:true});
+      svg.addEventListener('touchmove',function(e){ if(e.touches[0]){ var d=nearest(e.touches[0].clientX); if(d) show(d); } },{passive:true});
+    }
+    var _mgData=null, _mgRange='1d';
+    function mgDownsample(pts, range){
+      var now=Date.now();
+      var span=range==='1h'?3600000:(range==='1w'?604800000:86400000);
+      var win=pts.filter(function(p){return p.t>=now-span;});
+      if(win.length<2){ win=pts.slice(-Math.min(pts.length,12)); }
+      // feste Slot-Groesse je Bereich: 1w -> 2h, 1d -> 1h (verhindert gemischte 1h/2h-Abstaende)
+      var bs=(range==='1w')?7200000:900000;
+      var byBucket={};
+      win.forEach(function(p){ byBucket[Math.floor(p.t/bs)]=p; });
+      return Object.keys(byBucket).sort(function(a,b){return a-b;}).map(function(k){ return { t: (+k)*bs, m: byBucket[k].m, x: byBucket[k].t }; });
+    }
+    function mgRangeBtns(active){
+      return ['1h','1d','1w'].map(function(r){ return '<button type="button" class="mg-rbtn'+(r===active?' active':'')+'" data-r="'+r+'">'+r+'</button>'; }).join('');
+    }
+    function mgDraw(range){
+      _mgRange=range;
+      var wrap=document.getElementById('mgwrap'); if(!wrap||!_mgData) return;
+      var pts=mgDownsample(_mgData, range);
+      var now=wrap.querySelector('.mg-now'), body=wrap.querySelector('.mg-body');
+      wrap.querySelectorAll('.mg-rbtn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-r')===range); });
+      if(pts.length<2){ if(body) body.innerHTML='<div class="mg-hint">Not enough data in this range yet.</div>'; if(now) now.innerHTML=''; return; }
+      var first=pts[0].m, last=pts[pts.length-1].m; var pct=first?((last-first)/Math.abs(first)*100):0;
+      var cls=pct>=0?'up':'down', sign=pct>=0?'+':'';
+      if(now) now.innerHTML='Now <b>'+de(last)+' $</b> &middot; <span class="mg-delta '+cls+'">'+sign+pct.toFixed(1)+'%</span>';
+      if(body){ body.innerHTML=moneyChartSVG(pts); wireMgHover(body); }
+    }
+    function isLoggedIn(){ try{ return !!localStorage.getItem('acToken'); }catch(e){ return false; } }
+    function trackedList(){ try{ return JSON.parse(localStorage.getItem('donutTracked')||'[]'); }catch(e){ return []; } }
+    function saveTracked(a){ try{ localStorage.setItem('donutTracked', JSON.stringify(a.slice(0,3))); }catch(e){} }
+    function addTracked(lc){ var a=trackedList(); if(a.indexOf(lc)<0 && a.length<3){ a.push(lc); saveTracked(a); } }
+    function removeTracked(lc){ saveTracked(trackedList().filter(function(x){return x!==lc;})); }
+    async function renderMoney(nm){
+      window.__mn = nm;
+      var wrap=document.getElementById('mgwrap'); if(!wrap) return;
+      // Graph nur für eingeloggte Nutzer sichtbar. Tracking + gespeicherte Historie bleiben unberuehrt.
+      if(!isLoggedIn()){ wrap.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0">Sign in to see money history.</div>'; return; }
+      var lc=nm.toLowerCase();
+      wrap.innerHTML='<div class="mg-head"><span class="mg-title">Money history</span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
+      var isT=trackedList().indexOf(lc)>=0;
+      var pts=[];
+      try{ var r=await fetch(API+'?money='+encodeURIComponent(nm)); var j=await r.json(); pts=(j.points||[]).filter(function(p){return p&&isFinite(p.m);}); }catch(e){}
+      _mgData=pts;
+      var _fav=false;
+      if(isT){ try{ var _tr=await fetch(API+'?track='+encodeURIComponent(nm)); var _tj=await _tr.json(); _fav=!!(_tj&&_tj.fav); }catch(e){} }
+      var n=trackedList().length;
+      var cnt='<span class="mg-count" title="Players you track (max 3)">'+n+'/3 tracked</span>';
+      function wireTrack(){ var tb=document.getElementById('mgTrack'); if(!tb) return; tb.addEventListener('click', async function(){ if(trackedList().length>=3){ return; } tb.disabled=true; tb.textContent='Tracking…'; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)); var j=await r.json(); if(j&&j.ok){ addTracked(lc); renderMoney(nm); } else { tb.disabled=false; tb.innerHTML='&plus; Track this player'; if(j&&j.error==='not-found'){ var h=wrap.querySelector('.mg-hint'); if(h) h.insertAdjacentHTML('beforeend','<div style="margin-top:6px;color:#ff6b6b">Player not found.</div>'); } } }catch(e){ tb.disabled=false; tb.innerHTML='&plus; Track this player'; } }); }
+      if(!isT && pts.length<1){
+        var full=n>=3;
+        wrap.innerHTML='<div class="mg-head"><span class="mg-titlewrap"><span class="mg-title">Money history</span>'+cnt+'</span></div><div class="mg-body"><div class="mg-hint">'+(full?'You already track 3 players &mdash; untrack one to free a slot.':'<button type="button" class="mg-trackbtn" id="mgTrack">&plus; Track this player</button><div style="margin-top:8px;font-size:12px">Track to record this player\'s money over time (up to 3 players).</div>')+'</div></div>';
+        wireTrack();
+        if(!isLoggedIn()){ var _t=document.getElementById('mgTrack'); if(_t){ var _a=document.createElement('a'); _a.href='login.html'; _a.className='mg-trackbtn'; _a.style.textDecoration='none'; _a.style.display='inline-block'; _a.textContent='Zum Tracken einloggen'; _t.parentNode.replaceChild(_a,_t); } }
+        return;
+      }
+      var actionBtn = isT ? '<button type="button" class="mg-untrack" id="mgUntrack" title="Stop tracking this player">Untrack</button>' : (n<3 ? '<button type="button" class="mg-untrack" id="mgTrackAdd" title="Track this player (keep it updating)">&plus; Track</button>' : '');
+      wrap.innerHTML='<div class="mg-head"><span class="mg-titlewrap"><span class="mg-title">Money history</span>'+cnt+'</span><span class="mg-now"></span><span class="mg-ranges"></span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
+      var rng=wrap.querySelector('.mg-ranges');
+      var favBtn = isT ? '<button type="button" class="mg-fav'+(_fav?' on':'')+'" id="mgFav" title="Favorit: alle 15 Min tracken (statt 60)">'+(_fav?'\u2605':'\u2606')+'</button>' : '';
+      var cad = isT ? '<span class="mg-cad">getrackt '+(_fav?'alle 15 Min':'alle 60 Min')+'</span>' : '';
+      rng.innerHTML=mgRangeBtns(_mgRange)+favBtn+actionBtn+cad;
+      var fb=document.getElementById('mgFav'); if(fb) fb.addEventListener('click', async function(){ fb.disabled=true; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)+'&fav='+(_fav?'0':'1')); var j=await r.json(); if(j&&j.ok){ renderMoney(nm); return; } }catch(e){} fb.disabled=false; });
+      wrap.querySelectorAll('.mg-rbtn').forEach(function(b){ b.addEventListener('click', function(){ mgDraw(b.getAttribute('data-r')); }); });
+      var ub=document.getElementById('mgUntrack'); if(ub) ub.addEventListener('click', function(){ removeTracked(lc); renderMoney(nm); });
+      var ta=document.getElementById('mgTrackAdd'); if(ta) ta.addEventListener('click', async function(){ if(trackedList().length>=3) return; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)); var j=await r.json(); if(j&&j.ok){ addTracked(lc); renderMoney(nm); } }catch(e){} });
+      var body=wrap.querySelector('.mg-body');
+      if(pts.length<2){ body.innerHTML='<div class="mg-hint">'+(isT?'Tracking started &mdash; the graph fills in hourly, check back soon.':'Not enough data yet.')+'</div>'; return; }
+      mgDraw(_mgRange);
+    }
+    function card(lbl,val,sub,cls){ return '<div class="stat"><div class="lbl">'+lbl+'</div><div class="val '+(cls||'')+'">'+val+'</div>'+(sub?'<div class="sub2">'+sub+'</div>':'')+'</div>'; }
+    async function search(force){
+      const name=nameEl.value.trim(); if(!name) return;
+      const busyBtn=force?refreshEl:goEl;
+      out.innerHTML='<div class="msg"><div class="spinner"></div>Loading stats…</div>'; busyBtn.disabled=true;
+      try{
+        const _ti=trackIndex(name); const _tr=(_ti>=0&&_ti<3)?'':''; const r=await fetch(API+'?name='+encodeURIComponent(name)+_tr+(force?'&_='+Date.now():'')); const j=await r.json();
+        const s=j.stats;
+        if(j.statsStatus&&(j.statsStatus>=500||j.statsStatus===401||j.statsStatus===403)){ document.getElementById('apiDown').classList.add('show'); out.innerHTML='<div class="msg err"><b>DonutSMP API access restricted</b><br><small>DonutSMP has temporarily restricted API access, so stats can&rsquo;t load right now. This is on their side, not the site.</small></div>'; return; }
+        if(!s || s.money===undefined){ out.innerHTML='<div class="msg err">Player "'+name+'" not found, or no data.</div>'; return; }
+        const money=+s.money, shards=+s.shards, kills=+s.kills, deaths=+s.deaths;
+        const kd= deaths>0 ? (kills/deaths).toFixed(2) : String(kills);
+        const lk=j.lookup||{};
+        const _isOn=!!(lk.location||lk.username||lk.rank); const online = _isOn ? ('<span class="on">Online</span>'+(lk.location?(' · '+lk.location):'')) : 'Offline';
+        let h='<div class="phead"><img src="https://minotar.net/helm/'+encodeURIComponent(name)+'/64.png" alt=""><div><div class="nm">'+name+'</div><div class="meta">'+online+' · updated '+new Date().toLocaleTimeString('de-DE')+'</div></div></div>';
+        h+='<div class="grid">';
+        h+=card('Money', abbr(money), de(money)+' $', 'money');
+        h+=card('Shards', de(shards));
+        h+=card('Kills', de(kills));
+        h+=card('Deaths', de(deaths));
+        h+=card('K/D', kd);
+        h+=card('Playtime', playtime(+s.playtime));
+        h+=card('Blocks mined', de(+s.broken_blocks));
+        h+=card('Blocks placed', de(+s.placed_blocks));
+        h+=card('Mobs killed', de(+s.mobs_killed));
+        h+=card('Spent in shop', abbr(+s.money_spent_on_shop), de(+s.money_spent_on_shop)+' $');
+        h+=card('Earned via /sell', abbr(+s.money_made_from_sell), de(+s.money_made_from_sell)+' $');
+        h+='</div>';
+        h+='<div class="mgwrap" id="mgwrap"></div>'; out.innerHTML=h; renderMoney(name);
+      }catch(e){ out.innerHTML='<div class="msg err">Error loading: '+e.message+'</div>'; }
+      finally{ busyBtn.disabled=false; }
+    }
+    goEl.addEventListener('click',()=>search(false));
+    // Money-Tracker: sample beim Laden + alle 5 Min (solange Seite sichtbar); danach Graph neu rendern
+    (function(){
+      function tick(){ try{ fetch('/api/player?sample=1',{cache:'no-store'}).then(function(){ if(document.getElementById('mgwrap') && window.__mn){ try{ renderMoney(window.__mn); }catch(e){} } }).catch(function(){}); }catch(e){} }
+      tick();
+      setInterval(function(){ if(document.visibilityState==='visible') tick(); }, 300000);
+      document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') tick(); });
+    })();
+    document.getElementById('refresh').addEventListener('click',()=>search(true));
+    nameEl.addEventListener('keydown',e=>{ if(e.key==='Enter') search(); });
+    (function(){ try{ var _qn=new URLSearchParams(location.search).get('name'); if(_qn){ nameEl.value=_qn; search(); } }catch(e){} })();
+    fetch('/api/player?ping=1').then(function(r){return r.json();}).then(function(j){if(j&&(j.up===false||(j.status&&j.status>=400)))document.getElementById('apiDown').classList.add('show');}).catch(function(){});
+    (function(){
+      var KEY='donutSavedPlayers';
+      var box=document.getElementById('saved');
+      var saveBtn=document.getElementById('save');
+      function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return []; } }
+      function store(a){ try{ localStorage.setItem(KEY, JSON.stringify(a)); }catch(e){} }
+      function render(){
+        var a=load();
+        if(!a.length){ box.innerHTML=''; return; }
+        var h='<div class="saved-lbl">Saved players</div>';
+        a.forEach(function(n){ h+='<span class="chip" draggable="true" data-n="'+n+'"><span class="nm">'+n+'</span><span class="rm" data-rm="'+n+'" title="Remove">&times;</span></span>'; });
+        box.innerHTML=h;
+        box.querySelectorAll('.chip').forEach(function(c){ c.addEventListener('click',function(e){ if(e.target.classList.contains('rm')) return; nameEl.value=c.getAttribute('data-n'); search(); }); });
+        box.querySelectorAll('.rm').forEach(function(r){ r.addEventListener('click',function(e){ e.stopPropagation(); var n=r.getAttribute('data-rm'); store(load().filter(function(x){return x!==n;})); render(); }); });
+        box.querySelectorAll('.chip').forEach(function(c){
+          c.addEventListener('dragstart',function(e){ dragSrc=c.getAttribute('data-n'); c.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; try{e.dataTransfer.setData('text/plain',dragSrc);}catch(_){} });
+          c.addEventListener('dragend',function(){ c.classList.remove('dragging'); if(line.parentNode) line.parentNode.removeChild(line); dragSrc=null; });
+        });
+      }
+      if(saveBtn){ saveBtn.addEventListener('click',function(){ var n=nameEl.value.trim(); if(!n) return; var a=load(); if(a.map(function(x){return x.toLowerCase();}).indexOf(n.toLowerCase())<0){ a.push(n); store(a); } render(); }); }
+      var dragSrc=null;
+      var line=document.createElement('span'); line.className='drop-line';
+      function chipAfter(x){ var cs=[].slice.call(box.querySelectorAll('.chip:not(.dragging)')); for(var i=0;i<cs.length;i++){ var r=cs[i].getBoundingClientRect(); if(x < r.left + r.width/2) return cs[i]; } return null; }
+      box.addEventListener('dragover',function(e){ if(!dragSrc) return; e.preventDefault(); e.dataTransfer.dropEffect='move'; var after=chipAfter(e.clientX); if(after) box.insertBefore(line, after); else box.appendChild(line); });
+      box.addEventListener('drop',function(e){ if(!dragSrc) return; e.preventDefault(); var bf=line.nextElementSibling; while(bf && !bf.classList.contains('chip')) bf=bf.nextElementSibling; var beforeName=bf?bf.getAttribute('data-n'):null; if(line.parentNode) line.parentNode.removeChild(line); var a=load(); var from=a.indexOf(dragSrc); if(from<0) return; a.splice(from,1); var idx=beforeName?a.indexOf(beforeName):a.length; if(idx<0) idx=a.length; a.splice(idx,0,dragSrc); store(a); dragSrc=null; render(); });
+      render();
+    })();
+
+document.querySelectorAll('.btn').forEach(function(b){b.addEventListener('click',function(){b.classList.add('flash');});b.addEventListener('animationend',function(){b.classList.remove('flash');});});
