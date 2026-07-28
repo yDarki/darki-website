@@ -6,40 +6,7 @@
 <title>Spawner Prices</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="stylesheet" href="/theme.css" />
-<style>
-  :root{ --sp:#b083f0; }
-  .wrap{position:relative;z-index:1;max-width:880px;margin:0 auto;padding:28px 22px 60px}
-  .back{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 16px;color:var(--muted);font-weight:600;font-size:14px;margin-bottom:22px;transition:.2s}
-  .back:hover{color:var(--text);border-color:var(--sp);background:var(--card-2)}
-  h1{font-size:clamp(28px,5vw,40px);font-weight:800;letter-spacing:-1px;display:flex;align-items:center;gap:12px;filter:drop-shadow(0 0 22px rgba(255,255,255,.13))}
-  h1 .grad{background:linear-gradient(105deg,#ffffff 0%,#d7dae6 28%,#9197b0 50%,#d7dae6 72%,#ffffff 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shine 5s ease-in-out infinite alternate}
-  .sub{color:var(--muted);font-size:15px;margin-top:8px}
-  .toolbar{display:flex;align-items:center;gap:12px;margin-top:6px;flex-wrap:wrap}
-  .refresh{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:auto;transition:.14s}
-  .refresh:hover{color:var(--text);border-color:var(--sp)}
-  .msg{color:var(--muted);font-size:14px;padding:34px 0;text-align:center;line-height:1.6}
-  .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--sp);border-radius:50%;margin:0 auto 14px;animation:spin 1s linear infinite}
-  .src{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-top:20px}
-  .src .h{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-  .src .nm{font-size:18px;font-weight:800}
-  .src .up{color:var(--muted);font-size:12.5px}
-  table{width:100%;border-collapse:collapse}
-  th,td{text-align:left;padding:10px 12px;font-size:14px}
-  th{color:var(--muted);font-size:11px;letter-spacing:.6px;text-transform:uppercase;font-weight:700;border-bottom:1px solid var(--border)}
-  th:not(:first-child),td:not(:first-child){text-align:right}
-  td{border-bottom:1px solid rgba(255,255,255,.05)}
-  tr:last-child td{border-bottom:none}
-  .sp-name{font-weight:700}
-  .sell{color:#5bd99a;font-weight:800;font-variant-numeric:tabular-nums}
-  .buy{color:#ff9b6b;font-weight:800;font-variant-numeric:tabular-nums}
-  .dash{color:var(--muted)}
-  .legend{color:var(--muted);font-size:12px;margin-top:10px;line-height:1.5}
-  .srclink{display:inline-flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
-  .srclink:hover .nm{color:var(--sp)}
-  .srclink .ext{color:var(--muted);opacity:.65;transition:.14s}
-  .srclink:hover .ext{color:var(--sp);opacity:1}
-  .sicon{width:26px;height:26px;border-radius:7px;flex:none;object-fit:cover;background:var(--card-2)}
-</style>
+<link rel="stylesheet" href="/css/spawners.css" />
 <script src="/gate.js"></script>
 </head>
 <body>
