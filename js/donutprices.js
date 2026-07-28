@@ -53,10 +53,18 @@
           var X0=opts.x0, X1=opts.x1; if(X1<=X0) return null;
           // Punkte in gleich breite Zeitfenster buendeln und je Fenster OHLC bilden
           var slots=Math.max(8, Math.min(60, Math.round((W-padL-padR)/14)));
-          var bs=(X1-X0)/slots;
+          var _gaps=[]; for(var _gi=1;_gi<points.length;_gi++) _gaps.push(points[_gi].x-points[_gi-1].x);
+  _gaps.sort(function(a,b){return a-b;});
+  var _med=_gaps.length?_gaps[Math.floor(_gaps.length/2)]:0;
+  var CSTEPS=[60000,300000,600000,1200000,1800000,3600000,7200000,14400000,21600000,43200000,86400000];
+  var _want=Math.max((X1-X0)/slots, _med*2);
+  var bs=CSTEPS[CSTEPS.length-1];
+  for(var _si=0;_si<CSTEPS.length;_si++){ if(CSTEPS[_si]>=_want){ bs=CSTEPS[_si]; break; } }
+  var k0=Math.floor(X0/bs);
+  try{ window.__candleIv=bs; }catch(_e){}
           var map={};
           points.forEach(function(p){
-            var k=Math.floor((p.x-X0)/bs); if(k<0)k=0; if(k>=slots)k=slots-1;
+            var k=Math.floor(p.x/bs)-k0; if(k<0||(k0+k)*bs>X1) return;
             var c=map[k];
             if(!c){ map[k]={k:k,o:p.y,h:p.y,l:p.y,c:p.y,n:1}; }
             else { c.c=p.y; if(p.y>c.h)c.h=p.y; if(p.y<c.l)c.l=p.y; c.n++; }
@@ -80,10 +88,10 @@
             return '<line x1="'+x.toFixed(1)+'" y1="'+padT+'" x2="'+x.toFixed(1)+'" y2="'+(H-padB)+'" stroke="rgba(255,255,255,.05)"/>'
                  + '<text x="'+x.toFixed(1)+'" y="'+(H-7)+'" fill="#8b8ba0" font-size="10" text-anchor="'+anc+'">'+tk.label+'</text>';
           }).join('');
-          var cw=Math.max(2, Math.min(14, (W-padL-padR)/slots*0.62));
+          var cw=Math.max(2, Math.min(14, (bs/(X1-X0))*(W-padL-padR)*0.66));
           var body='';
           cs.forEach(function(c){
-            var xc=sx(X0+(c.k+0.5)*bs);
+            var xc=sx((k0+c.k+0.5)*bs);
             var up=(c.c>=c.o), col=up?GUP:GDN;
             var yH=sy(c.h), yL=sy(c.l), yO=sy(c.o), yC=sy(c.c);
             var top=Math.min(yO,yC), hgt=Math.max(1, Math.abs(yC-yO));
@@ -169,4 +177,20 @@ document.querySelectorAll('.btn').forEach(function(b){b.addEventListener('click'
   var saved='line'; try{ saved=localStorage.getItem('ovlChartMode')||'line'; }catch(e){}
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ setMode(saved); });
   else setMode(saved);
+})();
+
+
+/* Zeigt das aktuell verwendete Kerzen-Intervall am Candles-Button an. */
+(function __candleIvLabel(){
+  function fmt(ms){ if(!ms) return ''; if(ms>=86400000) return Math.round(ms/86400000)+'d'; if(ms>=3600000) return Math.round(ms/3600000)+'h'; return Math.round(ms/60000)+'m'; }
+  function sync(){
+    var b=document.getElementById('ovlModeCandles'); if(!b) return;
+    var on=b.classList.contains('on');
+    var iv=(on&&window.__candleIv)?fmt(window.__candleIv):'';
+    var t=iv?('Candles \u00b7 '+iv):'Candles';
+    if(b.textContent!==t) b.textContent=t;
+    b.title=iv?('Candlestick (OHLC) \u2013 '+iv+' pro Kerze'):'Candlestick (OHLC)';
+  }
+  setInterval(sync,400);
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',sync); else sync();
 })();
