@@ -1,0 +1,44 @@
+/* Spawner Calculator - Seiten-CSS (ausgelagert aus spawner.html) */
+.wrap{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:28px 22px 70px}
+  .back{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 16px;color:var(--muted);font-weight:600;font-size:14px;margin-bottom:22px;transition:.2s}
+  .back:hover{color:var(--text);border-color:rgba(255,255,255,.4)}
+  h1{font-size:clamp(28px,5vw,40px);font-weight:800;letter-spacing:-1px;filter:drop-shadow(0 0 22px rgba(255,255,255,.13))}
+  h1 .grad{background:linear-gradient(105deg,#ffffff 0%,#d7dae6 28%,#9197b0 50%,#d7dae6 72%,#ffffff 100%);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:shine 5s ease-in-out infinite alternate}
+  .sub{color:var(--muted);font-size:15px;margin-top:8px;line-height:1.5}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px 22px;margin-top:22px}
+  .card h2{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:16px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:600}
+  input,select,textarea{width:100%;background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-size:15px;outline:none;font-family:inherit}
+  input:focus,select:focus,textarea:focus{border-color:rgba(255,255,255,.45)}
+  textarea{min-height:96px;resize:vertical;font-variant-numeric:tabular-nums;line-height:1.5}
+  .btn{background:#ffffff;color:#0a0a0c;border:none;padding:11px 18px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:.12s}
+  .btn:hover{transform:translateY(-2px)}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .stat{background:var(--card-2);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+  .stat .k{font-size:12px;color:var(--muted);font-weight:600}
+  .stat .v{font-size:22px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums}
+  .stat .v.green{color:var(--green)}
+  .graph svg{width:100%;height:auto;display:block}
+  .note{color:var(--muted);font-size:13px;margin-top:14px;line-height:1.6}
+  .eq{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:var(--accent-2);background:var(--card-2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin-top:10px;word-break:break-word}
+  .hidden{display:none}
+  .row2{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .muted{color:var(--muted);font-size:13px}
+  .setrow{display:flex;align-items:center;gap:10px;background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+  .setrow .si{flex:1;min-width:0}
+  .setrow .sn{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .setrow .sm{font-size:12px;color:var(--muted);margin-top:2px}
+  .setrow button{background:#1a1a28;border:1px solid rgba(255,255,255,.14);color:#f3f3f7;border-radius:8px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s}
+  .setrow button:hover{border-color:rgba(255,255,255,.4)}
+  .setrow button.x{color:#ff9b9b;border-color:rgba(255,120,120,.4);width:30px;padding:6px 0}
+  .setrow button.x:hover{background:rgba(255,90,90,.18)}
+  .dd{position:relative}
+  .dd-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-size:15px;cursor:pointer;font-family:inherit;text-align:left}
+  .dd-btn:hover{border-color:rgba(255,255,255,.3)}
+  .dd-car{color:var(--muted);font-size:12px}
+  .dd-menu{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--card-2);border:1px solid var(--border);border-radius:10px;padding:6px;z-index:20;box-shadow:0 16px 40px rgba(0,0,0,.5)}
+  .dd-opt{display:flex;flex-direction:column;gap:1px;padding:9px 11px;border-radius:8px;cursor:pointer}
+  .dd-opt:hover{background:rgba(255,255,255,.07)}
+  .dd-opt .dd-t{font-size:14px;font-weight:600;color:var(--text)}
+  .dd-opt .dd-s{font-size:12px;color:var(--muted)}
