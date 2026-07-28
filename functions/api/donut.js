@@ -91,12 +91,12 @@ export async function onRequest(context) {
     const concurrency = 5;
     const active = WATCH.filter(c => !c.soon);
     const items = [];
-    for (let i = 0; i < active.length; i += concurrency) {
-      const slice = active.slice(i, i + concurrency);
-      // Letzte bekannte Verkaeufe aus KV laden, damit 'Last sale' nicht verschwindet,
-    // wenn im aktuellen Scan-Fenster zufaellig kein Verkauf liegt.
+    // Letzte bekannte Verkaeufe aus KV laden (ausserhalb der Batch-Schleife,
+    // damit die Werte beim Zurueckschreiben nach der Schleife noch im Scope sind).
     let _lsMap = {}; let _lsDirty = false;
     try { const _lskv = env.PRICE_HISTORY; if (_lskv) { const _r = await _lskv.get('lastsold'); if (_r) _lsMap = JSON.parse(_r) || {}; } } catch (e) { _lsMap = {}; }
+    for (let i = 0; i < active.length; i += concurrency) {
+      const slice = active.slice(i, i + concurrency);
     const results = await Promise.all(slice.map(cfg => collect(cfg, maxSearchPages)));
       for (let k = 0; k < slice.length; k++) {
         const cfg = slice[k];
