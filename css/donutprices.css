@@ -93,3 +93,6 @@
     .ovl-right{order:1}
     .ovl-list{max-height:170px}
   }
+
+/* Trenner zwischen Zeitbereich und Chart-Modus */
+.ovl-modesep{display:inline-block;width:1px;height:18px;background:rgba(255,255,255,.14);margin:0 8px;vertical-align:middle}
