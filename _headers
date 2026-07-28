@@ -4,3 +4,7 @@
 
 /gate.js
   Cache-Control: public, max-age=0, must-revalidate
+
+# Ausgelagerte Seiten-Skripte: immer revalidieren, damit ein Deploy sofort greift.
+/js/*
+  Cache-Control: public, max-age=0, must-revalidate
