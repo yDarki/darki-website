@@ -2,6 +2,68 @@
 // Token is the secret env var DONUT_TOKEN (set in the Cloudflare Pages dashboard) and never reaches the browser.
 // Tracks a fixed WATCHLIST of high-value items, each looked up directly via the API search
 // (sorted lowest_price) so expensive items always appear regardless of their price rank.
+// ---- Preis-Historie -------------------------------------------------------
+// Abtastung, Aufbewahrung und Aufloesung an einer Stelle konfigurierbar.
+const SAMPLE_MS   = 120000;        // Abtastintervall: 2 Minuten
+const COARSE_MS   = 600000;        // Grobraster fuer aeltere Daten: 10 Minuten
+const FINE_WINDOW = 86400000;      // volle Aufloesung fuer die letzten 24 Stunden
+const RETENTION   = 8 * 86400000;  // Aufbewahrung: 8 Tage
+
+async function ensureSchema(db) {
+  await db.batch([
+    db.prepare('CREATE TABLE IF NOT EXISTS price_samples (item TEXT NOT NULL, t INTEGER NOT NULL, o INTEGER, s INTEGER, PRIMARY KEY (item, t))'),
+    db.prepare('CREATE TABLE IF NOT EXISTS sale_events (item TEXT NOT NULL, t INTEGER NOT NULL, p INTEGER NOT NULL, PRIMARY KEY (item, t, p))'),
+    db.prepare('CREATE INDEX IF NOT EXISTS idx_ps_t ON price_samples(t)'),
+    db.prepare('CREATE INDEX IF NOT EXISTS idx_se_t ON sale_events(t)')
+  ]);
+}
+
+// Liefert Punkte und Verkaufsevents fuer ein Item.
+// Letzte 24 h in voller Aufloesung, aelteres nur auf dem 10-Minuten-Raster,
+// damit die Charts nicht mit zehntausenden Punkten geflutet werden.
+async function readHistory(env, hid) {
+  let points = [];
+  let sales = [];
+  const db = env.DB;
+  if (db) {
+    const cut = Date.now() - FINE_WINDOW;
+    const rs = await db.batch([
+      db.prepare('SELECT t, o, s FROM price_samples WHERE item = ?1 AND t >= ?2 ORDER BY t').bind(hid, cut),
+      db.prepare('SELECT t, o, s FROM price_samples WHERE item = ?1 AND t < ?2 AND t % 600000 = 0 ORDER BY t').bind(hid, cut),
+      db.prepare('SELECT t, p FROM sale_events WHERE item = ?1 ORDER BY t').bind(hid)
+    ]);
+    const fine = (rs[0] && rs[0].results) || [];
+    const coarse = (rs[1] && rs[1].results) || [];
+    points = coarse.concat(fine);
+    sales = ((rs[2] && rs[2].results) || []).map(r => ({ t: r.t, p: r.p }));
+  }
+  // Altbestand aus KV nur fuer den Zeitraum ergaenzen, den D1 noch nicht abdeckt.
+  try {
+    const kv = env.PRICE_HISTORY;
+    if (kv) {
+      const raw = await kv.get('phist');
+      const hp = raw ? JSON.parse(raw) : null;
+      const series = (hp && Array.isArray(hp.series)) ? hp.series : [];
+      const firstT = points.length ? points[0].t : Infinity;
+      const legacy = [];
+      for (const row of series) {
+        if (!row || row.t >= firstT) continue;
+        const val = row.p ? row.p[hid] : null;
+        if (val == null) continue;
+        if (typeof val === 'number') legacy.push({ t: row.t, o: val, s: null });
+        else legacy.push({ t: row.t, o: (val.o != null ? val.o : null), s: (val.s != null ? val.s : null) });
+      }
+      if (legacy.length) points = legacy.concat(points);
+      const firstS = sales.length ? sales[0].t : Infinity;
+      const sev = (hp && hp.sevents) ? hp.sevents : {};
+      const oldSales = (sev[hid] || []).filter(x => x && x.t < firstS);
+      if (oldSales.length) sales = oldSales.concat(sales);
+    }
+  } catch (e) {}
+  points = points.filter(x => x && (x.o != null || x.s != null));
+  return { points: points, sales: sales };
+}
+
 export async function onRequest(context) {
   const request = context.request;
   const env = context.env || {};
@@ -21,14 +83,18 @@ export async function onRequest(context) {
     if (!_ok) { try { const _oc = await env.PRICE_HISTORY.get('ac:config'); if (_oc) { const _ocf = JSON.parse(_oc); if (_ocf && _ocf.open === true) _ok = true; } } catch (e) {} }
       if (!_ok) return new Response(JSON.stringify({ error: 'locked' }), { status: 403, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' } });
   }
-  if (url.searchParams.get('reset')) { const provided = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim(); if (!env.DONUT_TOKEN || provided !== env.DONUT_TOKEN) { return new Response(JSON.stringify({ reset: false, error: 'unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } }); } try { const kv = env.PRICE_HISTORY; if (kv) { await kv.put('series', '[]'); await kv.put('sevents', '{}'); } return new Response(JSON.stringify({ reset: true, cleared: ['series','sevents'] }), { status: 200, headers: { 'Content-Type': 'application/json' } }); } catch (e) { return new Response(JSON.stringify({ reset: false, error: String(e) }), { status: 200, headers: { 'Content-Type': 'application/json' } }); } }
+  if (url.searchParams.get('reset')) { const provided = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim(); if (!env.DONUT_TOKEN || provided !== env.DONUT_TOKEN) { return new Response(JSON.stringify({ reset: false, error: 'unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } }); } try { const kv = env.PRICE_HISTORY; if (kv) { await kv.put('series', '[]'); await kv.put('sevents', '{}'); try { await kv.delete('phist'); } catch (e2) {} } if (env.DB) { try { await env.DB.batch([env.DB.prepare('DELETE FROM price_samples'), env.DB.prepare('DELETE FROM sale_events')]); } catch (e3) {} } return new Response(JSON.stringify({ reset: true, cleared: ['series','sevents'] }), { status: 200, headers: { 'Content-Type': 'application/json' } }); } catch (e) { return new Response(JSON.stringify({ reset: false, error: String(e) }), { status: 200, headers: { 'Content-Type': 'application/json' } }); } }
   if (url.searchParams.get('history')) {
     const hid = url.searchParams.get('history');
     const hcors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=120' };
-    const hkv = env.PRICE_HISTORY;
-    if (!hkv) return new Response(JSON.stringify({ id: hid, points: [], note: 'no-kv' }), { status: 200, headers: hcors });
-    try { let _hh = null; try { const _hhr = await hkv.get('phist'); _hh = _hhr ? JSON.parse(_hhr) : null; } catch (_e5) {} let series = (_hh && Array.isArray(_hh.series)) ? _hh.series : []; if (!series.length) { try { const raw = await hkv.get('series'); if (raw) series = JSON.parse(raw) || []; } catch (_e6) {} } const points = series.map(s => { var v = (s.p && s.p[hid] != null) ? s.p[hid] : null; if (v == null) return null; if (typeof v === "number") return { t: s.t, o: v, s: null }; return { t: s.t, o: (v.o != null ? v.o : null), s: (v.s != null ? v.s : null) }; }).filter(x => x && (x.o != null || x.s != null)); let sales = []; try { let sev = (_hh && _hh.sevents) ? _hh.sevents : null; if (!sev) { const sraw = await hkv.get('sevents'); sev = sraw ? JSON.parse(sraw) : {}; } sales = sev[hid] || []; } catch (e8) {} return new Response(JSON.stringify({ id: hid, points: points, sales: sales }), { status: 200, headers: hcors }); } catch (e) { return new Response(JSON.stringify({ id: hid, points: [], error: String(e) }), { status: 200, headers: hcors }); }
+    try {
+      const h = await readHistory(env, hid);
+      return new Response(JSON.stringify({ id: hid, points: h.points, sales: h.sales }), { status: 200, headers: hcors });
+    } catch (e) {
+      return new Response(JSON.stringify({ id: hid, points: [], sales: [], error: String(e) }), { status: 200, headers: hcors });
+    }
   }
+
   const median = (a) => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 
   const exact = id => (x => x === 'minecraft:' + id);
@@ -127,7 +193,7 @@ export async function onRequest(context) {
         const soldU = soldUnits.length ? Math.round(Math.min.apply(null, soldUnits)) : null;
         sales.sort((a, b) => b.time - a.time);
         let last = sales[0] || null;
-        if (last) { _lsMap[cfg.id] = { price: last.price, count: last.count, time: last.time, seller: last.seller }; _lsDirty = true; }
+        if (last) { const _prev = _lsMap[cfg.id]; if (!_prev || _prev.time !== last.time || _prev.price !== last.price) { _lsMap[cfg.id] = { price: last.price, count: last.count, time: last.time, seller: last.seller }; _lsDirty = true; } }
         else if (_lsMap && _lsMap[cfg.id]) { last = _lsMap[cfg.id]; }
         const lus = listUnits.slice().sort((a, b) => a - b);
         const cluster = lus.length ? median(lus.slice(0, Math.min(5, lus.length))) : null;
@@ -138,7 +204,41 @@ export async function onRequest(context) {
       }
     }
     for (const cfg of WATCH) { if (cfg.soon) items.push({ id: 'minecraft:' + cfg.id, soon: true, listings: 0, unit: null, soldUnit: null, price: null, lastSold: null, cheapest1: null, cheapestAny: null, ah: [], sales: [] }); }
-    try { const skv = env.PRICE_HISTORY; if (skv) { let _hpRaw = await skv.get('phist'); let _hp = null; try { _hp = _hpRaw ? JSON.parse(_hpRaw) : null; } catch (_e0) {} let series = (_hp && Array.isArray(_hp.series)) ? _hp.series : []; if (!series.length) { try { const _lgs = await skv.get('series'); if (_lgs) series = JSON.parse(_lgs) || []; } catch (_e1) {} } let _sevPre = (_hp && _hp.sevents && typeof _hp.sevents === 'object') ? _hp.sevents : null; const last = series.length ? series[series.length - 1].t : 0; var t10 = Math.round(Date.now() / 600000) * 600000; if (last !== t10) { const pm = {}; for (const it of items) { const sid = it.id.replace('minecraft:', ''); var _o=(it.unit!=null?it.unit:null); var _s=(it.lastSold?it.lastSold.unit:null); if (_o!=null || _s!=null) pm[sid] = {o:_o,s:_s}; } series.push({ t: t10, p: pm }); if (series.length > 2100) series = series.slice(series.length - 2100); let sev = _sevPre || {}; if (!_sevPre) { try { const sraw = await skv.get('sevents'); sev = sraw ? JSON.parse(sraw) : {}; } catch (_e4) {} } try { for (const it of items) { if (!it.sales || !it.sales.length) continue; const sid2 = it.id.replace('minecraft:',''); let arr = sev[sid2] || []; const seen = {}; for (const ev of arr) seen[ev.t + ':' + ev.p] = 1; for (const s of it.sales) { if (!s.time) continue; const per = Math.round(s.price / (s.count || 1)); const k = s.time + ':' + per; if (!seen[k]) { arr.push({ t: s.time, p: per }); seen[k] = 1; } } arr.sort(function(a,b){return a.t-b.t;}); if (arr.length > 400) arr = arr.slice(arr.length - 400); sev[sid2] = arr; } } catch (e9) {} try { await skv.put('phist', JSON.stringify({ series: series, sevents: sev })); } catch (e10) {} } } } catch (e) {}
+    // ---- Historie schreiben (D1) ---------------------------------------
+    try {
+      const db = env.DB;
+      if (db) {
+        await ensureSchema(db);
+        const bucket = Math.round(Date.now() / SAMPLE_MS) * SAMPLE_MS;
+        const stmts = [];
+        for (const it of items) {
+          if (it.soon) continue;
+          const sid = it.id.replace('minecraft:', '');
+          const o = (it.unit != null) ? it.unit : null;
+          const s = (it.lastSold ? it.lastSold.unit : null);
+          if (o == null && s == null) continue;
+          stmts.push(db.prepare('INSERT OR REPLACE INTO price_samples (item, t, o, s) VALUES (?1, ?2, ?3, ?4)').bind(sid, bucket, o, s));
+        }
+        for (const it of items) {
+          if (!it.sales || !it.sales.length) continue;
+          const sid = it.id.replace('minecraft:', '');
+          for (const sale of it.sales) {
+            if (!sale.time) continue;
+            const per = Math.round(sale.price / (sale.count || 1));
+            stmts.push(db.prepare('INSERT OR IGNORE INTO sale_events (item, t, p) VALUES (?1, ?2, ?3)').bind(sid, sale.time, per));
+          }
+        }
+        if (stmts.length) await db.batch(stmts);
+        // Aufraeumen einmal pro Stunde, nicht bei jedem Lauf.
+        if (bucket % 3600000 < SAMPLE_MS) {
+          const oldest = Date.now() - RETENTION;
+          await db.batch([
+            db.prepare('DELETE FROM price_samples WHERE t < ?1').bind(oldest),
+            db.prepare('DELETE FROM sale_events WHERE t < ?1').bind(oldest)
+          ]);
+        }
+      }
+    } catch (e) {}
     try { if (_lsDirty) { const _lskv2 = env.PRICE_HISTORY; if (_lskv2) await _lskv2.put('lastsold', JSON.stringify(_lsMap)); } } catch (e) {}
     const body = JSON.stringify({ lastUpdated: Date.now(), ver: 'listing-v2', watchlist: WATCH.length, salesScanned: tx.length, items: items });
     return new Response(body, { status: 200, headers: cors });
