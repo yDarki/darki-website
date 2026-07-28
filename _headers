@@ -8,3 +8,7 @@
 # Ausgelagerte Seiten-Skripte: immer revalidieren, damit ein Deploy sofort greift.
 /js/*
   Cache-Control: public, max-age=0, must-revalidate
+
+# Ausgelagerte Seiten-Styles: immer revalidieren.
+/css/*
+  Cache-Control: public, max-age=0, must-revalidate
