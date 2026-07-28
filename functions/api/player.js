@@ -18,7 +18,10 @@ export async function onRequest(context) {
   const MAX_PER_RUN = 45; // stay under the 50 external-subrequest limit per invocation
 
   async function ensureSchema() {
-    await db.prepare('CREATE TABLE IF NOT EXISTS money_samples (player TEXT NOT NULL, t INTEGER NOT NULL, m INTEGER NOT NULL, PRIMARY KEY (player, t))').run();
+    await db.batch([
+      db.prepare('CREATE TABLE IF NOT EXISTS money_samples (player TEXT NOT NULL, t INTEGER NOT NULL, m INTEGER NOT NULL, PRIMARY KEY (player, t))'),
+      db.prepare('CREATE INDEX IF NOT EXISTS idx_ms_t ON money_samples(t)')
+    ]);
   }
 
   if (!token) { return new Response(JSON.stringify({ error: 'no token configured' }), { status: 500, headers: cors }); }
@@ -61,7 +64,7 @@ export async function onRequest(context) {
     if (db) {
       try {
         await ensureSchema();
-        const rs = await db.prepare('SELECT player, MAX(t) AS lt FROM money_samples GROUP BY player').all();
+        const rs = await db.prepare('SELECT player, MAX(t) AS lt FROM money_samples WHERE t >= ? GROUP BY player').bind(now - STD_MS).all();
         (rs.results || []).forEach(function (r) { lastT[r.player] = r.lt; });
         useD1 = true;
       } catch (e) { useD1 = false; }
