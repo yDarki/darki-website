@@ -57,7 +57,7 @@
     var pts=src.filter(function(p){return p.t>=x0 && p.t<=x1;}).map(function(p){return {x:p.t,y:p.p};});
     if(pts.length<2){ el.innerHTML='<div class="ovl-empty">Not enough '+(curTabO==='offers'?'offer':'sales')+' history in this range yet \u2014 it fills in over time.</div>'; return; }
     var step=niceStep(x1-x0); var ticks=[]; for(var tt=Math.ceil(x0/step)*step; tt<=x1+1; tt+=step){ ticks.push({x:tt,label:fmtTick(tt)}); } if(ticks.length>9){ ticks=ticks.filter(function(_,ix){return ix%2===0;}); }
-    el.innerHTML=svgGraph(pts,W,H,{x0:x0,x1:x1,ticks:ticks,noGap:(curTab!=='offers')});
+    el.innerHTML=svgGraph(pts,W,H,{x0:x0,x1:x1,ticks:ticks,noGap:(function(){try{var _t=document.getElementById('ovlTabOffers');return !(_t&&_t.classList.contains('active'));}catch(_e){return false;}})()});
     wireHits(el);
   }
   function drawForTab(){ if(ovlGCap) ovlGCap.textContent=(curTabO==='offers'?'Cheapest offer \u00b7 over time':'Sales \u00b7 per unit \u00b7 over time'); drawInto(ovlGraph,false); }
