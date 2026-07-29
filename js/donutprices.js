@@ -57,14 +57,18 @@
   _gaps.sort(function(a,b){return a-b;});
   var _med=_gaps.length?_gaps[Math.floor(_gaps.length/2)]:0;
   var CSTEPS=[60000,300000,600000,1200000,1800000,3600000,7200000,14400000,21600000,43200000,86400000];
-  var _want=Math.max((X1-X0)/slots, _med*2);
-  var bs=CSTEPS[CSTEPS.length-1];
-  for(var _si=0;_si<CSTEPS.length;_si++){ if(CSTEPS[_si]>=_want){ bs=CSTEPS[_si]; break; } }
+  var bs;
+  if(opts && opts.bs){ bs=opts.bs; }
+  else {
+    var _want=Math.max((X1-X0)/slots, _med*2);
+    bs=CSTEPS[CSTEPS.length-1];
+    for(var _si=0;_si<CSTEPS.length;_si++){ if(CSTEPS[_si]>=_want){ bs=CSTEPS[_si]; break; } }
+  }
   var k0=Math.floor(X0/bs);
   try{ window.__candleIv=bs; }catch(_e){}
           var map={};
           points.forEach(function(p){
-            var k=Math.floor(p.x/bs)-k0; if(k<0||(k0+k)*bs>X1) return;
+            var kMax=Math.round((X1-X0)/bs)-1; var k=Math.floor(p.x/bs)-k0; if(k<0) k=0; if(k>kMax) k=kMax;
             var c=map[k];
             if(!c){ map[k]={k:k,o:p.y,h:p.y,l:p.y,c:p.y,n:1}; }
             else { c.c=p.y; if(p.y>c.h)c.h=p.y; if(p.y<c.l)c.l=p.y; c.n++; }
@@ -100,18 +104,32 @@
           });
           return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">'+grid+xlab+body+'</svg>';
         }
-        function drawInto(el, big){
+  // Feste Kerzenraster je Zeitraum: 1d = 24 Kerzen a 1 Stunde (immer --:00 bis +1:00),
+  // 1w = 28 Kerzen a 6 Stunden. Ohne das Einrasten waeren erste und letzte Kerze angeschnitten.
+  var CANDLE_GRID={ '86400000':{bs:3600000,n:24}, '604800000':{bs:21600000,n:28} };
+  function drawInto(el, big){
     var W=big?1040:560, H=big?470:240;
     var now=Date.now();
     var lastT=(((curTabO==='offers')?offerSeries:saleSeries).slice(-1)[0]||{}).t||now;
     var x1=(now-lastT>60000)?lastT:now;
     var x0=x1-rangeMs;
+    var _cm=(function(){try{var b=document.getElementById('ovlModeCandles');return (b&&b.classList.contains('on'))?'candles':'line';}catch(_e){return 'line';}})();
+    var _bs=null;
+    if(_cm==='candles'){
+      var _grid=CANDLE_GRID[String(rangeMs)];
+      if(_grid){
+        _bs=_grid.bs;
+        // an der lokalen Zeit ausrichten, damit die 6h-Grenzen auf 00/06/12/18 fallen
+        var _tz=new Date().getTimezoneOffset()*60000;
+        x1=Math.ceil((x1-_tz)/_bs)*_bs+_tz;
+        x0=x1-_grid.n*_bs;
+      }
+    }
     var src=(curTabO==='offers')?offerSeries:saleSeries;
     var pts=src.filter(function(p){return p.t>=x0 && p.t<=x1;}).map(function(p){return {x:p.t,y:p.p};});
     if(pts.length<2){ el.innerHTML='<div class="ovl-empty">Not enough '+(curTabO==='offers'?'offer':'sales')+' history in this range yet \u2014 it fills in over time.</div>'; return; }
     var step=niceStep(x1-x0); var ticks=[]; for(var tt=Math.ceil(x0/step)*step; tt<=x1+1; tt+=step){ ticks.push({x:tt,label:fmtTick(tt)}); } if(ticks.length>9){ ticks=ticks.filter(function(_,ix){return ix%2===0;}); }
-    var _cm=(function(){try{var b=document.getElementById('ovlModeCandles');return (b&&b.classList.contains('on'))?'candles':'line';}catch(_e){return 'line';}})();
-      var _svg=(_cm==='candles')?candleGraph(pts,W,H,{x0:x0,x1:x1,ticks:ticks}):null;
+      var _svg=(_cm==='candles')?candleGraph(pts,W,H,{x0:x0,x1:x1,ticks:ticks,bs:_bs}):null;
       if(!_svg){ _svg=svgGraph(pts,W,H,{x0:x0,x1:x1,ticks:ticks,noGap:(function(){try{var _t=document.getElementById('ovlTabOffers');return !(_t&&_t.classList.contains('active'));}catch(_e){return false;}})()}); }
       el.innerHTML=_svg;
     wireHits(el);
