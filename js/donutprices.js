@@ -92,11 +92,13 @@
     bs=CSTEPS[CSTEPS.length-1];
     for(var _si=0;_si<CSTEPS.length;_si++){ if(CSTEPS[_si]>=_want){ bs=CSTEPS[_si]; break; } }
   }
-  var k0=Math.floor(X0/bs);
+  // Bei vorgegebenem Raster ist das Fenster bereits eingerastet, dann ist X0 der Ursprung.
+  // Sonst auf das Epoch-Raster ausrichten.
+  var org=(opts && opts.bs) ? X0 : Math.floor(X0/bs)*bs;
   try{ window.__candleIv=bs; }catch(_e){}
           var map={};
           points.forEach(function(p){
-            var kMax=Math.round((X1-X0)/bs)-1; var k=Math.floor(p.x/bs)-k0; if(k<0) k=0; if(k>kMax) k=kMax;
+            var kMax=Math.round((X1-org)/bs)-1; var k=Math.floor((p.x-org)/bs); if(k<0) k=0; if(k>kMax) k=kMax;
             var c=map[k];
             if(!c){ map[k]={k:k,o:p.y,h:p.y,l:p.y,c:p.y,n:1}; }
             else { c.c=p.y; if(p.y>c.h)c.h=p.y; if(p.y<c.l)c.l=p.y; c.n++; }
@@ -124,7 +126,7 @@
           var body='', hits='';
           var _slotW=(bs/(X1-X0))*(W-padL-padR);
           cs.forEach(function(c){
-            var xc=sx((k0+c.k+0.5)*bs);
+            var xc=sx(org+(c.k+0.5)*bs);
             var up=(c.c>=c.o), col=up?GUP:GDN;
             var yH=sy(c.h), yL=sy(c.l), yO=sy(c.o), yC=sy(c.c);
             var top=Math.min(yO,yC), hgt=Math.max(1, Math.abs(yC-yO));
@@ -135,7 +137,7 @@
             hits+='<rect x="'+(xc-hw).toFixed(1)+'" y="'+padT+'" width="'+(hw*2).toFixed(1)+'" height="'+(H-padT-padB).toFixed(1)+'"'
                  + ' fill="transparent" class="ovl-chit" style="pointer-events:all;cursor:pointer"'
                  + ' data-o="'+c.o+'" data-h="'+c.h+'" data-l="'+c.l+'" data-c="'+c.c+'"'
-                 + ' data-t0="'+((k0+c.k)*bs)+'" data-t1="'+((k0+c.k+1)*bs)+'"/>';
+                 + ' data-t0="'+(org+c.k*bs)+'" data-t1="'+(org+(c.k+1)*bs)+'"/>';
           });
           return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">'+grid+xlab+body+hits+'</svg>';
         }
