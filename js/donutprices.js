@@ -46,7 +46,35 @@
     return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ovlUp" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+GUP+'" stop-opacity=".24"/><stop offset="100%" stop-color="'+GUP+'" stop-opacity="0"/></linearGradient><linearGradient id="ovlDn" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+GDN+'" stop-opacity=".24"/><stop offset="100%" stop-color="'+GDN+'" stop-opacity="0"/></linearGradient></defs>'+grid+'<path d="'+fUp+'" fill="url(#ovlUp)"/><path d="'+fDn+'" fill="url(#ovlDn)"/><path d="'+dDn+'" fill="none" stroke="'+GDN+'" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 4px '+GDN+'88)"/><path d="'+dUp+'" fill="none" stroke="'+GUP+'" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 4px '+GUP+'88)"/>'+dots+xlab+hits+'</svg>';
   }
   function curOffer(){ var it=curItem; if(!it) return null; return it.unit!=null?it.unit:(it.cheapest1!=null?it.cheapest1:(it.cheapestAny!=null?it.cheapestAny:null)); }
-  function wireHits(el){ el.querySelectorAll('.ovl-hit').forEach(function(c){ c.addEventListener('mousemove',showTip); c.addEventListener('mouseenter',showTip); c.addEventListener('mouseleave',hideTip); }); }
+  function showCandleTip(e){
+    var el=e.currentTarget;
+    var t0=+el.getAttribute('data-t0'), t1=+el.getAttribute('data-t1');
+    var o=+el.getAttribute('data-o'), h=+el.getAttribute('data-h');
+    var lo=+el.getAttribute('data-l'), c=+el.getAttribute('data-c');
+    function hm(t){ var d=new Date(t); return pad(d.getHours())+':'+pad(d.getMinutes()); }
+    var span=t1-t0;
+    var head=(span>=21600000)
+      ? new Date(t0).toLocaleDateString('en-US',{month:'short',day:'numeric'})+', '+hm(t0)+' \u2013 '+hm(t1)
+      : hm(t0)+' \u2013 '+hm(t1);
+    var cCol=(c>=o)?'#5bd99a':'#ff6b6b';
+    function row(lab,val,col){
+      return '<tr><td style="padding-right:12px;color:#9a9ab0">'+lab+'</td>'
+           + '<td style="text-align:right'+(col?(';color:'+col):'')+'"><b>'+fmt(val)+'</b></td></tr>';
+    }
+    tip.innerHTML='<div style="margin-bottom:6px;color:#9a9ab0">Zeit: <span style="color:#f3f3f7">'+head+'</span></div>'
+      + '<table style="border-collapse:collapse">'
+      + row('Open (O)',o) + row('Highest (H)',h) + row('Lowest (L)',lo) + row('Close (C)',c,cCol)
+      + '</table>';
+    tip.style.display='block';
+    var x=e.clientX+14, y=e.clientY-12;
+    if(x>window.innerWidth-210) x=e.clientX-200;
+    if(y<8) y=8;
+    tip.style.left=x+'px'; tip.style.top=y+'px';
+  }
+  function wireHits(el){
+    el.querySelectorAll('.ovl-hit').forEach(function(c){ c.addEventListener('mousemove',showTip); c.addEventListener('mouseenter',showTip); c.addEventListener('mouseleave',hideTip); });
+    el.querySelectorAll('.ovl-chit').forEach(function(c){ c.addEventListener('mousemove',showCandleTip); c.addEventListener('mouseenter',showCandleTip); c.addEventListener('mouseleave',hideTip); });
+  }
   function candleGraph(points, W, H, opts){
           if(!points||points.length<2) return null;
           var padL=50, padR=18, padT=18, padB=30;
@@ -93,7 +121,8 @@
                  + '<text x="'+x.toFixed(1)+'" y="'+(H-7)+'" fill="#8b8ba0" font-size="10" text-anchor="'+anc+'">'+tk.label+'</text>';
           }).join('');
           var cw=Math.max(2, Math.min(14, (bs/(X1-X0))*(W-padL-padR)*0.66));
-          var body='';
+          var body='', hits='';
+          var _slotW=(bs/(X1-X0))*(W-padL-padR);
           cs.forEach(function(c){
             var xc=sx((k0+c.k+0.5)*bs);
             var up=(c.c>=c.o), col=up?GUP:GDN;
@@ -101,8 +130,14 @@
             var top=Math.min(yO,yC), hgt=Math.max(1, Math.abs(yC-yO));
             body+='<line x1="'+xc.toFixed(1)+'" y1="'+yH.toFixed(1)+'" x2="'+xc.toFixed(1)+'" y2="'+yL.toFixed(1)+'" stroke="'+col+'" stroke-width="1"/>';
             body+='<rect x="'+(xc-cw/2).toFixed(1)+'" y="'+top.toFixed(1)+'" width="'+cw.toFixed(1)+'" height="'+hgt.toFixed(1)+'" fill="'+col+'" fill-opacity="'+(up?'.55':'.75')+'" stroke="'+col+'" stroke-width="1"/>';
+            // unsichtbare Trefferflaeche ueber die volle Spaltenhoehe, damit man die Kerze leicht trifft
+            var hw=Math.max(cw, _slotW)/2;
+            hits+='<rect x="'+(xc-hw).toFixed(1)+'" y="'+padT+'" width="'+(hw*2).toFixed(1)+'" height="'+(H-padT-padB).toFixed(1)+'"'
+                 + ' fill="transparent" class="ovl-chit" style="pointer-events:all;cursor:pointer"'
+                 + ' data-o="'+c.o+'" data-h="'+c.h+'" data-l="'+c.l+'" data-c="'+c.c+'"'
+                 + ' data-t0="'+((k0+c.k)*bs)+'" data-t1="'+((k0+c.k+1)*bs)+'"/>';
           });
-          return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">'+grid+xlab+body+'</svg>';
+          return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">'+grid+xlab+body+hits+'</svg>';
         }
   // Feste Kerzenraster je Zeitraum: 1d = 24 Kerzen a 1 Stunde (immer --:00 bis +1:00),
   // 1w = 28 Kerzen a 6 Stunden. Ohne das Einrasten waeren erste und letzte Kerze angeschnitten.
