@@ -162,6 +162,19 @@ document.querySelectorAll('.btn').forEach(function(b){b.addEventListener('click'
     if(c) c.classList.toggle('on', mode==='candles');
     try{ localStorage.setItem('ovlChartMode', mode); }catch(e){}
   }
+  // 1h nur in der Linienansicht anbieten: eine Stunde liefert rund 30 Messwerte,
+  // daraus entstehen keine Kerzen mit Koerper, nur Striche.
+  function syncRanges(mode){
+    var h=document.querySelector('#ovlRange button[data-r="3600000"]');
+    if(!h) return false;
+    var candles=(mode==='candles');
+    h.style.display=candles?'none':'';
+    if(candles && h.classList.contains('on')){
+      var d=document.querySelector('#ovlRange button[data-r="86400000"]');
+      if(d){ d.click(); return true; }
+    }
+    return false;
+  }
   function redraw(){
     var act=document.querySelector('#ovlRange button[data-r].on');
     if(act && act.getAttribute('data-r')!=='custom'){ act.click(); return; }
@@ -171,12 +184,14 @@ document.querySelectorAll('.btn').forEach(function(b){b.addEventListener('click'
   document.addEventListener('click', function(e){
     var t=e.target && e.target.closest ? e.target.closest('#ovlModeLine,#ovlModeCandles') : null;
     if(!t) return;
-    setMode(t.id==='ovlModeCandles' ? 'candles' : 'line');
-    redraw();
+    var mode=(t.id==='ovlModeCandles') ? 'candles' : 'line';
+    setMode(mode);
+    if(!syncRanges(mode)) redraw();
   });
   var saved='line'; try{ saved=localStorage.getItem('ovlChartMode')||'line'; }catch(e){}
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ setMode(saved); });
-  else setMode(saved);
+  function init(){ setMode(saved); syncRanges(saved); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();
 
 
