@@ -61,7 +61,7 @@
       return '<tr><td style="padding-right:12px;color:#9a9ab0">'+lab+'</td>'
            + '<td style="text-align:right'+(col?(';color:'+col):'')+'"><b>'+fmt(val)+'</b></td></tr>';
     }
-    tip.innerHTML='<div style="margin-bottom:6px;color:#9a9ab0">Zeit: <span style="color:#f3f3f7">'+head+'</span></div>'
+    tip.innerHTML='<div style="margin-bottom:6px;color:#9a9ab0">Time: <span style="color:#f3f3f7">'+head+'</span></div>'
       + '<table style="border-collapse:collapse">'
       + row('Open (O)',o) + row('Highest (H)',h) + row('Lowest (L)',lo) + row('Close (C)',c,cCol)
       + '</table>';
@@ -259,7 +259,7 @@ document.querySelectorAll('.btn').forEach(function(b){b.addEventListener('click'
     var iv=(on&&window.__candleIv)?fmt(window.__candleIv):'';
     var t=iv?('Candles \u00b7 '+iv):'Candles';
     if(b.textContent!==t) b.textContent=t;
-    b.title=iv?('Candlestick (OHLC) \u2013 '+iv+' pro Kerze'):'Candlestick (OHLC)';
+    b.title=iv?('Candlestick (OHLC) \u2013 '+iv+' per candle'):'Candlestick (OHLC)';
   }
   setInterval(sync,400);
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',sync); else sync();
