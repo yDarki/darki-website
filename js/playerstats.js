@@ -101,8 +101,6 @@ const API='/api/player';
       var pts=[];
       try{ var r=await fetch(API+'?money='+encodeURIComponent(nm)); var j=await r.json(); pts=(j.points||[]).filter(function(p){return p&&isFinite(p.m);}); }catch(e){}
       _mgData=pts;
-      var _fav=false;
-      if(isT){ try{ var _tr=await fetch(API+'?track='+encodeURIComponent(nm)); var _tj=await _tr.json(); _fav=!!(_tj&&_tj.fav); }catch(e){} }
       var n=trackedList().length;
       var cnt='<span class="mg-count" title="Players you track (max 3)">'+n+'/3 tracked</span>';
       function wireTrack(){ var tb=document.getElementById('mgTrack'); if(!tb) return; tb.addEventListener('click', async function(){ if(trackedList().length>=3){ return; } tb.disabled=true; tb.textContent='Tracking…'; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)); var j=await r.json(); if(j&&j.ok){ addTracked(lc); renderMoney(nm); } else { tb.disabled=false; tb.innerHTML='&plus; Track this player'; if(j&&j.error==='not-found'){ var h=wrap.querySelector('.mg-hint'); if(h) h.insertAdjacentHTML('beforeend','<div style="margin-top:6px;color:#ff6b6b">Player not found.</div>'); } } }catch(e){ tb.disabled=false; tb.innerHTML='&plus; Track this player'; } }); }
@@ -116,15 +114,13 @@ const API='/api/player';
       var actionBtn = isT ? '<button type="button" class="mg-untrack" id="mgUntrack" title="Stop tracking this player">Untrack</button>' : (n<3 ? '<button type="button" class="mg-untrack" id="mgTrackAdd" title="Track this player (keep it updating)">&plus; Track</button>' : '');
       wrap.innerHTML='<div class="mg-head"><span class="mg-titlewrap"><span class="mg-title">Money history</span>'+cnt+'</span><span class="mg-now"></span><span class="mg-ranges"></span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
       var rng=wrap.querySelector('.mg-ranges');
-      var favBtn = isT ? '<button type="button" class="mg-fav'+(_fav?' on':'')+'" id="mgFav" title="Favorite: every 15 min instead of 60">'+(_fav?'\u2605':'\u2606')+'</button>' : '';
-      var cad = isT ? '<span class="mg-cad">tracked '+(_fav?'every 15 min':'every 60 min')+'</span>' : '';
-      rng.innerHTML=mgRangeBtns(_mgRange)+favBtn+actionBtn+cad;
-      var fb=document.getElementById('mgFav'); if(fb) fb.addEventListener('click', async function(){ fb.disabled=true; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)+'&fav='+(_fav?'0':'1')); var j=await r.json(); if(j&&j.ok){ renderMoney(nm); return; } }catch(e){} fb.disabled=false; });
+      var cad = isT ? '<span class="mg-cad">tracked every 15 min</span>' : '';
+      rng.innerHTML=mgRangeBtns(_mgRange)+actionBtn+cad;
       wrap.querySelectorAll('.mg-rbtn').forEach(function(b){ b.addEventListener('click', function(){ mgDraw(b.getAttribute('data-r')); }); });
       var ub=document.getElementById('mgUntrack'); if(ub) ub.addEventListener('click', function(){ removeTracked(lc); renderMoney(nm); });
       var ta=document.getElementById('mgTrackAdd'); if(ta) ta.addEventListener('click', async function(){ if(trackedList().length>=3) return; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)); var j=await r.json(); if(j&&j.ok){ addTracked(lc); renderMoney(nm); } }catch(e){} });
       var body=wrap.querySelector('.mg-body');
-      if(pts.length<2){ body.innerHTML='<div class="mg-hint">'+(isT?'Tracking started &mdash; the graph fills in hourly, check back soon.':'Not enough data yet.')+'</div>'; return; }
+      if(pts.length<2){ body.innerHTML='<div class="mg-hint">'+(isT?'Tracking started &mdash; the graph fills in every 15 minutes, check back soon.':'Not enough data yet.')+'</div>'; return; }
       mgDraw(_mgRange);
     }
     function card(lbl,val,sub,cls){ return '<div class="stat"><div class="lbl">'+lbl+'</div><div class="val '+(cls||'')+'">'+val+'</div>'+(sub?'<div class="sub2">'+sub+'</div>':'')+'</div>'; }
