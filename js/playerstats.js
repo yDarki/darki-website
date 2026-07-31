@@ -44,7 +44,7 @@ const API='/api/player';
         if(guide){ guide.setAttribute('x1',cx); guide.setAttribute('x2',cx); guide.style.display=''; }
         if(hl){ hl.setAttribute('cx',cx); hl.setAttribute('cy',cy); hl.style.display=''; }
         var brect=body.getBoundingClientRect(), dr=dot.getBoundingClientRect();
-        tip.innerHTML='<div class="mg-tip-t">'+fmtDT(xt)+' Uhr</div><div class="mg-tip-m">'+de(m)+' $</div>';
+        tip.innerHTML='<div class="mg-tip-t">'+fmtDT(xt)+'</div><div class="mg-tip-m">'+de(m)+' $</div>';
         tip.style.display='block';
         var left=dr.left+dr.width/2-brect.left, top=dr.top-brect.top;
         tip.style.left=left+'px'; tip.style.top=(top-10)+'px';
