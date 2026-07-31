@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -42,7 +42,7 @@
     let items = [];
     let sortKey = 'price', sortDir = 1;
 
-    const fmt = n => (n==null) ? '–' : Math.round(n).toLocaleString('de-DE');
+    const fmt = n => (n==null) ? '–' : Math.round(n).toLocaleString('en-US');
     const shortName = id => (id||'').replace(/^minecraft:/,'');
     const pretty = id => shortName(id).replace(/_/g,' ');
     const tex = id => TEX + shortName(id) + '.png';
@@ -87,7 +87,7 @@
       tableWrap.querySelectorAll('tbody tr').forEach(tr=>tr.addEventListener('click',()=>openPanel(items[+tr.dataset.i])));
     }
 
-    function setStatus(ts,n){ const t=new Date(ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    function setStatus(ts,n){ const t=new Date(ts).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
       statusEl.innerHTML='<b>'+n+'</b> items · as of '+t+''; }
 
     async function load(force){
@@ -139,6 +139,6 @@
   <div class="ovlbig-sub" id="ovlBigSub">Price history &middot; per unit</div>
   <div class="ovlbig-graph" id="ovlBigGraph"></div>
 </div></div>
-<script src="/js/donutprices.js?v=9" defer></script>
+<script src="/js/donutprices.js?v=10" defer></script>
 </body>
 </html>
