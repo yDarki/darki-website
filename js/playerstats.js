@@ -1,7 +1,7 @@
 // Player Stats - Seitenlogik (ausgelagert aus playerstats.html)
 const API='/api/player';
     const nameEl=document.getElementById('name'), goEl=document.getElementById('go'), out=document.getElementById('out'), refreshEl=document.getElementById('refresh');
-    const de=n=>Math.round(n).toLocaleString('de-DE');
+    const de=n=>Math.round(n).toLocaleString('en-US');
     function abbr(n){ const a=Math.abs(n); if(a>=1e12)return (n/1e12).toFixed(2)+'T'; if(a>=1e9)return (n/1e9).toFixed(2)+'B'; if(a>=1e6)return (n/1e6).toFixed(2)+'M'; if(a>=1e3)return (n/1e3).toFixed(2)+'k'; return Math.round(n).toString(); }
     function playtime(ms){ const s=Math.floor(ms/1000); const d=Math.floor(s/86400); const h=Math.floor((s%86400)/3600); const m=Math.floor((s%3600)/60); if(d>0)return d+'d '+h+'h'; if(h>0)return h+'h '+m+'m'; return m+'m'; }
     function savedList(){ try{ return JSON.parse(localStorage.getItem('donutSavedPlayers')||'[]'); }catch(e){ return []; } }
@@ -23,7 +23,7 @@ const API='/api/player';
       else { for(var h3=Math.ceil(t0/86400000)*86400000; h3<=t1; h3+=86400000) ticks.push(h3); }
       if(ticks.length<2) ticks=[t0,(t0+t1)/2,t1];
       if(ticks.length>14){ var stp=Math.ceil(ticks.length/14); ticks=ticks.filter(function(_,i){return i%stp===0;}); }
-      function fmtTick(t){ var d=new Date(t); return span>2*86400000 ? d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}) : d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}); }
+      function fmtTick(t){ var d=new Date(t); return span>2*86400000 ? d.toLocaleDateString('en-US',{day:'2-digit',month:'2-digit'}) : d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); }
       ticks.forEach(function(t){ var x=X(t); var anc=x<pl+16?'start':(x>W-pr-16?'end':'middle'); g+='<line class="axis" x1="'+x.toFixed(1)+'" y1="'+pt+'" x2="'+x.toFixed(1)+'" y2="'+(H-pb)+'"/>'; g+='<text class="axlbl" x="'+x.toFixed(1)+'" y="'+(H-8)+'" text-anchor="'+anc+'">'+fmtTick(t)+'</text>'; });
       var line=pts.map(function(p,i){return (i?'L':'M')+X(p.t).toFixed(1)+' '+Y(p.m).toFixed(1);}).join(' ');
       var area=line+' L'+X(t1).toFixed(1)+' '+Y(sc.min).toFixed(1)+' L'+X(t0).toFixed(1)+' '+Y(sc.min).toFixed(1)+' Z';
@@ -37,7 +37,7 @@ const API='/api/player';
       var dots=[].slice.call(svg.querySelectorAll('circle.dot')); if(!dots.length) return;
       var guide=svg.querySelector('.mg-guide'), hl=svg.querySelector('.mg-hl');
       var tip=body.querySelector('.mg-tip'); if(!tip){ tip=document.createElement('div'); tip.className='mg-tip'; body.appendChild(tip); }
-      function fmtDT(t){ return new Date(t).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+      function fmtDT(t){ return new Date(t).toLocaleString('en-US',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
       function show(dot){
         var t=+dot.getAttribute('data-t'), m=+dot.getAttribute('data-m'); var xt=+(dot.getAttribute('data-x')||t);
         var cx=+dot.getAttribute('data-cx'), cy=+dot.getAttribute('data-cy');
@@ -110,14 +110,14 @@ const API='/api/player';
         var full=n>=3;
         wrap.innerHTML='<div class="mg-head"><span class="mg-titlewrap"><span class="mg-title">Money history</span>'+cnt+'</span></div><div class="mg-body"><div class="mg-hint">'+(full?'You already track 3 players &mdash; untrack one to free a slot.':'<button type="button" class="mg-trackbtn" id="mgTrack">&plus; Track this player</button><div style="margin-top:8px;font-size:12px">Track to record this player\'s money over time (up to 3 players).</div>')+'</div></div>';
         wireTrack();
-        if(!isLoggedIn()){ var _t=document.getElementById('mgTrack'); if(_t){ var _a=document.createElement('a'); _a.href='login.html'; _a.className='mg-trackbtn'; _a.style.textDecoration='none'; _a.style.display='inline-block'; _a.textContent='Zum Tracken einloggen'; _t.parentNode.replaceChild(_a,_t); } }
+        if(!isLoggedIn()){ var _t=document.getElementById('mgTrack'); if(_t){ var _a=document.createElement('a'); _a.href='login.html'; _a.className='mg-trackbtn'; _a.style.textDecoration='none'; _a.style.display='inline-block'; _a.textContent='Sign in to track'; _t.parentNode.replaceChild(_a,_t); } }
         return;
       }
       var actionBtn = isT ? '<button type="button" class="mg-untrack" id="mgUntrack" title="Stop tracking this player">Untrack</button>' : (n<3 ? '<button type="button" class="mg-untrack" id="mgTrackAdd" title="Track this player (keep it updating)">&plus; Track</button>' : '');
       wrap.innerHTML='<div class="mg-head"><span class="mg-titlewrap"><span class="mg-title">Money history</span>'+cnt+'</span><span class="mg-now"></span><span class="mg-ranges"></span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
       var rng=wrap.querySelector('.mg-ranges');
-      var favBtn = isT ? '<button type="button" class="mg-fav'+(_fav?' on':'')+'" id="mgFav" title="Favorit: alle 15 Min tracken (statt 60)">'+(_fav?'\u2605':'\u2606')+'</button>' : '';
-      var cad = isT ? '<span class="mg-cad">getrackt '+(_fav?'alle 15 Min':'alle 60 Min')+'</span>' : '';
+      var favBtn = isT ? '<button type="button" class="mg-fav'+(_fav?' on':'')+'" id="mgFav" title="Favorite: every 15 min instead of 60">'+(_fav?'\u2605':'\u2606')+'</button>' : '';
+      var cad = isT ? '<span class="mg-cad">tracked '+(_fav?'every 15 min':'every 60 min')+'</span>' : '';
       rng.innerHTML=mgRangeBtns(_mgRange)+favBtn+actionBtn+cad;
       var fb=document.getElementById('mgFav'); if(fb) fb.addEventListener('click', async function(){ fb.disabled=true; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)+'&fav='+(_fav?'0':'1')); var j=await r.json(); if(j&&j.ok){ renderMoney(nm); return; } }catch(e){} fb.disabled=false; });
       wrap.querySelectorAll('.mg-rbtn').forEach(function(b){ b.addEventListener('click', function(){ mgDraw(b.getAttribute('data-r')); }); });
@@ -141,7 +141,7 @@ const API='/api/player';
         const kd= deaths>0 ? (kills/deaths).toFixed(2) : String(kills);
         const lk=j.lookup||{};
         const _isOn=!!(lk.location||lk.username||lk.rank); const online = _isOn ? ('<span class="on">Online</span>'+(lk.location?(' · '+lk.location):'')) : 'Offline';
-        let h='<div class="phead"><img src="https://minotar.net/helm/'+encodeURIComponent(name)+'/64.png" alt=""><div><div class="nm">'+name+'</div><div class="meta">'+online+' · updated '+new Date().toLocaleTimeString('de-DE')+'</div></div></div>';
+        let h='<div class="phead"><img src="https://minotar.net/helm/'+encodeURIComponent(name)+'/64.png" alt=""><div><div class="nm">'+name+'</div><div class="meta">'+online+' · updated '+new Date().toLocaleTimeString('en-US')+'</div></div></div>';
         h+='<div class="grid">';
         h+=card('Money', abbr(money), de(money)+' $', 'money');
         h+=card('Shards', de(shards));
