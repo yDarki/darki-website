@@ -14,7 +14,8 @@ export async function onRequest(context) {
   const kv = env.PRICE_HISTORY;
   const db = env.DB || null;
 
-  const FAV_MS = 900000, STD_MS = 3600000, WEEK = 604800000, RETAIN = 2592000000;
+  // Alle verfolgten Spieler werden im selben Takt abgetastet (kein Favoriten-Sonderfall mehr).
+  const SAMPLE_MS = 900000, WEEK = 604800000, RETAIN = 2592000000;
   const MAX_PER_RUN = 45; // stay under the 50 external-subrequest limit per invocation
 
   async function ensureSchema() {
@@ -52,6 +53,7 @@ export async function onRequest(context) {
       let e = meta[nl];
       if (Array.isArray(e)) { e = { last: (e.length ? e[e.length - 1].t : 0), pts: e }; meta[nl] = e; metaDirty = true; }
       if (!e || (e.last || 0) < now - WEEK) { delete meta[nl]; evicted++; metaDirty = true; continue; }
+      if (e.fav !== undefined) { delete e.fav; metaDirty = true; } // Altlast aus der Favoriten-Zeit
       names.push(nl);
     }
     if (!names.length) {
@@ -64,7 +66,7 @@ export async function onRequest(context) {
     if (db) {
       try {
         await ensureSchema();
-        const rs = await db.prepare('SELECT player, MAX(t) AS lt FROM money_samples WHERE t >= ? GROUP BY player').bind(now - STD_MS).all();
+        const rs = await db.prepare('SELECT player, MAX(t) AS lt FROM money_samples WHERE t >= ? GROUP BY player').bind(now - SAMPLE_MS).all();
         (rs.results || []).forEach(function (r) { lastT[r.player] = r.lt; });
         useD1 = true;
       } catch (e) { useD1 = false; }
@@ -76,8 +78,7 @@ export async function onRequest(context) {
     });
 
     const due = names.filter(function (nl) {
-      const bs = meta[nl].fav ? FAV_MS : STD_MS;
-      return Math.floor(now / bs) !== Math.floor((lastT[nl] || 0) / bs);
+      return Math.floor(now / SAMPLE_MS) !== Math.floor((lastT[nl] || 0) / SAMPLE_MS);
     }).slice(0, MAX_PER_RUN);
 
     if (!due.length) {
@@ -155,7 +156,6 @@ export async function onRequest(context) {
     let _ign = null;
     try { if (_acc) { const _r = await kv.get('ac:token:' + _acc); if (_r) { const _t = JSON.parse(_r); if (_t && _t.expires > Date.now() && _t.ign) _ign = _t.ign; } } } catch (e) {}
     if (!_ign) { return new Response(JSON.stringify({ ok: false, error: 'login-required' }), { status: 401, headers: nostore }); }
-    const favParam = url.searchParams.get('fav');
     let meta = {}; try { meta = JSON.parse((await kv.get('mtrack')) || '{}') || {}; } catch (e) { meta = {}; }
     let entry = meta[tn];
     if (Array.isArray(entry)) entry = { last: 0, pts: entry };
@@ -176,13 +176,8 @@ export async function onRequest(context) {
       } catch (e) { return new Response(JSON.stringify({ ok: false, error: 'fetch' }), { status: 200, headers: nostore }); }
       meta[tn] = entry;
     }
-    if (favParam !== null && meta[tn]) {
-      const favOn = (favParam === '1' || favParam === 'on' || favParam === 'true');
-      meta[tn].fav = favOn;
-      if (favOn) { Object.keys(meta).forEach(function (k) { if (k !== tn && meta[k] && meta[k].fav) meta[k].fav = false; }); }
-    }
     await kv.put('mtrack', JSON.stringify(meta));
-    return new Response(JSON.stringify({ ok: true, tracked: Object.keys(meta).length, fav: !!(meta[tn] && meta[tn].fav) }), { status: 200, headers: nostore });
+    return new Response(JSON.stringify({ ok: true, tracked: Object.keys(meta).length }), { status: 200, headers: nostore });
   }
 
   const name = (url.searchParams.get('name') || '').trim();
