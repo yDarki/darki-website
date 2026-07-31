@@ -1,7 +1,7 @@
 {
   "name": "DonutSMP Stats — Admin",
   "short_name": "Donut Admin",
-  "description": "Admin-Panel für donutsmpstats.com — Essentials verwalten.",
+  "description": "Admin panel for donutsmpstats.com — manage essentials.",
   "start_url": "/admin",
   "scope": "/",
   "display": "standalone",
