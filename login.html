@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -12,23 +12,23 @@
   <div class="bg"></div>
   <div class="wrap">
     <h1><img src="/favicon.svg" alt=""><span class="grad">DonutSMP Stats</span></h1>
-    <p class="sub">Melde dich mit deinem Minecraft-Account an, um Spieler zu tracken — oder stöbere als Gast.</p>
+    <p class="sub">Sign in with your Minecraft account to track players — or browse as a guest.</p>
     <div class="card">
       <div id="choose">
         <button class="btn primary" id="loginBtn">Login<span class="via">via Minecraft</span></button>
         <button class="btn ghost" id="guestBtn">Enter as guest</button>
       </div>
       <div class="step" id="step">
-        <div class="lead">Schick in Minecraft diese Nachricht:</div>
+        <div class="lead">Send this message in Minecraft:</div>
         <div class="cmd">/msg <b id="collector">Vortex_xy</b> <b id="codeInline">…</b></div>
         <div class="code" id="code">••••••</div>
-        <div class="waiting" id="waiting"><span class="spin"></span><span>Warte auf deinen Whisper in Minecraft…</span></div>
+        <div class="waiting" id="waiting"><span class="spin"></span><span>Waiting for your whisper in Minecraft…</span></div>
         <div class="err" id="err"></div>
-        <span class="cancel" id="cancel">Abbrechen</span>
+        <span class="cancel" id="cancel">Cancel</span>
       </div>
     </div>
-    <div class="foot">Der Login beweist nur, dass dir der Account gehört. Kein Passwort, keine Kosten.</div>
+    <div class="foot">The login only proves the account is yours. No password, no cost.</div>
   </div>
-  <script src="/js/login.js?v=1" defer></script>
+  <script src="/js/login.js?v=2" defer></script>
 </body>
 </html>
