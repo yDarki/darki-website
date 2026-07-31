@@ -13,11 +13,11 @@ var API='/api/access';
       try{
         var r=await fetch(API+'?login=start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token})});
         var j=await r.json();
-        if(!j||!j.code){ showErr('Konnte keinen Code erstellen. Bitte erneut versuchen.'); return; }
+        if(!j||!j.code){ showErr('Could not create a code. Please try again.'); return; }
         el('code').textContent=j.code; el('codeInline').textContent=j.code;
         if(j.collector) el('collector').textContent=j.collector;
         poll=setInterval(check, 2500); check();
-      }catch(e){ showErr('Netzwerkfehler. Bitte erneut versuchen.'); }
+      }catch(e){ showErr('Network error. Please try again.'); }
     }
     async function check(){
       if(!token) return;
