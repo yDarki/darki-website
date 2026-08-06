@@ -95,7 +95,6 @@ export async function onRequest(context) {
     }
   }
 
-  const median = (a) => { if (!a.length) return null; const s = a.slice().sort((x, y) => x - y); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 
   const exact = id => (x => x === 'minecraft:' + id);
   const WATCH = [
@@ -195,9 +194,9 @@ export async function onRequest(context) {
         let last = sales[0] || null;
         if (last) { const _prev = _lsMap[cfg.id]; if (!_prev || _prev.time !== last.time || _prev.price !== last.price) { _lsMap[cfg.id] = { price: last.price, count: last.count, time: last.time, seller: last.seller }; _lsDirty = true; } }
         else if (_lsMap && _lsMap[cfg.id]) { last = _lsMap[cfg.id]; }
+        // Guenstigstes Angebot je Einheit - exakt der Wert, gegen den auch der Discord-Bot prueft.
         const lus = listUnits.slice().sort((a, b) => a - b);
-        const cluster = lus.length ? median(lus.slice(0, Math.min(5, lus.length))) : null;
-        const listUnit = (cluster === null ? null : Math.round(cluster));
+        const listUnit = lus.length ? Math.round(lus[0]) : null;
         let medSold = null;
         if (sUnits.length >= 3) { const a = sUnits.slice().sort((x, y) => x.per - y.per); const cut = Math.floor(a.length * 0.15); let mid = a.slice(cut, a.length - cut); if (!mid.length) mid = a; let sp = 0, sc = 0; for (const z of mid) { sp += z.per * z.count; sc += z.count; } medSold = sc > 0 ? Math.round(sp / sc) : null; }
         const approx = (medSold !== null ? medSold : listUnit); items.push({ id: 'minecraft:' + cfg.id, listings: listings.length, unit: listUnit, soldUnit: soldU, soldCount: soldUnits.length, price: (approx === null ? null : Math.round(approx)), lastSold: (last ? { unit: Math.round(last.price / (last.count || 1)), time: last.time } : null), cheapest1: cheapest1, cheapestAny: cheapestAny, ah: ah.slice(0, 12), sales: sales.slice(0, 12) });
