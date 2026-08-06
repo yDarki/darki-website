@@ -9,12 +9,9 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Check Discord price alerts
-        run: |
-          curl -s -m 30 -H "Authorization: Bearer ${{ secrets.DONUT_TOKEN }}" "https://donutsmpstats.com/api/discord?cron=1&t=$(date +%s)" -o /dev/null
       - name: Read spawner prices from Discord
         run: |
-          curl -s -m 30 -H "Authorization: Bearer ${{ secrets.DONUT_TOKEN }}" "https://donutsmpstats.com/api/spawners?cron=1&t=$(date +%s)" -o /dev/null
+          curl -sS -f -m 30 -H "Authorization: Bearer ${{ secrets.DONUT_TOKEN }}" "https://donutsmpstats.com/api/spawners?cron=1&t=$(date +%s)" -o /dev/null
       - name: Sample tracked player money (server throttles to 1/hour)
         run: |
-          curl -s -m 60 -H "Authorization: Bearer ${{ secrets.DONUT_TOKEN }}" "https://donutsmpstats.com/api/player?sample=1&_=$(date +%s)" -o /dev/null
+          curl -sS -f -m 60 -H "Authorization: Bearer ${{ secrets.DONUT_TOKEN }}" "https://donutsmpstats.com/api/player?sample=1&_=$(date +%s)" -o /dev/null
