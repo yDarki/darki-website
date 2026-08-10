@@ -62,8 +62,9 @@ const API='/api/player';
     function mgDownsample(pts, range){
       var now=Date.now();
       var span=range==='1h'?3600000:(range==='1w'?604800000:86400000);
+      // Bewusst KEIN Rueckfall auf aeltere Punkte: sonst zeigt der Chart Daten von
+      // vorgestern so, als laegen sie im gewaehlten Zeitraum.
       var win=pts.filter(function(p){return p.t>=now-span;});
-      if(win.length<2){ win=pts.slice(-Math.min(pts.length,12)); }
       // feste Slot-Groesse je Bereich: 1w -> 2h, 1d -> 1h (verhindert gemischte 1h/2h-Abstaende)
       var bs=(range==='1w')?7200000:900000;
       var byBucket={};
@@ -82,7 +83,10 @@ const API='/api/player';
       if(pts.length<2){ if(body) body.innerHTML='<div class="mg-hint">Not enough data in this range yet.</div>'; if(now) now.innerHTML=''; return; }
       var first=pts[0].m, last=pts[pts.length-1].m; var pct=first?((last-first)/Math.abs(first)*100):0;
       var cls=pct>=0?'up':'down', sign=pct>=0?'+':'';
-      if(now) now.innerHTML='Now <b>'+de(last)+' $</b> &middot; <span class="mg-delta '+cls+'">'+sign+pct.toFixed(1)+'%</span>';
+      var lastT=pts[pts.length-1].x||pts[pts.length-1].t;
+      var ageM=Math.round((Date.now()-lastT)/60000);
+      var lbl=(ageM<=30)?'Now':(ageM<60?(ageM+'m ago'):(ageM<1440?(Math.round(ageM/60)+'h ago'):(Math.round(ageM/1440)+'d ago')));
+      if(now) now.innerHTML=lbl+' <b>'+de(last)+' $</b> &middot; <span class="mg-delta '+cls+'">'+sign+pct.toFixed(1)+'%</span>';
       if(body){ body.innerHTML=moneyChartSVG(pts); wireMgHover(body); }
     }
     function isLoggedIn(){ try{ return !!localStorage.getItem('acToken'); }catch(e){ return false; } }
@@ -99,7 +103,11 @@ const API='/api/player';
       wrap.innerHTML='<div class="mg-head"><span class="mg-title">Money history</span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
       var isT=trackedList().indexOf(lc)>=0;
       var pts=[];
-      try{ var r=await fetch(API+'?money='+encodeURIComponent(nm)); var j=await r.json(); pts=(j.points||[]).filter(function(p){return p&&isFinite(p.m);}); }catch(e){}
+      var srvTracked=null;
+      try{ var r=await fetch(API+'?money='+encodeURIComponent(nm)); var j=await r.json(); pts=(j.points||[]).filter(function(p){return p&&isFinite(p.m);}); if(typeof j.tracked==='boolean') srvTracked=j.tracked; }catch(e){}
+      // Der Server ist die Wahrheit: laeuft dort kein Tracking mehr, raeumen wir lokal auf.
+      if(srvTracked===false && isT){ removeTracked(lc); isT=false; }
+      else if(srvTracked===true && !isT){ addTracked(lc); isT=trackedList().indexOf(lc)>=0; }
       _mgData=pts;
       var n=trackedList().length;
       var cnt='<span class="mg-count" title="Players you track (max 3)">'+n+'/3 tracked</span>';
