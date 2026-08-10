@@ -137,13 +137,42 @@ export async function onRequest(context) {
     if (!_ok) return new Response(JSON.stringify({ error: 'locked' }), { status: 403, headers: nostore });
   }
 
+
+  // ---- Besitz-Logik: jeder Account verfolgt bis zu MAX_OWNED Spieler, die Historie
+  // ---- ist danach aber fuer alle sichtbar. -----------------------------------
+  const MAX_OWNED = 3;
+  const ownersOf = (e) => (e && Array.isArray(e.owners)) ? e.owners : [];
+  const countOwned = (meta, ign) => ign ? Object.keys(meta).filter(function (k) { return ownersOf(meta[k]).indexOf(ign) >= 0; }).length : 0;
+  async function callerIgn() {
+    const acc = request.headers.get('X-Access-Token') || '';
+    if (!acc || !kv) return null;
+    try {
+      const r = await kv.get('ac:token:' + acc);
+      if (!r) return null;
+      const t = JSON.parse(r);
+      if (t && t.expires > Date.now() && t.ign) return String(t.ign).trim().toLowerCase();
+    } catch (e) {}
+    return null;
+  }
+
   if (url.searchParams.get('money')) {
     const mn = String(url.searchParams.get('money')).trim().toLowerCase();
-    const mcors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=120' };
-    let pts = [];
-    let isTracked = false;
+    // Antwort haengt vom Aufrufer ab (mine/mineCount), deshalb bewusst nicht cachen.
+    const mcors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' };
+    const ign = await callerIgn();
+    let pts = [], isTracked = false, mine = false, mineCount = 0, ownerCount = 0;
     try {
-      if (kv) { const meta = JSON.parse((await kv.get('mtrack')) || '{}') || {}; const e = meta[mn]; isTracked = !!e; const legacy = (e && Array.isArray(e.pts)) ? e.pts : (Array.isArray(e) ? e : []); pts = legacy.slice(); }
+      if (kv) {
+        const meta = JSON.parse((await kv.get('mtrack')) || '{}') || {};
+        const e = meta[mn];
+        isTracked = !!e;
+        const own = ownersOf(e);
+        ownerCount = own.length;
+        mine = !!ign && own.indexOf(ign) >= 0;
+        mineCount = countOwned(meta, ign);
+        const legacy = (e && Array.isArray(e.pts)) ? e.pts : (Array.isArray(e) ? e : []);
+        pts = legacy.slice();
+      }
     } catch (e) {}
     if (db) {
       try { const rs = await db.prepare('SELECT t, m FROM money_samples WHERE player = ? ORDER BY t').bind(mn).all(); (rs.results || []).forEach(function (r) { pts.push({ t: r.t, m: r.m }); }); } catch (e) {}
@@ -151,38 +180,60 @@ export async function onRequest(context) {
     pts.sort(function (a, b) { return a.t - b.t; });
     const seen = {}, outPts = [];
     pts.forEach(function (p) { if (p && isFinite(p.t) && isFinite(p.m) && !seen[p.t]) { seen[p.t] = 1; outPts.push({ t: p.t, m: p.m }); } });
-    return new Response(JSON.stringify({ name: mn, points: outPts, tracked: isTracked }), { status: 200, headers: mcors });
+    return new Response(JSON.stringify({ name: mn, points: outPts, tracked: isTracked, mine: mine, mineCount: mineCount, owners: ownerCount, slots: MAX_OWNED }), { status: 200, headers: mcors });
   }
 
-  if (url.searchParams.get('track') && url.searchParams.get('track') !== '1') {
-    const tn = String(url.searchParams.get('track')).trim().toLowerCase();
-    if (!kv || !tn) { return new Response(JSON.stringify({ ok: false }), { status: 200, headers: nostore }); }
-    const _acc = request.headers.get('X-Access-Token') || '';
-    let _ign = null;
-    try { if (_acc) { const _r = await kv.get('ac:token:' + _acc); if (_r) { const _t = JSON.parse(_r); if (_t && _t.expires > Date.now() && _t.ign) _ign = _t.ign; } } } catch (e) {}
-    if (!_ign) { return new Response(JSON.stringify({ ok: false, error: 'login-required' }), { status: 401, headers: nostore }); }
+  // ---- track / untrack (Login noetig; Besitz zaehlt, Sichtbarkeit ist global) ----
+  const _tp = url.searchParams.get('track');
+  const _up = url.searchParams.get('untrack');
+  if (_up || (_tp && _tp !== '1')) {
+    const tn = String(_up || _tp).trim().toLowerCase();
+    if (!kv || !tn) return new Response(JSON.stringify({ ok: false, error: 'bad-request' }), { status: 200, headers: nostore });
+    const ign = await callerIgn();
+    if (!ign) return new Response(JSON.stringify({ ok: false, error: 'login-required' }), { status: 401, headers: nostore });
+
     let meta = {}; try { meta = JSON.parse((await kv.get('mtrack')) || '{}') || {}; } catch (e) { meta = {}; }
+    const now = Date.now();
+
+    if (_up) {
+      const e = meta[tn];
+      if (e) {
+        const rest = ownersOf(e).filter(function (o) { return o !== ign; });
+        if (rest.length) { e.owners = rest; meta[tn] = e; }
+        else { delete meta[tn]; } // niemand verfolgt ihn mehr -> Abtastung stoppt
+      }
+      await kv.put('mtrack', JSON.stringify(meta));
+      return new Response(JSON.stringify({ ok: true, mine: false, tracked: !!meta[tn], mineCount: countOwned(meta, ign), slots: MAX_OWNED }), { status: 200, headers: nostore });
+    }
+
     let entry = meta[tn];
     if (Array.isArray(entry)) entry = { last: 0, pts: entry };
-    const now = Date.now();
-    if (entry) { entry.last = now; meta[tn] = entry; }
+    const alreadyMine = ownersOf(entry).indexOf(ign) >= 0;
+    if (!alreadyMine && countOwned(meta, ign) >= MAX_OWNED) {
+      return new Response(JSON.stringify({ ok: false, error: 'limit', mineCount: countOwned(meta, ign), slots: MAX_OWNED }), { status: 200, headers: nostore });
+    }
+
+    if (entry) { entry.last = now; }
     else {
-      entry = { last: now, pts: [] };
+      entry = { last: now, pts: [], owners: [] };
       try {
         const r = await fetch(base + 'stats/' + encodeURIComponent(tn), { headers: auth });
         const j = await r.json().catch(function () { return null; });
-        const s = (j && j.result !== undefined) ? j.result : j;
-        if (s && isFinite(Number(s.money))) {
-          const m0 = Math.round(Number(s.money));
+        const st = (j && j.result !== undefined) ? j.result : j;
+        if (st && isFinite(Number(st.money))) {
+          const m0 = Math.round(Number(st.money));
           let stored = false;
           if (db) { try { await ensureSchema(); await db.prepare('INSERT OR IGNORE INTO money_samples (player, t, m) VALUES (?, ?, ?)').bind(tn, now, m0).run(); stored = true; } catch (e) {} }
           if (!stored) entry.pts.push({ t: now, m: m0 });
         } else { return new Response(JSON.stringify({ ok: false, error: 'not-found' }), { status: 200, headers: nostore }); }
       } catch (e) { return new Response(JSON.stringify({ ok: false, error: 'fetch' }), { status: 200, headers: nostore }); }
-      meta[tn] = entry;
     }
+    const own = ownersOf(entry);
+    if (own.indexOf(ign) < 0) own.push(ign);
+    entry.owners = own;
+    meta[tn] = entry;
     await kv.put('mtrack', JSON.stringify(meta));
-    return new Response(JSON.stringify({ ok: true, tracked: Object.keys(meta).length }), { status: 200, headers: nostore });
+    return new Response(JSON.stringify({ ok: true, mine: true, tracked: true, mineCount: countOwned(meta, ign), slots: MAX_OWNED }), { status: 200, headers: nostore });
   }
 
   const name = (url.searchParams.get('name') || '').trim();
