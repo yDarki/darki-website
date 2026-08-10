@@ -100,6 +100,10 @@ export async function onRequest(context) {
       rows.push({ nl: it.nl, m: Math.round(Number(s.money)) });
     }
 
+    // Ein erfolgreich abgetasteter Spieler gilt als aktiv - sonst wuerde er nach einer
+    // Woche aus mtrack fliegen, obwohl er durchgehend abgetastet wurde.
+    rows.forEach(function (r) { if (meta[r.nl]) { meta[r.nl].last = now; metaDirty = true; } });
+
     let sampled = 0;
     if (useD1 && rows.length) {
       try {
@@ -137,8 +141,9 @@ export async function onRequest(context) {
     const mn = String(url.searchParams.get('money')).trim().toLowerCase();
     const mcors = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=120' };
     let pts = [];
+    let isTracked = false;
     try {
-      if (kv) { const meta = JSON.parse((await kv.get('mtrack')) || '{}') || {}; const e = meta[mn]; const legacy = (e && Array.isArray(e.pts)) ? e.pts : (Array.isArray(e) ? e : []); pts = legacy.slice(); }
+      if (kv) { const meta = JSON.parse((await kv.get('mtrack')) || '{}') || {}; const e = meta[mn]; isTracked = !!e; const legacy = (e && Array.isArray(e.pts)) ? e.pts : (Array.isArray(e) ? e : []); pts = legacy.slice(); }
     } catch (e) {}
     if (db) {
       try { const rs = await db.prepare('SELECT t, m FROM money_samples WHERE player = ? ORDER BY t').bind(mn).all(); (rs.results || []).forEach(function (r) { pts.push({ t: r.t, m: r.m }); }); } catch (e) {}
@@ -146,7 +151,7 @@ export async function onRequest(context) {
     pts.sort(function (a, b) { return a.t - b.t; });
     const seen = {}, outPts = [];
     pts.forEach(function (p) { if (p && isFinite(p.t) && isFinite(p.m) && !seen[p.t]) { seen[p.t] = 1; outPts.push({ t: p.t, m: p.m }); } });
-    return new Response(JSON.stringify({ name: mn, points: outPts }), { status: 200, headers: mcors });
+    return new Response(JSON.stringify({ name: mn, points: outPts, tracked: isTracked }), { status: 200, headers: mcors });
   }
 
   if (url.searchParams.get('track') && url.searchParams.get('track') !== '1') {
