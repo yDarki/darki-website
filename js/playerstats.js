@@ -98,14 +98,14 @@ const API='/api/player';
       if(!isLoggedIn()){ wrap.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0">Sign in to see money history.</div>'; return; }
       var lc=nm.toLowerCase();
       wrap.innerHTML='<div class="mg-head"><span class="mg-title">Money history</span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
-      var isT=false, srvTracked=false, n=0, slots=3;
+      var isT=false, srvTracked=false, n=0, slots=3, ownerCnt=0;
       var pts=[];
       try{
         var r=await fetch(API+'?money='+encodeURIComponent(nm));
         var j=await r.json();
         pts=(j.points||[]).filter(function(p){return p&&isFinite(p.m);});
         isT=!!j.mine; srvTracked=!!j.tracked;
-        n=+j.mineCount||0; if(j.slots) slots=+j.slots;
+        n=+j.mineCount||0; if(j.slots) slots=+j.slots; ownerCnt=+j.owners||0;
       }catch(e){}
       _mgData=pts;
       var cnt='<span class="mg-count" title="Players you track">'+n+'/'+slots+' tracked</span>';
@@ -140,7 +140,7 @@ const API='/api/player';
       }
       var actionBtn = isT
         ? '<button type="button" class="mg-untrack" id="mgUntrack" title="Stop tracking this player">Untrack</button>'
-        : (srvTracked
+        : ((srvTracked && ownerCnt>0)
             ? '<span class="mg-cad" title="Someone else keeps this player updated">tracked by another user</span>'
             : (n<slots ? '<button type="button" class="mg-untrack" id="mgTrackAdd" title="Track this player (keep it updating)">&plus; Track</button>' : ''));
       wrap.innerHTML='<div class="mg-head"><span class="mg-titlewrap"><span class="mg-title">Money history</span>'+cnt+'</span><span class="mg-now"></span><span class="mg-ranges"></span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
