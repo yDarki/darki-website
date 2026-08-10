@@ -90,10 +90,7 @@ const API='/api/player';
       if(body){ body.innerHTML=moneyChartSVG(pts); wireMgHover(body); }
     }
     function isLoggedIn(){ try{ return !!localStorage.getItem('acToken'); }catch(e){ return false; } }
-    function trackedList(){ try{ return JSON.parse(localStorage.getItem('donutTracked')||'[]'); }catch(e){ return []; } }
-    function saveTracked(a){ try{ localStorage.setItem('donutTracked', JSON.stringify(a.slice(0,3))); }catch(e){} }
-    function addTracked(lc){ var a=trackedList(); if(a.indexOf(lc)<0 && a.length<3){ a.push(lc); saveTracked(a); } }
-    function removeTracked(lc){ saveTracked(trackedList().filter(function(x){return x!==lc;})); }
+    // Tracking-Zustand kommt ausschliesslich vom Server (siehe ?money -> mine/mineCount).
     async function renderMoney(nm){
       window.__mn = nm;
       var wrap=document.getElementById('mgwrap'); if(!wrap) return;
@@ -101,32 +98,58 @@ const API='/api/player';
       if(!isLoggedIn()){ wrap.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0">Sign in to see money history.</div>'; return; }
       var lc=nm.toLowerCase();
       wrap.innerHTML='<div class="mg-head"><span class="mg-title">Money history</span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
-      var isT=trackedList().indexOf(lc)>=0;
+      var isT=false, srvTracked=false, n=0, slots=3;
       var pts=[];
-      var srvTracked=null;
-      try{ var r=await fetch(API+'?money='+encodeURIComponent(nm)); var j=await r.json(); pts=(j.points||[]).filter(function(p){return p&&isFinite(p.m);}); if(typeof j.tracked==='boolean') srvTracked=j.tracked; }catch(e){}
-      // Der Server ist die Wahrheit: laeuft dort kein Tracking mehr, raeumen wir lokal auf.
-      if(srvTracked===false && isT){ removeTracked(lc); isT=false; }
-      else if(srvTracked===true && !isT){ addTracked(lc); isT=trackedList().indexOf(lc)>=0; }
+      try{
+        var r=await fetch(API+'?money='+encodeURIComponent(nm));
+        var j=await r.json();
+        pts=(j.points||[]).filter(function(p){return p&&isFinite(p.m);});
+        isT=!!j.mine; srvTracked=!!j.tracked;
+        n=+j.mineCount||0; if(j.slots) slots=+j.slots;
+      }catch(e){}
       _mgData=pts;
-      var n=trackedList().length;
-      var cnt='<span class="mg-count" title="Players you track (max 3)">'+n+'/3 tracked</span>';
-      function wireTrack(){ var tb=document.getElementById('mgTrack'); if(!tb) return; tb.addEventListener('click', async function(){ if(trackedList().length>=3){ return; } tb.disabled=true; tb.textContent='Tracking…'; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)); var j=await r.json(); if(j&&j.ok){ addTracked(lc); renderMoney(nm); } else { tb.disabled=false; tb.innerHTML='&plus; Track this player'; if(j&&j.error==='not-found'){ var h=wrap.querySelector('.mg-hint'); if(h) h.insertAdjacentHTML('beforeend','<div style="margin-top:6px;color:#ff6b6b">Player not found.</div>'); } } }catch(e){ tb.disabled=false; tb.innerHTML='&plus; Track this player'; } }); }
+      var cnt='<span class="mg-count" title="Players you track">'+n+'/'+slots+' tracked</span>';
+      // Jede Fehlerursache wird angezeigt - vorher passierte bei Fehlern einfach nichts.
+      function trackErrText(err){
+        if(err==='limit') return 'You already track '+slots+' players. Untrack one first.';
+        if(err==='login-required') return 'Please sign in again to track players.';
+        if(err==='not-found') return 'Player not found.';
+        return 'Could not start tracking. Please try again.';
+      }
+      function showTrackErr(msg){
+        var box=wrap.querySelector('.mg-hint')||wrap.querySelector('.mg-body');
+        if(box) box.insertAdjacentHTML('beforeend','<div class="mg-err" style="margin-top:6px;color:#ff6b6b">'+msg+'</div>');
+      }
+      async function doTrack(btn, label){
+        btn.disabled=true; btn.textContent='Tracking…';
+        try{
+          var r=await fetch(API+'?track='+encodeURIComponent(nm));
+          var j=await r.json();
+          if(j&&j.ok){ renderMoney(nm); return; }
+          showTrackErr(trackErrText(j&&j.error));
+        }catch(e){ showTrackErr(trackErrText()); }
+        btn.disabled=false; btn.innerHTML=label;
+      }
+      function wireTrack(){ var tb=document.getElementById('mgTrack'); if(!tb) return; tb.addEventListener('click', function(){ doTrack(tb,'&plus; Track this player'); }); }
       if(!isT && pts.length<1){
-        var full=n>=3;
-        wrap.innerHTML='<div class="mg-head"><span class="mg-titlewrap"><span class="mg-title">Money history</span>'+cnt+'</span></div><div class="mg-body"><div class="mg-hint">'+(full?'You already track 3 players &mdash; untrack one to free a slot.':'<button type="button" class="mg-trackbtn" id="mgTrack">&plus; Track this player</button><div style="margin-top:8px;font-size:12px">Track to record this player\'s money over time (up to 3 players).</div>')+'</div></div>';
+        var full=n>=slots;
+        wrap.innerHTML='<div class="mg-head"><span class="mg-titlewrap"><span class="mg-title">Money history</span>'+cnt+'</span></div><div class="mg-body"><div class="mg-hint">'+(full?'You already track '+slots+' players &mdash; untrack one to free a slot.':'<button type="button" class="mg-trackbtn" id="mgTrack">&plus; Track this player</button><div style="margin-top:8px;font-size:12px">Track to record this player\'s money over time (up to 3 players).</div>')+'</div></div>';
         wireTrack();
         if(!isLoggedIn()){ var _t=document.getElementById('mgTrack'); if(_t){ var _a=document.createElement('a'); _a.href='login.html'; _a.className='mg-trackbtn'; _a.style.textDecoration='none'; _a.style.display='inline-block'; _a.textContent='Sign in to track'; _t.parentNode.replaceChild(_a,_t); } }
         return;
       }
-      var actionBtn = isT ? '<button type="button" class="mg-untrack" id="mgUntrack" title="Stop tracking this player">Untrack</button>' : (n<3 ? '<button type="button" class="mg-untrack" id="mgTrackAdd" title="Track this player (keep it updating)">&plus; Track</button>' : '');
+      var actionBtn = isT
+        ? '<button type="button" class="mg-untrack" id="mgUntrack" title="Stop tracking this player">Untrack</button>'
+        : (srvTracked
+            ? '<span class="mg-cad" title="Someone else keeps this player updated">tracked by another user</span>'
+            : (n<slots ? '<button type="button" class="mg-untrack" id="mgTrackAdd" title="Track this player (keep it updating)">&plus; Track</button>' : ''));
       wrap.innerHTML='<div class="mg-head"><span class="mg-titlewrap"><span class="mg-title">Money history</span>'+cnt+'</span><span class="mg-now"></span><span class="mg-ranges"></span></div><div class="mg-body"><div class="mg-hint">Loading&hellip;</div></div>';
       var rng=wrap.querySelector('.mg-ranges');
-      var cad = isT ? '<span class="mg-cad">tracked every 15 min</span>' : '';
+      var cad = srvTracked ? '<span class="mg-cad">tracked every 15 min</span>' : '';
       rng.innerHTML=mgRangeBtns(_mgRange)+actionBtn+cad;
       wrap.querySelectorAll('.mg-rbtn').forEach(function(b){ b.addEventListener('click', function(){ mgDraw(b.getAttribute('data-r')); }); });
-      var ub=document.getElementById('mgUntrack'); if(ub) ub.addEventListener('click', function(){ removeTracked(lc); renderMoney(nm); });
-      var ta=document.getElementById('mgTrackAdd'); if(ta) ta.addEventListener('click', async function(){ if(trackedList().length>=3) return; try{ var r=await fetch(API+'?track='+encodeURIComponent(nm)); var j=await r.json(); if(j&&j.ok){ addTracked(lc); renderMoney(nm); } }catch(e){} });
+      var ub=document.getElementById('mgUntrack'); if(ub) ub.addEventListener('click', async function(){ ub.disabled=true; ub.textContent='…'; try{ await fetch(API+'?untrack='+encodeURIComponent(nm)); }catch(e){} renderMoney(nm); });
+      var ta=document.getElementById('mgTrackAdd'); if(ta) ta.addEventListener('click', function(){ doTrack(ta,'&plus; Track'); });
       var body=wrap.querySelector('.mg-body');
       if(pts.length<2){ body.innerHTML='<div class="mg-hint">'+(isT?'Tracking started &mdash; the graph fills in every 15 minutes, check back soon.':'Not enough data yet.')+'</div>'; return; }
       mgDraw(_mgRange);
