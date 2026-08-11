@@ -72,7 +72,7 @@ const API='/api/player';
       return Object.keys(byBucket).sort(function(a,b){return a-b;}).map(function(k){ return { t: (+k)*bs, m: byBucket[k].m, x: byBucket[k].t }; });
     }
     function mgRangeBtns(active){
-      return ['1h','1d','1w'].map(function(r){ return '<button type="button" class="mg-rbtn'+(r===active?' active':'')+'" data-r="'+r+'">'+r+'</button>'; }).join('');
+      return ['1w','1d','1h'].map(function(r){ return '<button type="button" class="mg-rbtn'+(r===active?' active':'')+'" data-r="'+r+'">'+r+'</button>'; }).join('');
     }
     function mgDraw(range){
       _mgRange=range;
@@ -111,6 +111,7 @@ const API='/api/player';
       var cnt='<span class="mg-count" title="Players you track">'+n+'/'+slots+' tracked</span>';
       // Jede Fehlerursache wird angezeigt - vorher passierte bei Fehlern einfach nichts.
       function trackErrText(err){
+        if(err==='owned') return 'Another user already tracks this player \u2014 the history is shared, no slot needed.';
         if(err==='limit') return 'You already track '+slots+' players. Untrack one first.';
         if(err==='login-required') return 'Please sign in again to track players.';
         if(err==='not-found') return 'Player not found.';
