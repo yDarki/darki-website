@@ -209,6 +209,11 @@ export async function onRequest(context) {
     let entry = meta[tn];
     if (Array.isArray(entry)) entry = { last: 0, pts: entry };
     const alreadyMine = ownersOf(entry).indexOf(ign) >= 0;
+    // Ein Spieler gehoert genau einem Account. Wird er schon von jemandem verfolgt,
+    // waere ein zweiter Slot verschwendet - die Historie ist ohnehin fuer alle sichtbar.
+    if (!alreadyMine && ownersOf(entry).length > 0) {
+      return new Response(JSON.stringify({ ok: false, error: 'owned', mineCount: countOwned(meta, ign), slots: MAX_OWNED }), { status: 200, headers: nostore });
+    }
     if (!alreadyMine && countOwned(meta, ign) >= MAX_OWNED) {
       return new Response(JSON.stringify({ ok: false, error: 'limit', mineCount: countOwned(meta, ign), slots: MAX_OWNED }), { status: 200, headers: nostore });
     }
