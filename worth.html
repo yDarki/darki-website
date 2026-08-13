@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Item Worth</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="stylesheet" href="/theme.css?v=1" />
+<link rel="stylesheet" href="/css/worth.css?v=1" />
+<script src="/gate.js?v=1"></script>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="wrap">
+    <a class="back" href="index.html">&larr; Dashboard</a>
+    <h1>
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-6px;margin-right:10px"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v10"></path><path d="M9.5 9.5h4a1.8 1.8 0 0 1 0 3.6h-3a1.8 1.8 0 0 0 0 3.6h4"></path></svg>
+      <span class="grad">Item Worth</span>
+    </h1>
+    <p class="sub">What the server pays per item, read straight from <b>/worth</b> in game.</p>
+
+    <div class="toolbar">
+      <input class="search" id="search" placeholder="Search item&hellip; (e.g. diamond)" />
+      <select class="sortsel" id="sort">
+        <option value="worth_desc">Worth: high to low</option>
+        <option value="worth_asc">Worth: low to high</option>
+        <option value="name_asc">Name: A to Z</option>
+        <option value="name_desc">Name: Z to A</option>
+      </select>
+      <button class="btn ghost" id="refresh">Refresh</button>
+    </div>
+
+    <div class="status" id="status">Loading data&hellip;</div>
+    <div id="tableWrap"><div class="loading"><div class="spinner"></div>Loading&hellip;</div></div>
+    <p class="attrib">Values come from the in-game <b>/worth</b> command and are refreshed when the scanner runs. Items the server does not buy have no entry.</p>
+  </div>
+<script src="/js/worth.js?v=1" defer></script>
+</body>
+</html>
