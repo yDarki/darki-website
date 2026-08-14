@@ -1,6 +1,6 @@
 // Discord-Bot-Seite - Seitenlogik (ausgelagert aus discordbot.html)
 const API = '/api/discord';
-  const ITEMS = ['netherite_ingot','netherite_scrap','netherite_block','enchanted_golden_apple','elytra','dragon_head'];
+  const ITEMS = ['netherite_ingot','netherite_scrap','netherite_block','enchanted_golden_apple','elytra','dragon_head','totem_of_undying'];
   const app = document.getElementById('app');
   const KEY = 'dcPairCode';
 
