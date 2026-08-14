@@ -103,7 +103,8 @@ export async function onRequest(context) {
     { id: 'netherite_block', q: 'netherite_block', match: exact('netherite_block') },
     { id: 'enchanted_golden_apple', q: 'enchanted_golden_apple', match: exact('enchanted_golden_apple') },
     { id: 'elytra', q: 'elytra', match: exact('elytra') },
-    { id: 'dragon_head', q: 'dragon_head', match: exact('dragon_head') }
+    { id: 'dragon_head', q: 'dragon_head', match: exact('dragon_head') },
+    { id: 'totem_of_undying', q: 'totem_of_undying', match: exact('totem_of_undying') }
   ];
 
   async function searchPage(q, p) {
@@ -151,7 +152,7 @@ export async function onRequest(context) {
   }
 
   try {
-    const maxSearchPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 6, 8);
+    const maxSearchPages = Math.min(parseInt(url.searchParams.get('pages'), 10) || 6, 6);
     const tx = await getTxPages(6);
     const concurrency = 5;
     const active = WATCH.filter(c => !c.soon);
