@@ -18,3 +18,19 @@ a{text-decoration:none;color:inherit}
 /* Quiet outline action button (e.g. Refresh) — distinct from the solid primary .btn and from toggles */
 .btn.ghost{background:#1a1a28;color:#f3f3f7;border:1px solid rgba(255,255,255,.14)}
 .btn.ghost:hover{background:#22222e}
+
+/* Utility, damit ein <select> als reine Datenquelle im DOM bleiben kann */
+.hidden{display:none}
+
+/* Dropdown im Seitenstil - ersetzt das native <select> optisch.
+   Die Optionen bleiben im <select>, das Menue baut sich daraus.
+   Breite richtet sich nach dem Text, damit der Pfeil nicht weit aussen klebt. */
+.dd{position:relative;flex:0 0 auto}
+.dd-btn{display:inline-flex;align-items:center;gap:10px;background:var(--card-2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-size:14px;font-family:inherit;cursor:pointer;text-align:left;white-space:nowrap;transition:.15s}
+.dd-btn:hover{border-color:rgba(255,255,255,.3)}
+.dd-btn.open{border-color:var(--accent)}
+.dd-car{color:var(--muted);font-size:11px;line-height:1}
+.dd-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:100%;background:var(--card-2);border:1px solid var(--border);border-radius:12px;padding:6px;z-index:30;box-shadow:0 16px 40px rgba(0,0,0,.5)}
+.dd-opt{padding:9px 12px;border-radius:9px;cursor:pointer;white-space:nowrap;font-size:14px;color:var(--muted);transition:.12s}
+.dd-opt:hover{background:rgba(255,255,255,.07);color:var(--text)}
+.dd-opt.on{background:rgba(255,255,255,.11);color:var(--text);font-weight:600}
