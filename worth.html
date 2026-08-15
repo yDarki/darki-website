@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Item Worth</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-<link rel="stylesheet" href="/theme.css?v=1" />
+<link rel="stylesheet" href="/theme.css?v=4" />
 <link rel="stylesheet" href="/css/worth.css?v=3" />
 <script src="/gate.js?v=1"></script>
 </head>
@@ -21,7 +21,7 @@
 
     <div class="toolbar">
       <input class="search" id="search" placeholder="Search item&hellip; (e.g. diamond)" />
-      <select class="sortsel" id="sort">
+      <select id="sort" aria-label="Sort">
         <option value="worth_desc">Worth: high to low</option>
         <option value="worth_asc">Worth: low to high</option>
         <option value="name_asc">Name: A to Z</option>
@@ -34,6 +34,7 @@
     <div id="tableWrap"><div class="loading"><div class="spinner"></div>Loading&hellip;</div></div>
     <p class="attrib">Values come from the in-game <b>/worth</b> command and are refreshed when the scanner runs. Items the server does not buy have no entry.</p>
   </div>
+<script src="/js/dropdown.js?v=1" defer></script>
 <script src="/js/worth.js?v=2" defer></script>
 </body>
 </html>
